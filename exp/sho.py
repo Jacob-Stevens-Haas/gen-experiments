@@ -10,13 +10,12 @@ import seaborn as sns
 INTEGRATOR_KEYWORDS = {"rtol": 1e-12, "method": "LSODA", "atol": 1e-12}
 
 
-def gen_data(seed=None, example_trajectory=False):
+def gen_data(seed=None, example_trajectory=False, n_trajectories=1):
     """Generate random training and test data"""
     rng = np.random.default_rng(seed)
     dt = 0.01
     ic_stdev = 3
     noise_stdev = 0.1
-    n_trajectories = 1
     t_train = np.arange(0, 10, dt)
     t_train_span = (t_train[0], t_train[-1])
     if example_trajectory:
@@ -217,3 +216,7 @@ def compare_coefficient_plots(
 
 if __name__ == "__main__":
     run(seed=1, diff_params={"kind": "FiniteDifference"}, opt_params={"kind": "stlsq"})
+
+sim_params = {"test": {"n_trajectories": 2}}
+diff_params = {"test": {"kind": "FiniteDifference"}}
+opt_params = {"test": {"kind": "STLSQ"}}
