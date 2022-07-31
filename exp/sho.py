@@ -33,7 +33,7 @@ def gen_data(seed=None, example_trajectory=False):
                 t_train_span,
                 x0_train[traj, :],
                 t_eval=t_train,
-                **INTEGRATOR_KEYWORDS
+                **INTEGRATOR_KEYWORDS,
             ).y.T
         )
     x_train = np.stack(x_train)
@@ -45,7 +45,7 @@ def gen_data(seed=None, example_trajectory=False):
                 t_train_span,
                 x0_test[traj, :],
                 t_eval=t_train,
-                **INTEGRATOR_KEYWORDS
+                **INTEGRATOR_KEYWORDS,
             ).y.T
         )
     x_test = np.array(x_test)
@@ -96,17 +96,17 @@ def run(seed, sim_params={}, diff_params={}, opt_params={}):
 
     model.fit(x_train, quiet=True, multiple_trajectories=True)
     coefficients = model.coefficients()
-    coeff_true = np.array([
-        [0, -.1, 2, 0, 0, 0],
-        [0, -2, -.1, 0, 0, 0]
-    ])
+    coeff_true = np.array([[0, -0.1, 2, 0, 0, 0], [0, -2, -0.1, 0, 0, 0]])
 
     # make the plots
     model.print()
     input_features = ["x", "y"]
     feature_names = model.get_feature_names()
     compare_coefficient_plots(
-        coefficients, coeff_true, input_features=input_features, feature_names=feature_names
+        coefficients,
+        coeff_true,
+        input_features=input_features,
+        feature_names=feature_names,
     )
 
     # calculate metrics
@@ -136,7 +136,9 @@ def run(seed, sim_params={}, diff_params={}, opt_params={}):
     metrics["coeff_mae"] = sklearn.metrics.mean_absolute_error(
         coeff_true.flatten(), coefficients.flatten()
     )
+    metrics["main"] = metrics["coeff_f1"]
     return metrics
+
 
 def plot_coefficients(
     coefficients, input_features=None, feature_names=None, ax=None, **heatmap_kws
@@ -169,6 +171,7 @@ def plot_coefficients(
         ax.tick_params(axis="y", rotation=0)
 
     return ax
+
 
 def compare_coefficient_plots(
     coefficients_est, coefficients_true, input_features=None, feature_names=None
@@ -209,6 +212,7 @@ def compare_coefficient_plots(
         axs[1].set_title("Est. Coefficients", rotation=45)
 
         fig.tight_layout()
+
 
 if __name__ == "__main__":
     run(seed=1, diff_params={"kind": "FiniteDifference"}, opt_params={"kind": "stlsq"})
