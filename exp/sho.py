@@ -79,7 +79,7 @@ def opt_lookup(kind):
         raise ValueError
 
 
-def run(seed, sim_params={}, diff_params={}, opt_params={}):
+def run(seed, sim_params={}, diff_params={}, opt_params={}, display=True):
     dt, t_train, x_train, x_test, x_dot_test = gen_data(seed, **sim_params)
     diff_cls = diff_lookup(diff_params.pop("kind"))
     diff = diff_cls(**diff_params)
@@ -99,15 +99,16 @@ def run(seed, sim_params={}, diff_params={}, opt_params={}):
     coeff_true = np.array([[0, -0.1, 2, 0, 0, 0], [0, -2, -0.1, 0, 0, 0]])
 
     # make the plots
-    model.print()
-    input_features = ["x", "y"]
-    feature_names = model.get_feature_names()
-    compare_coefficient_plots(
-        coefficients,
-        coeff_true,
-        input_features=input_features,
-        feature_names=feature_names,
-    )
+    if display:
+        model.print()
+        input_features = ["x", "y"]
+        feature_names = model.get_feature_names()
+        compare_coefficient_plots(
+            coefficients,
+            coeff_true,
+            input_features=input_features,
+            feature_names=feature_names,
+        )
 
     # calculate metrics
     metrics = {}
