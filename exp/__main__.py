@@ -15,7 +15,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument("experiment", help="Name to identify the experiment")
 parser.add_argument(
     "--param",
-    action="store",
+    action="append",
     help=(
         "Name of parameters to use with this trial, in format 'key=value'\ne.g. --param"
         " seed=1 --param solver=solver_1\nKeys must be understood by the experiment"
