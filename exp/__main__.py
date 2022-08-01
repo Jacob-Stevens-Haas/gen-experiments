@@ -25,8 +25,7 @@ parser.add_argument(
 )
 parser.add_argument(
     "--debug",
-    type=bool,
-    default=False,
+    action="store_true",
     help=(
         "Run in debug mode, allowing one to use uncommitted code changes and not"
         " recording results"
@@ -35,9 +34,13 @@ parser.add_argument(
 args = parser.parse_args()
 ex = exp.experiments[args.experiment]
 params = exp.lookup_params(args.experiment, args.param)
+trials_folder = Path(__file__).parent.absolute() / "trials"
+if not trials_folder.exists():
+    trials_folder.mkdir(parents=True)
 mitosis.run(
     ex,
     args.debug,
+    logfile = f"trials_{ex.name}.db",
     params=params,
-    trials_folder=Path(__file__).parent / "trials" / args.experiment,
+    trials_folder=trials_folder,
 )
