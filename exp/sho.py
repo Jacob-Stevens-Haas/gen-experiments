@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 INTEGRATOR_KEYWORDS = {"rtol": 1e-12, "method": "LSODA", "atol": 1e-12}
-
+name = "SHO"
 
 def gen_data(seed=None, example_trajectory=False, n_trajectories=1):
     """Generate random training and test data"""
