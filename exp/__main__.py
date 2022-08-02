@@ -14,6 +14,22 @@ parser = argparse.ArgumentParser(
 )
 parser.add_argument("experiment", help="Name to identify the experiment")
 parser.add_argument(
+    "--debug",
+    action="store_true",
+    help=(
+        "Run in debug mode, allowing one to use uncommitted code changes and not"
+        " recording results"
+    ),
+)
+parser.add_argument(
+    "--seed",
+    type=int,
+    help=(
+        "Random seed for the trial"
+    ),
+    required=True
+)
+parser.add_argument(
     "--param",
     action="append",
     help=(
@@ -23,16 +39,9 @@ parser.add_argument(
         " experiment's namespace"
     ),
 )
-parser.add_argument(
-    "--debug",
-    action="store_true",
-    help=(
-        "Run in debug mode, allowing one to use uncommitted code changes and not"
-        " recording results"
-    ),
-)
 args = parser.parse_args()
 ex = exp.experiments[args.experiment]
+seed = args.seed
 params = exp.lookup_params(args.experiment, args.param)
 trials_folder = Path(__file__).parent.absolute() / "trials"
 if not trials_folder.exists():
@@ -40,6 +49,7 @@ if not trials_folder.exists():
 mitosis.run(
     ex,
     args.debug,
+    seed = seed,
     logfile = f"trials_{ex.name}.db",
     params=params,
     trials_folder=trials_folder,
