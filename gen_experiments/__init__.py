@@ -1,6 +1,6 @@
 from mitosis import Parameter
 
-import sho
+from . import sho
 
 experiments = {"sho": sho}
 

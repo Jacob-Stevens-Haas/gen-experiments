@@ -3,7 +3,7 @@ from pathlib import Path
 
 import mitosis
 
-import exp
+import gen_experiments
 
 parser = argparse.ArgumentParser(
     prog="pysindy-experiments",
@@ -40,9 +40,9 @@ parser.add_argument(
     ),
 )
 args = parser.parse_args()
-ex = exp.experiments[args.experiment]
+ex = gen_experiments.experiments[args.experiment]
 seed = args.seed
-params = exp.lookup_params(args.experiment, args.param)
+params = gen_experiments.lookup_params(args.experiment, args.param)
 trials_folder = Path(__file__).parent.absolute() / "trials"
 if not trials_folder.exists():
     trials_folder.mkdir(parents=True)

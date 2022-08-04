@@ -1,6 +1,6 @@
 commit-msg
 todo
-exp/trials/
+gen_experiments/trials/
 
 # IDE files
 .vscode
