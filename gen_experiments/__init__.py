@@ -1,8 +1,9 @@
 from mitosis import Parameter
 
 from . import sho
+from . import lorenz
 
-experiments = {"sho": sho}
+experiments = {"sho": sho, "lorenz": lorenz}
 
 
 def lookup_params(experiment: str, params: list):

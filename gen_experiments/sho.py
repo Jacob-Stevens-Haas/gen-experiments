@@ -2,13 +2,13 @@ import numpy as np
 import pysindy as ps
 import sklearn
 
-from .utils import gen_data, compare_coefficient_plots, opt_lookup, diff_lookup, INTEGRATOR_KEYWORDS
+from .utils import gen_data, compare_coefficient_plots, opt_lookup, diff_lookup, coeff_metrics, integration_metrics
 
 name = "SHO"
 
 
 def run(seed, sim_params={}, diff_params={}, opt_params={}, display=True):
-    dt, t_train, x_train, x_test, x_dot_test = gen_data(ps.utils.linear_damped_SHO, seed, **sim_params)
+    dt, t_train, x_train, x_test, x_dot_test = gen_data(ps.utils.linear_damped_SHO, 2, seed, **sim_params)
     diff_cls = diff_lookup(diff_params.pop("kind"))
     diff = diff_cls(**diff_params)
     opt_cls = opt_lookup(opt_params.pop("kind"))
@@ -29,7 +29,6 @@ def run(seed, sim_params={}, diff_params={}, opt_params={}, display=True):
     # make the plots
     if display:
         model.print()
-        input_features = ["x", "y"]
         feature_names = model.get_feature_names()
         compare_coefficient_plots(
             coefficients,
@@ -39,33 +38,8 @@ def run(seed, sim_params={}, diff_params={}, opt_params={}, display=True):
         )
 
     # calculate metrics
-    metrics = {}
-    metrics["mse"] = model.score(
-        x_test, t_train, x_dot_test, multiple_trajectories=True
-    )
-    metrics["mae"] = model.score(
-        x_test,
-        t_train,
-        x_dot_test,
-        multiple_trajectories=True,
-        metric=sklearn.metrics.mean_absolute_error,
-    )
-    metrics["coeff_precision"] = sklearn.metrics.precision_score(
-        coeff_true.flatten() != 0, coefficients.flatten() != 0
-    )
-    metrics["coeff_recall"] = sklearn.metrics.recall_score(
-        coeff_true.flatten() != 0, coefficients.flatten() != 0
-    )
-    metrics["coeff_f1"] = sklearn.metrics.f1_score(
-        coeff_true.flatten() != 0, coefficients.flatten() != 0
-    )
-    metrics["coeff_mse"] = sklearn.metrics.mean_squared_error(
-        coeff_true.flatten(), coefficients.flatten()
-    )
-    metrics["coeff_mae"] = sklearn.metrics.mean_absolute_error(
-        coeff_true.flatten(), coefficients.flatten()
-    )
-    metrics["main"] = metrics["coeff_f1"]
+    metrics = coeff_metrics(coefficients, coeff_true)
+    metrics.update(integration_metrics(model, x_test, t_train, x_dot_test))
     return metrics
 
 

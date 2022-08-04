@@ -5,20 +5,26 @@ import numpy as np
 import seaborn as sns
 import scipy
 import pysindy as ps
+import sklearn
 
 INTEGRATOR_KEYWORDS = {"rtol": 1e-12, "method": "LSODA", "atol": 1e-12}
 
 
-def gen_data(rhs_func, seed=None, n_trajectories=1):
-    """Generate random training and test data"""
+def gen_data(rhs_func, n_coord, seed=None, n_trajectories=1):
+    """Generate random training and test data
+    
+    Arguments:
+        rhs_func (Callable): the function to integrate
+        n_coord (int): number of coordinates needed for rhs_func
+    """
     rng = np.random.default_rng(seed)
     dt = 0.01
     ic_stdev = 3
     noise_stdev = 0.1
     t_train = np.arange(0, 10, dt)
     t_train_span = (t_train[0], t_train[-1])
-    x0_train = ic_stdev * rng.standard_normal((n_trajectories, 2))
-    x0_test = ic_stdev * rng.standard_normal((ceil(n_trajectories / 2), 2))
+    x0_train = ic_stdev * rng.standard_normal((n_trajectories, n_coord))
+    x0_test = ic_stdev * rng.standard_normal((ceil(n_trajectories / 2), n_coord))
     x_train = []
     for traj in range(n_trajectories):
         x_train.append(
@@ -146,3 +152,38 @@ def compare_coefficient_plots(
 
         fig.tight_layout()
 
+
+def coeff_metrics(coefficients, coeff_true):
+    metrics = {}
+    metrics["coeff_precision"] = sklearn.metrics.precision_score(
+        coeff_true.flatten() != 0, coefficients.flatten() != 0
+    )
+    metrics["coeff_recall"] = sklearn.metrics.recall_score(
+        coeff_true.flatten() != 0, coefficients.flatten() != 0
+    )
+    metrics["coeff_f1"] = sklearn.metrics.f1_score(
+        coeff_true.flatten() != 0, coefficients.flatten() != 0
+    )
+    metrics["coeff_mse"] = sklearn.metrics.mean_squared_error(
+        coeff_true.flatten(), coefficients.flatten()
+    )
+    metrics["coeff_mae"] = sklearn.metrics.mean_absolute_error(
+        coeff_true.flatten(), coefficients.flatten()
+    )
+    metrics["main"] = metrics["coeff_f1"]
+    return metrics
+
+
+def integration_metrics(model, x_test, t_train, x_dot_test):
+    metrics = {}
+    metrics["mse"] = model.score(
+        x_test, t_train, x_dot_test, multiple_trajectories=True
+    )
+    metrics["mae"] = model.score(
+        x_test,
+        t_train,
+        x_dot_test,
+        multiple_trajectories=True,
+        metric=sklearn.metrics.mean_absolute_error,
+    )
+    return metrics
