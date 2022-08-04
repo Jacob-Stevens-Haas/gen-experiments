@@ -5,81 +5,13 @@ import pysindy as ps
 import scipy
 import sklearn
 
-from .utils import compare_coefficient_plots
+from .utils import gen_data, compare_coefficient_plots, opt_lookup, diff_lookup, INTEGRATOR_KEYWORDS
 
-INTEGRATOR_KEYWORDS = {"rtol": 1e-12, "method": "LSODA", "atol": 1e-12}
 name = "LORENZ"
-
-def gen_data(seed=None, example_trajectory=False, n_trajectories=1):
-    """Generate random training and test data"""
-    rng = np.random.default_rng(seed)
-    dt = 0.01
-    ic_stdev = 3
-    noise_stdev = 0.1
-    t_train = np.arange(0, 10, dt)
-    t_train_span = (t_train[0], t_train[-1])
-    if example_trajectory:
-        x0_train = np.array([[2, 0]])
-        x0_test = np.array([[2, 0]])
-    else:
-        x0_train = ic_stdev * rng.standard_normal((n_trajectories, 2))
-        x0_test = ic_stdev * rng.standard_normal((ceil(n_trajectories / 2), 2))
-    x_train = []
-    for traj in range(n_trajectories):
-        x_train.append(
-            scipy.integrate.solve_ivp(
-                ps.utils.linear_damped_SHO,
-                t_train_span,
-                x0_train[traj, :],
-                t_eval=t_train,
-                **INTEGRATOR_KEYWORDS,
-            ).y.T
-        )
-    x_train = np.stack(x_train)
-    x_test = []
-    for traj in range(ceil(n_trajectories / 2)):
-        x_test.append(
-            scipy.integrate.solve_ivp(
-                ps.utils.linear_damped_SHO,
-                t_train_span,
-                x0_test[traj, :],
-                t_eval=t_train,
-                **INTEGRATOR_KEYWORDS,
-            ).y.T
-        )
-    x_test = np.array(x_test)
-    x_dot_test = np.array(
-        [[ps.utils.linear_damped_SHO(0, xij) for xij in xi] for xi in x_test]
-    )
-    x_train = x_train + noise_stdev * rng.standard_normal(x_train.shape)
-    x_train = [xi for xi in x_train]
-    x_test = [xi for xi in x_test]
-    x_dot_test = [xi for xi in x_dot_test]
-    return dt, t_train, x_train, x_test, x_dot_test
-
-
-def diff_lookup(kind):
-    normalized_kind = kind.lower().replace(" ", "")
-    if normalized_kind == "finitedifference":
-        return ps.FiniteDifference
-    elif normalized_kind == "sindy":
-        return ps.SINDyDerivative
-    else:
-        raise ValueError
-
-
-def opt_lookup(kind):
-    normalized_kind = kind.lower().replace(" ", "")
-    if normalized_kind == "stlsq":
-        return ps.STLSQ
-    elif normalized_kind == "sr3":
-        return ps.SR3
-    else:
-        raise ValueError
 
 
 def run(seed, sim_params={}, diff_params={}, opt_params={}, display=True):
-    dt, t_train, x_train, x_test, x_dot_test = gen_data(seed, **sim_params)
+    dt, t_train, x_train, x_test, x_dot_test = gen_data(ps.utils.lorenz, seed, **sim_params)
     diff_cls = diff_lookup(diff_params.pop("kind"))
     diff = diff_cls(**diff_params)
     opt_cls = opt_lookup(opt_params.pop("kind"))

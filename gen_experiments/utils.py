@@ -1,6 +1,77 @@
+from math import ceil
+
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
+import scipy
+import pysindy as ps
+
+INTEGRATOR_KEYWORDS = {"rtol": 1e-12, "method": "LSODA", "atol": 1e-12}
+
+
+def gen_data(rhs_func, seed=None, n_trajectories=1):
+    """Generate random training and test data"""
+    rng = np.random.default_rng(seed)
+    dt = 0.01
+    ic_stdev = 3
+    noise_stdev = 0.1
+    t_train = np.arange(0, 10, dt)
+    t_train_span = (t_train[0], t_train[-1])
+    x0_train = ic_stdev * rng.standard_normal((n_trajectories, 2))
+    x0_test = ic_stdev * rng.standard_normal((ceil(n_trajectories / 2), 2))
+    x_train = []
+    for traj in range(n_trajectories):
+        x_train.append(
+            scipy.integrate.solve_ivp(
+                rhs_func,
+                t_train_span,
+                x0_train[traj, :],
+                t_eval=t_train,
+                **INTEGRATOR_KEYWORDS,
+            ).y.T
+        )
+    x_train = np.stack(x_train)
+    x_test = []
+    for traj in range(ceil(n_trajectories / 2)):
+        x_test.append(
+            scipy.integrate.solve_ivp(
+                rhs_func,
+                t_train_span,
+                x0_test[traj, :],
+                t_eval=t_train,
+                **INTEGRATOR_KEYWORDS,
+            ).y.T
+        )
+    x_test = np.array(x_test)
+    x_dot_test = np.array(
+        [[rhs_func(0, xij) for xij in xi] for xi in x_test]
+    )
+    x_train = x_train + noise_stdev * rng.standard_normal(x_train.shape)
+    x_train = [xi for xi in x_train]
+    x_test = [xi for xi in x_test]
+    x_dot_test = [xi for xi in x_dot_test]
+    return dt, t_train, x_train, x_test, x_dot_test
+
+
+def diff_lookup(kind):
+    normalized_kind = kind.lower().replace(" ", "")
+    if normalized_kind == "finitedifference":
+        return ps.FiniteDifference
+    elif normalized_kind == "sindy":
+        return ps.SINDyDerivative
+    else:
+        raise ValueError
+
+
+def opt_lookup(kind):
+    normalized_kind = kind.lower().replace(" ", "")
+    if normalized_kind == "stlsq":
+        return ps.STLSQ
+    elif normalized_kind == "sr3":
+        return ps.SR3
+    else:
+        raise ValueError
+
 
 def plot_coefficients(
     coefficients, input_features=None, feature_names=None, ax=None, **heatmap_kws
