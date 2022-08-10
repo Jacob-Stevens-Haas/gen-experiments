@@ -12,7 +12,7 @@ INTEGRATOR_KEYWORDS = {"rtol": 1e-12, "method": "LSODA", "atol": 1e-12}
 
 def gen_data(rhs_func, n_coord, seed=None, n_trajectories=1):
     """Generate random training and test data
-    
+
     Arguments:
         rhs_func (Callable): the function to integrate
         n_coord (int): number of coordinates needed for rhs_func
@@ -49,9 +49,7 @@ def gen_data(rhs_func, n_coord, seed=None, n_trajectories=1):
             ).y.T
         )
     x_test = np.array(x_test)
-    x_dot_test = np.array(
-        [[rhs_func(0, xij) for xij in xi] for xi in x_test]
-    )
+    x_dot_test = np.array([[rhs_func(0, xij) for xij in xi] for xi in x_test])
     x_train = x_train + noise_stdev * rng.standard_normal(x_train.shape)
     x_train = [xi for xi in x_train]
     x_test = [xi for xi in x_test]
@@ -67,6 +65,16 @@ def diff_lookup(kind):
         return ps.SINDyDerivative
     else:
         raise ValueError
+
+
+def feature_lookup(kind):
+    normalized_kind = kind.lower().replace(" ", "")
+    if normalized_kind is None:
+        return ps.PolynomialLibrary
+    elif normalized_kind == "polynomial":
+        return ps.PolynomialLibrary
+    elif normalized_kind == "fourier":
+        return ps.FourierLibrary
 
 
 def opt_lookup(kind):

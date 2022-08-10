@@ -3,15 +3,35 @@ from math import ceil
 import numpy as np
 import pysindy as ps
 
-from .utils import gen_data, compare_coefficient_plots, opt_lookup, diff_lookup, coeff_metrics, integration_metrics
+from .utils import (
+    gen_data,
+    compare_coefficient_plots,
+    opt_lookup,
+    feature_lookup,
+    diff_lookup,
+    coeff_metrics,
+    integration_metrics,
+)
 
 name = "LORENZ"
 
 
-def run(seed, sim_params={}, diff_params={}, opt_params={}, display=True):
-    dt, t_train, x_train, x_test, x_dot_test = gen_data(ps.utils.lorenz, 3, seed, **sim_params)
+def run(
+    seed: float,
+    /,
+    sim_params: dict,
+    diff_params: dict,
+    feat_params: dict,
+    opt_params: dict,
+    display: bool = True,
+) -> dict:
+    dt, t_train, x_train, x_test, x_dot_test = gen_data(
+        ps.utils.lorenz, 3, seed, **sim_params
+    )
     diff_cls = diff_lookup(diff_params.pop("kind"))
     diff = diff_cls(**diff_params)
+    feature_cls = feature_lookup(feat_params.pop("kind"))
+    features = feature_cls(**feat_params)
     opt_cls = opt_lookup(opt_params.pop("kind"))
     opt = opt_cls(**opt_params)
     input_features = ["x", "y", "z"]
@@ -20,16 +40,19 @@ def run(seed, sim_params={}, diff_params={}, opt_params={}, display=True):
         differentiation_method=diff,
         optimizer=opt,
         t_default=dt,
+        feature_library=features,
         feature_names=input_features,
     )
 
     model.fit(x_train, quiet=True, multiple_trajectories=True)
     coefficients = model.coefficients()
-    coeff_true = np.array([
-        [0, -10, 10, 0, 0, 0, 0, 0, 0, 0],
-        [0, 28, -1, 0, 0, 0, -1, 0, 0, 0],
-        [0, 0, 0, -8/3, 0, 1, 0, 0, 0, 0]
-    ])
+    coeff_true = np.array(
+        [
+            [0, -10, 10, 0, 0, 0, 0, 0, 0, 0],
+            [0, 28, -1, 0, 0, 0, -1, 0, 0, 0],
+            [0, 0, 0, -8 / 3, 0, 1, 0, 0, 0, 0],
+        ]
+    )
 
     # make the plots
     if display:
@@ -47,9 +70,11 @@ def run(seed, sim_params={}, diff_params={}, opt_params={}, display=True):
     metrics.update(integration_metrics(model, x_test, t_train, x_dot_test))
     return metrics
 
+
 if __name__ == "__main__":
     run(seed=1, diff_params={"kind": "FiniteDifference"}, opt_params={"kind": "stlsq"})
 
 sim_params = {"test": {"n_trajectories": 2}}
 diff_params = {"test": {"kind": "FiniteDifference"}}
+feat_params = {"test": {"kind": "Polynomial"}}
 opt_params = {"test": {"kind": "STLSQ"}}

@@ -21,14 +21,7 @@ parser.add_argument(
         " recording results"
     ),
 )
-parser.add_argument(
-    "--seed",
-    type=int,
-    help=(
-        "Random seed for the trial"
-    ),
-    required=True
-)
+parser.add_argument("--seed", type=int, help="Random seed for the trial", required=True)
 parser.add_argument(
     "--param",
     action="append",
@@ -49,8 +42,8 @@ if not trials_folder.exists():
 mitosis.run(
     ex,
     args.debug,
-    seed = seed,
-    logfile = f"trials_{ex.name}.db",
+    seed=seed,
+    logfile=f"trials_{ex.name}.db",
     params=params,
     trials_folder=trials_folder,
 )
