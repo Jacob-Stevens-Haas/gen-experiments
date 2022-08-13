@@ -1,0 +1,61 @@
+from typing import List
+import pysindy as ps
+
+from .utils import (
+    gen_data,
+    compare_coefficient_plots,
+    coeff_metrics,
+    integration_metrics,
+    unionize_coeff_matrices,
+    _make_model
+)
+
+name = "SHO3"
+
+
+def run(
+    seed: float,
+    /,
+    sim_params: dict,
+    diff_params: dict,
+    feat_params: dict,
+    opt_params: dict,
+    display: bool = True,
+) -> dict:
+    dt, t_train, x_train, x_test, x_dot_test = gen_data(
+        ps.utils.cubic_damped_SHO, 2, seed, **sim_params
+    )
+    input_features = ["x", "y"]
+    model = _make_model(input_features, dt, diff_params, feat_params, opt_params)
+
+    model.fit(x_train, quiet=True, multiple_trajectories=True)
+    coeff_true = [
+        {"x^3": -.1, "y^3": 2},
+        {"x^3": -2, "y^3": -.1},
+    ]
+    coeff_true, coefficients, feature_names = unionize_coeff_matrices(model, coeff_true)
+
+    # make the plots
+    if display:
+        model.print()
+        feature_names = model.get_feature_names()
+        compare_coefficient_plots(
+            coefficients,
+            coeff_true,
+            input_features=input_features,
+            feature_names=feature_names,
+        )
+
+    # calculate metrics
+    metrics = coeff_metrics(coefficients, coeff_true)
+    metrics.update(integration_metrics(model, x_test, t_train, x_dot_test))
+    return metrics
+
+
+if __name__ == "__main__":
+    run(seed=1, diff_params={"kind": "FiniteDifference"}, opt_params={"kind": "stlsq"})
+
+sim_params = {"test": {"n_trajectories": 2}}
+diff_params = {"test": {"kind": "FiniteDifference"}}
+feat_params = {"test": {"kind": "Polynomial", "degree": 3}}
+opt_params = {"test": {"kind": "STLSQ"}}
