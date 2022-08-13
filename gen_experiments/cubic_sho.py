@@ -1,9 +1,9 @@
-from typing import List
 import pysindy as ps
 
 from .utils import (
     gen_data,
     compare_coefficient_plots,
+    plot_training_data,
     coeff_metrics,
     integration_metrics,
     unionize_coeff_matrices,
@@ -22,7 +22,7 @@ def run(
     opt_params: dict,
     display: bool = True,
 ) -> dict:
-    dt, t_train, x_train, x_test, x_dot_test = gen_data(
+    dt, t_train, x_train, x_test, x_dot_test, x_train_true = gen_data(
         ps.utils.cubic_damped_SHO, 2, seed, **sim_params
     )
     input_features = ["x", "y"]
@@ -45,6 +45,8 @@ def run(
             input_features=input_features,
             feature_names=feature_names,
         )
+        smoothed_last_train = model.differentiation_method.smoothed_x_
+        plot_training_data(x_train[-1], x_train_true[-1], smoothed_last_train)
 
     # calculate metrics
     metrics = coeff_metrics(coefficients, coeff_true)
@@ -56,6 +58,6 @@ if __name__ == "__main__":
     run(seed=1, diff_params={"kind": "FiniteDifference"}, opt_params={"kind": "stlsq"})
 
 sim_params = {"test": {"n_trajectories": 2}}
-diff_params = {"test": {"kind": "FiniteDifference"}}
+diff_params = {"test": {"kind": "FiniteDifference"}, "test2": {"kind": "SmoothedFiniteDifference"}}
 feat_params = {"test": {"kind": "Polynomial", "degree": 3}}
 opt_params = {"test": {"kind": "STLSQ"}}

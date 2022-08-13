@@ -1,4 +1,5 @@
 from itertools import chain
+from multiprocessing.sharedctypes import Value
 from typing import List, Tuple
 from math import ceil
 
@@ -10,7 +11,8 @@ import pysindy as ps
 import sklearn
 
 INTEGRATOR_KEYWORDS = {"rtol": 1e-12, "method": "LSODA", "atol": 1e-12}
-
+PAL = sns.color_palette("Set1")
+PLOT_KWS = dict(alpha=0.7, linewidth=3)
 
 def gen_data(rhs_func, n_coord, seed=None, n_trajectories=1):
     """Generate random training and test data
@@ -52,17 +54,20 @@ def gen_data(rhs_func, n_coord, seed=None, n_trajectories=1):
         )
     x_test = np.array(x_test)
     x_dot_test = np.array([[rhs_func(0, xij) for xij in xi] for xi in x_test])
+    x_train_true = np.copy(x_train)
     x_train = x_train + noise_stdev * rng.standard_normal(x_train.shape)
     x_train = [xi for xi in x_train]
     x_test = [xi for xi in x_test]
     x_dot_test = [xi for xi in x_dot_test]
-    return dt, t_train, x_train, x_test, x_dot_test
+    return dt, t_train, x_train, x_test, x_dot_test, x_train_true
 
 
 def diff_lookup(kind):
     normalized_kind = kind.lower().replace(" ", "")
     if normalized_kind == "finitedifference":
         return ps.FiniteDifference
+    if normalized_kind == "smoothedfinitedifference":
+        return ps.SmoothedFiniteDifference
     elif normalized_kind == "sindy":
         return ps.SINDyDerivative
     else:
@@ -266,3 +271,36 @@ def _make_model(
         feature_library=features,
         feature_names=input_features,
     )
+
+
+def plot_training_data(last_train, last_train_true, smoothed_last_train):
+    """Plot training data (and smoothed training data, if different)."""
+    plt.figure(figsize=[5,5])
+    ax = plt.gca()
+    if last_train.shape[1] == 2:
+        ax.plot(last_train_true[:, 0], last_train_true[:, 1], ".", label="True values", color=PAL[0], **PLOT_KWS)
+        ax.plot(
+            last_train[:, 0],
+            last_train[:, 1],
+            ".",
+            label="Measured values",
+            color=PAL[1],
+            **PLOT_KWS,
+        )
+        if np.linalg.norm(smoothed_last_train-last_train)/smoothed_last_train.size > 1e-12:
+            ax.plot(
+                smoothed_last_train[:, 0],
+                smoothed_last_train[:, 1],
+                ".",
+                label="Smoothed values",
+                color=PAL[2],
+                **PLOT_KWS,
+            )
+        ax.set(xlabel="$x_0$", ylabel="$x_1$")
+    elif last_train.shape[1] == 3:
+        raise ValueError("Can't yet plot 3d data.")
+    else:
+        raise ValueError("Can only plot 2d or 3d data.")
+    ax.set(title="Training data")
+    ax.legend()
+    return ax
