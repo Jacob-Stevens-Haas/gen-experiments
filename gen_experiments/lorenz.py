@@ -1,16 +1,12 @@
-from math import ceil
-
 import pysindy as ps
 
 from .utils import (
     gen_data,
     compare_coefficient_plots,
-    opt_lookup,
-    feature_lookup,
-    diff_lookup,
     coeff_metrics,
     integration_metrics,
     unionize_coeff_matrices,
+    _make_model
 )
 
 name = "LORENZ"
@@ -28,21 +24,8 @@ def run(
     dt, t_train, x_train, x_test, x_dot_test = gen_data(
         ps.utils.lorenz, 3, seed, **sim_params
     )
-    diff_cls = diff_lookup(diff_params.pop("kind"))
-    diff = diff_cls(**diff_params)
-    feature_cls = feature_lookup(feat_params.pop("kind"))
-    features = feature_cls(**feat_params)
-    opt_cls = opt_lookup(opt_params.pop("kind"))
-    opt = opt_cls(**opt_params)
     input_features = ["x", "y", "z"]
-
-    model = ps.SINDy(
-        differentiation_method=diff,
-        optimizer=opt,
-        t_default=dt,
-        feature_library=features,
-        feature_names=input_features,
-    )
+    model = _make_model(input_features, dt, diff_params, feat_params, opt_params)
 
     model.fit(x_train, quiet=True, multiple_trajectories=True)
     coeff_true = [

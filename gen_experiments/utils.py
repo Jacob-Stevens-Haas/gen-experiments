@@ -240,3 +240,29 @@ def unionize_coeff_matrices(
             true_coeff_mat[row, model_features.index(term)] = coeff
 
     return true_coeff_mat, new_est_coeff, model_features
+
+
+def _make_model(
+    input_features: List[str],
+    dt: float,
+    diff_params: dict,
+    feat_params: dict,
+    opt_params: dict
+) -> ps.SINDy:
+    """Build a model with object parameters dictionaries
+
+    e.g. {"kind": "finitedifference"} instead of FiniteDifference()
+    """
+    diff_cls = diff_lookup(diff_params.pop("kind"))
+    diff = diff_cls(**diff_params)
+    feature_cls = feature_lookup(feat_params.pop("kind"))
+    features = feature_cls(**feat_params)
+    opt_cls = opt_lookup(opt_params.pop("kind"))
+    opt = opt_cls(**opt_params)
+    return ps.SINDy(
+        differentiation_method=diff,
+        optimizer=opt,
+        t_default=dt,
+        feature_library=features,
+        feature_names=input_features,
+    )
