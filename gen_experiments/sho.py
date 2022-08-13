@@ -1,6 +1,4 @@
-import numpy as np
 import pysindy as ps
-import sklearn
 
 from .utils import (
     gen_data,

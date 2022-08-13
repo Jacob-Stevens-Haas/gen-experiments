@@ -1,6 +1,5 @@
 from math import ceil
 
-import numpy as np
 import pysindy as ps
 
 from .utils import (
