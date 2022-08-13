@@ -46,7 +46,7 @@ def run(
             feature_names=feature_names,
         )
         smoothed_last_train = model.differentiation_method.smoothed_x_
-        # plot_training_data(x_train[-1], x_train_true[-1], smoothed_last_train)
+        plot_training_data(x_train[-1], x_train_true[-1], smoothed_last_train)
 
     # calculate metrics
     metrics = coeff_metrics(coefficients, coeff_true)

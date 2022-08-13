@@ -275,7 +275,7 @@ def _make_model(
 
 def plot_training_data(last_train, last_train_true, smoothed_last_train):
     """Plot training data (and smoothed training data, if different)."""
-    plt.figure(figsize=[5,5])
+    plt.figure(figsize=[6, 6])
     ax = plt.gca()
     if last_train.shape[1] == 2:
         ax.plot(last_train_true[:, 0], last_train_true[:, 1], ".", label="True values", color=PAL[0], **PLOT_KWS)
@@ -298,7 +298,36 @@ def plot_training_data(last_train, last_train_true, smoothed_last_train):
             )
         ax.set(xlabel="$x_0$", ylabel="$x_1$")
     elif last_train.shape[1] == 3:
-        raise ValueError("Can't yet plot 3d data.")
+        ax = plt.axes(projection="3d")
+        ax.plot(
+            last_train_true[:, 0],
+            last_train_true[:, 1],
+            last_train_true[:, 2],
+            color=PAL[0],
+            label="True values",
+            **PLOT_KWS,
+        )
+
+        ax.plot(
+            last_train[:, 0],
+            last_train[:, 1],
+            last_train[:, 2],
+            ".",
+            color=PAL[1],
+            label="Measured values",
+            alpha=0.3,
+        )
+        if np.linalg.norm(smoothed_last_train-last_train)/smoothed_last_train.size > 1e-12:
+            ax.plot(
+                smoothed_last_train[:, 0],
+                smoothed_last_train[:, 1],
+                smoothed_last_train[:, 2],
+                ".",
+                color=PAL[2],
+                label="Smoothed values",
+                alpha=0.3,
+            )
+        ax.set(xlabel="$x$", ylabel="$y$", zlabel="$z$")
     else:
         raise ValueError("Can only plot 2d or 3d data.")
     ax.set(title="Training data")
