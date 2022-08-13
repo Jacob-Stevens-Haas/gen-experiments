@@ -44,7 +44,7 @@ def run(
     display: bool = True,
 ) -> dict:
     dt, t_train, x_train, x_test, x_dot_test, x_train_true = gen_data(
-        nonlinear_pendulum, 2, seed, **sim_params
+        nonlinear_pendulum, 2, seed, ic_stdev=1, **sim_params
     )
     input_features = ["x", "x'"]
     model = _make_model(input_features, dt, diff_params, feat_params, opt_params)
