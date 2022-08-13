@@ -45,7 +45,6 @@ def run(
     )
 
     model.fit(x_train, quiet=True, multiple_trajectories=True)
-    coefficients = model.coefficients()
     coeff_true = [
         {"x": -.1, "y": 2},
         {"x": -2, "y": -.1},
