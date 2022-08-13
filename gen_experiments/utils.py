@@ -17,6 +17,8 @@ PLOT_KWS = dict(alpha=0.7, linewidth=3)
 def gen_data(rhs_func, n_coord, seed=None, n_trajectories=1):
     """Generate random training and test data
 
+    Note that test data has no noise.
+
     Arguments:
         rhs_func (Callable): the function to integrate
         n_coord (int): number of coordinates needed for rhs_func
@@ -333,3 +335,36 @@ def plot_training_data(last_train, last_train_true, smoothed_last_train):
     ax.set(title="Training data")
     ax.legend()
     return ax
+
+
+def plot_test_trajectories(last_test, model, dt):
+    t_test = np.arange(len(last_test) * dt, step = dt)
+    x_test_sim = model.simulate(last_test[0], t_test)
+    fig, axs = plt.subplots(last_test.shape[1], 1, sharex=True, figsize=(7, 9))
+    plt.suptitle("Trajectories by Dimension")
+    for i in range(last_test.shape[1]):
+        axs[i].plot(t_test, last_test[:, i], 'k', label='true trajectory')
+        axs[i].plot(t_test, x_test_sim[:, i], 'r--', label='model simulation')
+        axs[i].legend()
+        axs[i].set(xlabel='t', ylabel='$x_{}$'.format(i))
+
+    fig = plt.figure(figsize=(10, 4.5))
+    plt.suptitle("Full trajectories")
+    if last_test.shape[1] == 2:
+        ax1 = fig.add_subplot(121)
+        ax1.plot(last_test[:, 0], last_test[:, 1], 'k')
+        ax1.set(xlabel='$x_0$', ylabel='$x_1$', title='true trajectory')
+        ax2 = fig.add_subplot(122)
+        ax2.plot(x_test_sim[:, 0], x_test_sim[:, 1], 'r--')
+        ax2.set(xlabel='$x_0$', ylabel='$x_1$', title='model simulation')
+    elif last_test.shape[1] == 3:
+        ax1 = fig.add_subplot(121, projection='3d')
+        ax1.plot(last_test[:, 0], last_test[:, 1], last_test[:, 2], 'k')
+        ax1.set(xlabel='$x_0$', ylabel='$x_1$', zlabel='$x_2$', title='true trajectory')
+        ax2 = fig.add_subplot(122, projection='3d')
+        ax2.plot(x_test_sim[:, 0], x_test_sim[:, 1], x_test_sim[:, 2], 'r--')
+        ax2.set(
+            xlabel='$x_0$', ylabel='$x_1$', zlabel='$x_2$', title='model simulation'
+        )
+    else:
+        raise ValueError("Can only plot 2d or 3d data.")

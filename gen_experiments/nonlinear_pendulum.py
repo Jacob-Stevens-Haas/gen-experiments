@@ -5,6 +5,7 @@ from .utils import (
     gen_data,
     compare_coefficient_plots,
     plot_training_data,
+    plot_test_trajectories,
     coeff_metrics,
     integration_metrics,
     unionize_coeff_matrices,
@@ -67,6 +68,7 @@ def run(
         )
         smoothed_last_train = model.differentiation_method.smoothed_x_
         plot_training_data(x_train[-1], x_train_true[-1], smoothed_last_train)
+        plot_test_trajectories(x_test[-1], model, dt)
 
     # calculate metrics
     metrics = coeff_metrics(coefficients, coeff_true)

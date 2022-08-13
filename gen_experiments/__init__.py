@@ -3,9 +3,9 @@ from mitosis import Parameter
 from . import sho
 from . import lorenz
 from . import nonlinear_pendulum
-from . import cubic_sho
+from . import cubic_oscillator
 
-experiments = {"sho": sho, "lorenz": lorenz, "pendulum": nonlinear_pendulum, "sho3": cubic_sho}
+experiments = {"sho": sho, "lorenz": lorenz, "pendulum": nonlinear_pendulum, "cubic_ho": cubic_oscillator}
 
 
 def lookup_params(experiment: str, params: list):
