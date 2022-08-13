@@ -30,7 +30,7 @@ def nonlinear_pendulum(t, x, m=1, L=1, g=9.81, forcing=0):
         const_force = forcing
         forcing = lambda t, x: const_force
     moment_of_inertia = m * L**2
-    return (x[1], (m * g * np.sin(x[0]) + forcing(t, x)) / moment_of_inertia)
+    return (x[1], (-m * g * np.sin(x[0]) + forcing(t, x)) / moment_of_inertia)
 
 
 def run(
