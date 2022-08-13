@@ -1,3 +1,5 @@
+from itertools import chain
+from typing import List, Tuple
 from math import ceil
 
 import matplotlib.pyplot as plt
@@ -195,3 +197,46 @@ def integration_metrics(model, x_test, t_train, x_dot_test):
         metric=sklearn.metrics.mean_absolute_error,
     )
     return metrics
+
+
+def unionize_coeff_matrices(
+    model: ps.SINDy, coeff_true: List[dict]
+) -> Tuple[np.ndarray]:
+    """Reformat true coefficients and coefficient matrix compatibly
+
+
+    In order to calculate accuracy metrics between true and estimated
+    coefficients, this function compares the names of true coefficients
+    and a the fitted model's features in order to create comparable true
+    and estimated coefficient matrices.
+
+    That is, it embeds the correct coefficient matrix and the estimated
+    coefficient matrix in a matrix that represents the union of true
+    features and modeled features.
+
+    Arguments:
+        model: fitted model
+        coeff_true: list of dicts of format function_name: coefficient,
+            one dict for each modeled coordinate/target
+
+    Returns:
+        Tuple of true coefficient matrix, estimated coefficient matrix,
+        and combined feature names
+
+    Warning:
+        Does not disambiguate between commutatively equivalent function
+        names such as 'x z' and 'z x' or 'x^2' and 'x x'
+    """
+    model_features = model.get_feature_names()
+    true_features = [set(coeffs.keys()) for coeffs in coeff_true]
+    unmodeled_features = set(chain.from_iterable(true_features)) - set(model_features)
+    model_features.extend(list(unmodeled_features))
+    est_coeff_mat = model.coefficients()
+    new_est_coeff = np.zeros((est_coeff_mat.shape[0], len(model_features)))
+    new_est_coeff[:, :est_coeff_mat.shape[1]] = est_coeff_mat
+    true_coeff_mat = np.zeros_like(new_est_coeff)
+    for row, terms in enumerate(coeff_true):
+        for term, coeff in terms.items():
+            true_coeff_mat[row, model_features.index(term)] = coeff
+
+    return true_coeff_mat, new_est_coeff, model_features

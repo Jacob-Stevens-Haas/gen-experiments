@@ -11,6 +11,7 @@ from .utils import (
     diff_lookup,
     coeff_metrics,
     integration_metrics,
+    unionize_coeff_matrices,
 )
 
 name = "LORENZ"
@@ -45,19 +46,16 @@ def run(
     )
 
     model.fit(x_train, quiet=True, multiple_trajectories=True)
-    coefficients = model.coefficients()
-    coeff_true = np.array(
-        [
-            [0, -10, 10, 0, 0, 0, 0, 0, 0, 0],
-            [0, 28, -1, 0, 0, 0, -1, 0, 0, 0],
-            [0, 0, 0, -8 / 3, 0, 1, 0, 0, 0, 0],
-        ]
-    )
+    coeff_true = [
+        {"x": -10, "y": 10},
+        {"x": 28, "y": -1, "x z": -1},
+        {"z": -8 / 3, "x y": 1},
+    ]
+    coeff_true, coefficients, feature_names = unionize_coeff_matrices(model, coeff_true)
 
     # make the plots
     if display:
         model.print()
-        feature_names = model.get_feature_names()
         compare_coefficient_plots(
             coefficients,
             coeff_true,
@@ -76,5 +74,5 @@ if __name__ == "__main__":
 
 sim_params = {"test": {"n_trajectories": 2}}
 diff_params = {"test": {"kind": "FiniteDifference"}}
-feat_params = {"test": {"kind": "Polynomial"}}
+feat_params = {"test": {"kind": "Polynomial"}, "test2": {"kind": "Fourier"}}
 opt_params = {"test": {"kind": "STLSQ"}}

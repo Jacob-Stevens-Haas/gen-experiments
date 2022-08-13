@@ -10,6 +10,7 @@ from .utils import (
     diff_lookup,
     coeff_metrics,
     integration_metrics,
+    unionize_coeff_matrices
 )
 
 name = "SHO"
@@ -45,7 +46,11 @@ def run(
 
     model.fit(x_train, quiet=True, multiple_trajectories=True)
     coefficients = model.coefficients()
-    coeff_true = np.array([[0, -0.1, 2, 0, 0, 0], [0, -2, -0.1, 0, 0, 0]])
+    coeff_true = [
+        {"x": -.1, "y": 2},
+        {"x": -2, "y": -.1},
+    ]
+    coeff_true, coefficients, feature_names = unionize_coeff_matrices(model, coeff_true)
 
     # make the plots
     if display:
