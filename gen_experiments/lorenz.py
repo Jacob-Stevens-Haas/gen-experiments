@@ -1,3 +1,4 @@
+import numpy as np
 import pysindy as ps
 
 from .utils import (
@@ -23,8 +24,9 @@ def run(
     opt_params: dict,
     display: bool = True,
 ) -> dict:
+    x0_center = np.array([0, 0, 15])
     dt, t_train, x_train, x_test, x_dot_test, x_train_true = gen_data(
-        ps.utils.lorenz, 3, seed, **sim_params
+        ps.utils.lorenz, 3, seed, x0_center=x0_center, **sim_params
     )
     input_features = ["x", "y", "z"]
     model = _make_model(input_features, dt, diff_params, feat_params, opt_params)

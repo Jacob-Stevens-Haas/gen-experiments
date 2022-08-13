@@ -15,7 +15,7 @@ PAL = sns.color_palette("Set1")
 PLOT_KWS = dict(alpha=0.7, linewidth=3)
 
 
-def gen_data(rhs_func, n_coord, seed=None, n_trajectories=1):
+def gen_data(rhs_func, n_coord, seed=None, n_trajectories=1, x0_center=None):
     """Generate random training and test data
 
     Note that test data has no noise.
@@ -25,13 +25,15 @@ def gen_data(rhs_func, n_coord, seed=None, n_trajectories=1):
         n_coord (int): number of coordinates needed for rhs_func
     """
     rng = np.random.default_rng(seed)
+    if x0_center is None:
+        x0_center=np.zeros((n_coord))
     dt = 0.01
     ic_stdev = 3
     noise_stdev = 0.1
     t_train = np.arange(0, 10, dt)
     t_train_span = (t_train[0], t_train[-1])
-    x0_train = ic_stdev * rng.standard_normal((n_trajectories, n_coord))
-    x0_test = ic_stdev * rng.standard_normal((ceil(n_trajectories / 2), n_coord))
+    x0_train = ic_stdev * rng.standard_normal((n_trajectories, n_coord)) + x0_center
+    x0_test = ic_stdev * rng.standard_normal((ceil(n_trajectories / 2), n_coord)) + x0_center
     x_train = []
     for traj in range(n_trajectories):
         x_train.append(
