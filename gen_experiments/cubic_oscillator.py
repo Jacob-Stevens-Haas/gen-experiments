@@ -8,7 +8,7 @@ from .utils import (
     coeff_metrics,
     integration_metrics,
     unionize_coeff_matrices,
-    _make_model
+    _make_model,
 )
 
 name = "cubic_HO"
@@ -31,8 +31,8 @@ def run(
 
     model.fit(x_train, quiet=True, multiple_trajectories=True)
     coeff_true = [
-        {"x^3": -.1, "y^3": 2},
-        {"x^3": -2, "y^3": -.1},
+        {"x^3": -0.1, "y^3": 2},
+        {"x^3": -2, "y^3": -0.1},
     ]
     coeff_true, coefficients, feature_names = unionize_coeff_matrices(model, coeff_true)
 
@@ -60,6 +60,9 @@ if __name__ == "__main__":
     run(seed=1, diff_params={"kind": "FiniteDifference"}, opt_params={"kind": "stlsq"})
 
 sim_params = {"test": {"n_trajectories": 2}}
-diff_params = {"test": {"kind": "FiniteDifference"}, "test2": {"kind": "SmoothedFiniteDifference"}}
+diff_params = {
+    "test": {"kind": "FiniteDifference"},
+    "test2": {"kind": "SmoothedFiniteDifference"},
+}
 feat_params = {"test": {"kind": "Polynomial", "degree": 3}}
 opt_params = {"test": {"kind": "STLSQ"}}

@@ -8,7 +8,7 @@ from .utils import (
     coeff_metrics,
     integration_metrics,
     unionize_coeff_matrices,
-    _make_model
+    _make_model,
 )
 
 name = "SHO"
@@ -23,14 +23,16 @@ def run(
     opt_params: dict,
     display: bool = True,
 ) -> dict:
-    dt, t_train, x_train, x_test, x_dot_test, x_train_true = gen_data(ps.utils.linear_damped_SHO, 2, seed, **sim_params)
+    dt, t_train, x_train, x_test, x_dot_test, x_train_true = gen_data(
+        ps.utils.linear_damped_SHO, 2, seed, **sim_params
+    )
     input_features = ["x", "y"]
     model = _make_model(input_features, dt, diff_params, feat_params, opt_params)
 
     model.fit(x_train, quiet=True, multiple_trajectories=True)
     coeff_true = [
-        {"x": -.1, "y": 2},
-        {"x": -2, "y": -.1},
+        {"x": -0.1, "y": 2},
+        {"x": -2, "y": -0.1},
     ]
     coeff_true, coefficients, feature_names = unionize_coeff_matrices(model, coeff_true)
 
@@ -57,6 +59,9 @@ if __name__ == "__main__":
     run(seed=1, diff_params={"kind": "FiniteDifference"}, opt_params={"kind": "stlsq"})
 
 sim_params = {"test": {"n_trajectories": 2}}
-diff_params = {"test": {"kind": "FiniteDifference"}, "test2": {"kind": "SmoothedFiniteDifference"}}
+diff_params = {
+    "test": {"kind": "FiniteDifference"},
+    "test2": {"kind": "SmoothedFiniteDifference"},
+}
 feat_params = {"test": {"kind": "Polynomial"}}
 opt_params = {"test": {"kind": "STLSQ"}}

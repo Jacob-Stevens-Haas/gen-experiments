@@ -9,7 +9,7 @@ from .utils import (
     coeff_metrics,
     integration_metrics,
     unionize_coeff_matrices,
-    _make_model
+    _make_model,
 )
 
 name = "pendulum"
@@ -49,7 +49,6 @@ def run(
     input_features = ["x", "x'"]
     model = _make_model(input_features, dt, diff_params, feat_params, opt_params)
 
-
     model.fit(x_train, quiet=True, multiple_trajectories=True)
     coeff_true = [
         {"x'": 1},
@@ -80,6 +79,9 @@ if __name__ == "__main__":
     run(seed=1, diff_params={"kind": "FiniteDifference"}, opt_params={"kind": "stlsq"})
 
 sim_params = {"test": {"n_trajectories": 2}}
-diff_params = {"test": {"kind": "FiniteDifference"}, "test2": {"kind": "SmoothedFiniteDifference"}}
+diff_params = {
+    "test": {"kind": "FiniteDifference"},
+    "test2": {"kind": "SmoothedFiniteDifference"},
+}
 feat_params = {"test": {"kind": "Polynomial"}}
 opt_params = {"test": {"kind": "STLSQ"}}

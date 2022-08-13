@@ -14,6 +14,7 @@ INTEGRATOR_KEYWORDS = {"rtol": 1e-12, "method": "LSODA", "atol": 1e-12}
 PAL = sns.color_palette("Set1")
 PLOT_KWS = dict(alpha=0.7, linewidth=3)
 
+
 def gen_data(rhs_func, n_coord, seed=None, n_trajectories=1):
     """Generate random training and test data
 
@@ -240,7 +241,7 @@ def unionize_coeff_matrices(
     model_features.extend(list(unmodeled_features))
     est_coeff_mat = model.coefficients()
     new_est_coeff = np.zeros((est_coeff_mat.shape[0], len(model_features)))
-    new_est_coeff[:, :est_coeff_mat.shape[1]] = est_coeff_mat
+    new_est_coeff[:, : est_coeff_mat.shape[1]] = est_coeff_mat
     true_coeff_mat = np.zeros_like(new_est_coeff)
     for row, terms in enumerate(coeff_true):
         for term, coeff in terms.items():
@@ -254,7 +255,7 @@ def _make_model(
     dt: float,
     diff_params: dict,
     feat_params: dict,
-    opt_params: dict
+    opt_params: dict,
 ) -> ps.SINDy:
     """Build a model with object parameters dictionaries
 
@@ -280,7 +281,14 @@ def plot_training_data(last_train, last_train_true, smoothed_last_train):
     plt.figure(figsize=[6, 6])
     ax = plt.gca()
     if last_train.shape[1] == 2:
-        ax.plot(last_train_true[:, 0], last_train_true[:, 1], ".", label="True values", color=PAL[0], **PLOT_KWS)
+        ax.plot(
+            last_train_true[:, 0],
+            last_train_true[:, 1],
+            ".",
+            label="True values",
+            color=PAL[0],
+            **PLOT_KWS,
+        )
         ax.plot(
             last_train[:, 0],
             last_train[:, 1],
@@ -289,7 +297,10 @@ def plot_training_data(last_train, last_train_true, smoothed_last_train):
             color=PAL[1],
             **PLOT_KWS,
         )
-        if np.linalg.norm(smoothed_last_train-last_train)/smoothed_last_train.size > 1e-12:
+        if (
+            np.linalg.norm(smoothed_last_train - last_train) / smoothed_last_train.size
+            > 1e-12
+        ):
             ax.plot(
                 smoothed_last_train[:, 0],
                 smoothed_last_train[:, 1],
@@ -319,7 +330,10 @@ def plot_training_data(last_train, last_train_true, smoothed_last_train):
             label="Measured values",
             alpha=0.3,
         )
-        if np.linalg.norm(smoothed_last_train-last_train)/smoothed_last_train.size > 1e-12:
+        if (
+            np.linalg.norm(smoothed_last_train - last_train) / smoothed_last_train.size
+            > 1e-12
+        ):
             ax.plot(
                 smoothed_last_train[:, 0],
                 smoothed_last_train[:, 1],
@@ -338,33 +352,33 @@ def plot_training_data(last_train, last_train_true, smoothed_last_train):
 
 
 def plot_test_trajectories(last_test, model, dt):
-    t_test = np.arange(len(last_test) * dt, step = dt)
+    t_test = np.arange(len(last_test) * dt, step=dt)
     x_test_sim = model.simulate(last_test[0], t_test)
     fig, axs = plt.subplots(last_test.shape[1], 1, sharex=True, figsize=(7, 9))
     plt.suptitle("Trajectories by Dimension")
     for i in range(last_test.shape[1]):
-        axs[i].plot(t_test, last_test[:, i], 'k', label='true trajectory')
-        axs[i].plot(t_test, x_test_sim[:, i], 'r--', label='model simulation')
+        axs[i].plot(t_test, last_test[:, i], "k", label="true trajectory")
+        axs[i].plot(t_test, x_test_sim[:, i], "r--", label="model simulation")
         axs[i].legend()
-        axs[i].set(xlabel='t', ylabel='$x_{}$'.format(i))
+        axs[i].set(xlabel="t", ylabel="$x_{}$".format(i))
 
     fig = plt.figure(figsize=(10, 4.5))
     plt.suptitle("Full trajectories")
     if last_test.shape[1] == 2:
         ax1 = fig.add_subplot(121)
-        ax1.plot(last_test[:, 0], last_test[:, 1], 'k')
-        ax1.set(xlabel='$x_0$', ylabel='$x_1$', title='true trajectory')
+        ax1.plot(last_test[:, 0], last_test[:, 1], "k")
+        ax1.set(xlabel="$x_0$", ylabel="$x_1$", title="true trajectory")
         ax2 = fig.add_subplot(122)
-        ax2.plot(x_test_sim[:, 0], x_test_sim[:, 1], 'r--')
-        ax2.set(xlabel='$x_0$', ylabel='$x_1$', title='model simulation')
+        ax2.plot(x_test_sim[:, 0], x_test_sim[:, 1], "r--")
+        ax2.set(xlabel="$x_0$", ylabel="$x_1$", title="model simulation")
     elif last_test.shape[1] == 3:
-        ax1 = fig.add_subplot(121, projection='3d')
-        ax1.plot(last_test[:, 0], last_test[:, 1], last_test[:, 2], 'k')
-        ax1.set(xlabel='$x_0$', ylabel='$x_1$', zlabel='$x_2$', title='true trajectory')
-        ax2 = fig.add_subplot(122, projection='3d')
-        ax2.plot(x_test_sim[:, 0], x_test_sim[:, 1], x_test_sim[:, 2], 'r--')
+        ax1 = fig.add_subplot(121, projection="3d")
+        ax1.plot(last_test[:, 0], last_test[:, 1], last_test[:, 2], "k")
+        ax1.set(xlabel="$x_0$", ylabel="$x_1$", zlabel="$x_2$", title="true trajectory")
+        ax2 = fig.add_subplot(122, projection="3d")
+        ax2.plot(x_test_sim[:, 0], x_test_sim[:, 1], x_test_sim[:, 2], "r--")
         ax2.set(
-            xlabel='$x_0$', ylabel='$x_1$', zlabel='$x_2$', title='model simulation'
+            xlabel="$x_0$", ylabel="$x_1$", zlabel="$x_2$", title="model simulation"
         )
     else:
         raise ValueError("Can only plot 2d or 3d data.")
