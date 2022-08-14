@@ -11,7 +11,7 @@ from .utils import (
     _make_model,
 )
 
-name = "vdp"
+name = "hopf"
 
 
 def run(
@@ -23,16 +23,19 @@ def run(
     opt_params: dict,
     display: bool = True,
 ) -> dict:
+    mu=-0.05
+    omega=1
+    A=1
     dt, t_train, x_train, x_test, x_dot_test, x_train_true = gen_data(
-        ps.utils.odes.van_der_pol, 2, seed, ic_stdev=1, **sim_params
+        ps.utils.odes.hopf, 2, seed, ic_stdev=1, **sim_params
     )
-    input_features = ["x", "x'"]
+    input_features = ["x", "y"]
     model = _make_model(input_features, dt, diff_params, feat_params, opt_params)
 
     model.fit(x_train, quiet=True, multiple_trajectories=True)
     coeff_true = [
-        {"x'": 1},
-        {"x": -1, "x'": 0.5, "x^2 x'": -0.5},
+        {"x": mu, "y": -omega, "x^3": -A, "x y^2": -A},
+        {"x": omega, "y": mu, "x^2 y": -A, "y^3": -A},
     ]
     coeff_true, coefficients, feature_names = unionize_coeff_matrices(model, coeff_true)
 
