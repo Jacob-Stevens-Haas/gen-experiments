@@ -4,12 +4,14 @@ from . import sho
 from . import lorenz
 from . import nonlinear_pendulum
 from . import cubic_oscillator
+from . import vanderpol
 
 experiments = {
     "sho": sho,
     "lorenz": lorenz,
     "pendulum": nonlinear_pendulum,
     "cubic_ho": cubic_oscillator,
+    "vdp": vanderpol,
 }
 
 
