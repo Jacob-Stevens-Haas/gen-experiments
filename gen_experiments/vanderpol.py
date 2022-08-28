@@ -54,6 +54,7 @@ def run(
     metrics.update(integration_metrics(model, x_test, t_train, x_dot_test))
     return metrics
 
+
 sim_params = {"test": {"n_trajectories": 2}}
 diff_params = {
     "test": {"kind": "FiniteDifference"},

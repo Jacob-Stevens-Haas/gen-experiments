@@ -23,9 +23,9 @@ def run(
     opt_params: dict,
     display: bool = True,
 ) -> dict:
-    mu=-0.05
-    omega=1
-    A=1
+    mu = -0.05
+    omega = 1
+    A = 1
     dt, t_train, x_train, x_test, x_dot_test, x_train_true = gen_data(
         ps.utils.odes.hopf, 2, seed, ic_stdev=1, **sim_params
     )
@@ -56,6 +56,7 @@ def run(
     metrics = coeff_metrics(coefficients, coeff_true)
     metrics.update(integration_metrics(model, x_test, t_train, x_dot_test))
     return metrics
+
 
 sim_params = {"test": {"n_trajectories": 2}}
 diff_params = {

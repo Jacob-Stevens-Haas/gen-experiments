@@ -33,7 +33,7 @@ parser.add_argument(
     ),
 )
 args = parser.parse_args()
-ex = gen_experiments.experiments[args.experiment]
+ex, group = gen_experiments.experiments[args.experiment]
 seed = args.seed
 params = gen_experiments.lookup_params(args.experiment, args.param)
 trials_folder = Path(__file__).parent.absolute() / "trials"
@@ -43,7 +43,8 @@ mitosis.run(
     ex,
     args.debug,
     seed=seed,
-    logfile=f"trials_{ex.name}.db",
+    group=group,
+    logfile=f"trials_{args.experiment}.db",
     params=params,
     trials_folder=trials_folder,
 )

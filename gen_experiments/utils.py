@@ -23,6 +23,7 @@ def gen_data(
     x0_center=None,
     ic_stdev=3,
     noise_stdev=0.1,
+    nonnegative=False,
 ):
     """Generate random training and test data
 
@@ -37,6 +38,9 @@ def gen_data(
         ic_stdev (float): standard deviation for generating initial
             conditions
         noise_stdev (float): measurement noise standard deviation
+        nonnegative (bool): Whether x0 must be nonnegative, such as for
+            population models.  If so, a gamma distribution is
+            used, rather than a normal distribution.
     """
     rng = np.random.default_rng(seed)
     if x0_center is None:
@@ -44,10 +48,24 @@ def gen_data(
     dt = 0.01
     t_train = np.arange(0, 10, dt)
     t_train_span = (t_train[0], t_train[-1])
-    x0_train = ic_stdev * rng.standard_normal((n_trajectories, n_coord)) + x0_center
-    x0_test = (
-        ic_stdev * rng.standard_normal((ceil(n_trajectories / 2), n_coord)) + x0_center
-    )
+    if nonnegative:
+        shape = (x0_center / ic_stdev) ** 2
+        scale = ic_stdev**2 / x0_center
+        x0_train = np.array(
+            [rng.gamma(k, theta, n_trajectories) for k, theta in zip(shape, scale)]
+        ).T
+        x0_test = np.array(
+            [
+                rng.gamma(k, theta, ceil(n_trajectories / 2))
+                for k, theta in zip(shape, scale)
+            ]
+        ).T
+    else:
+        x0_train = ic_stdev * rng.standard_normal((n_trajectories, n_coord)) + x0_center
+        x0_test = (
+            ic_stdev * rng.standard_normal((ceil(n_trajectories / 2), n_coord))
+            + x0_center
+        )
     x_train = []
     for traj in range(n_trajectories):
         x_train.append(
