@@ -7,10 +7,12 @@ from . import cubic_oscillator
 from . import vanderpol
 from . import hopf
 from . import odes
+from . import lorenz_missing
 
 experiments = {
     "sho": (sho, None),
     "lorenz": (lorenz, None),
+    "lorenz_2d": (lorenz_missing, None),
     "pendulum": (nonlinear_pendulum, None),
     "cubic_ho": (cubic_oscillator, None),
     "vdp": (vanderpol, None),
@@ -30,7 +32,12 @@ def lookup_params(ex_name: str, params: list):
     return resolved_params
 
 
-sim_params = {"test": {"n_trajectories": 2}}
+sim_params = {
+    "test": {"n_trajectories": 2},
+    "test2": {"n_trajectories": 2, "noise_stdev": 0.4},
+    "med-noise": {"n_trajectories": 2, "noise_stdev": .8},
+    "hi-noise": {"n_trajectories": 2, "noise_stdev": 2},
+}
 diff_params = {
     "test": {"kind": "FiniteDifference"},
     "test2": {"kind": "SmoothedFiniteDifference"},
