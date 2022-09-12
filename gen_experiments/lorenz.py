@@ -59,4 +59,8 @@ def run(
 
 
 if __name__ == "__main__":
-    run(seed=1, diff_params={"kind": "FiniteDifference"}, opt_params={"kind": "stlsq"})
+    run(
+        seed=1,
+        diff_params={"diffcls": "FiniteDifference"},
+        opt_params={"optcls": "stlsq"},
+    )

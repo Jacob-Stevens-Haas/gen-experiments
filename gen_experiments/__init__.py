@@ -35,16 +35,18 @@ def lookup_params(ex_name: str, params: list):
 sim_params = {
     "test": {"n_trajectories": 2},
     "test2": {"n_trajectories": 2, "noise_stdev": 0.4},
-    "med-noise": {"n_trajectories": 2, "noise_stdev": .8},
+    "med-noise": {"n_trajectories": 2, "noise_stdev": 0.8},
     "hi-noise": {"n_trajectories": 2, "noise_stdev": 2},
 }
 diff_params = {
-    "test": {"kind": "FiniteDifference"},
-    "test2": {"kind": "SmoothedFiniteDifference"},
+    "test": {"diffcls": "FiniteDifference"},
+    "test2": {"diffcls": "SmoothedFiniteDifference"},
+    "sfd-nox": {"diffcls": "SmoothedFiniteDifference", "save_smooth": False},
+    "kalman": {"diffcls": "sindy", "kind": "kalman", "alpha": 0.0015},
 }
 feat_params = {
-    "test": {"kind": "Polynomial"},
-    "test2": {"kind": "Fourier"},
-    "test3": {"kind": "Polynomial", "degree": 3},
+    "test": {"featcls": "Polynomial"},
+    "test2": {"featcls": "Fourier"},
+    "test3": {"featcls": "Polynomial", "degree": 3},
 }
-opt_params = {"test": {"kind": "STLSQ"}}
+opt_params = {"test": {"optcls": "STLSQ"}}

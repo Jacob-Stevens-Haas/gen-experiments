@@ -295,11 +295,11 @@ def _make_model(
 
     e.g. {"kind": "finitedifference"} instead of FiniteDifference()
     """
-    diff_cls = diff_lookup(diff_params.pop("kind"))
+    diff_cls = diff_lookup(diff_params.pop("diffcls"))
     diff = diff_cls(**diff_params)
-    feature_cls = feature_lookup(feat_params.pop("kind"))
+    feature_cls = feature_lookup(feat_params.pop("featcls"))
     features = feature_cls(**feat_params)
-    opt_cls = opt_lookup(opt_params.pop("kind"))
+    opt_cls = opt_lookup(opt_params.pop("optcls"))
     opt = opt_cls(**opt_params)
     return ps.SINDy(
         differentiation_method=diff,
