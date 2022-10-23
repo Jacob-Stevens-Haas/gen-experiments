@@ -42,7 +42,7 @@ diff_params = {
     "test": {"diffcls": "FiniteDifference"},
     "test2": {"diffcls": "SmoothedFiniteDifference"},
     "sfd-nox": {"diffcls": "SmoothedFiniteDifference", "save_smooth": False},
-    "kalman": {"diffcls": "sindy", "kind": "kalman", "alpha": 0.0015},
+    "kalman": {"diffcls": "sindy", "kind": "kalman", "alpha": 0.000055},
 }
 feat_params = {
     "test": {"featcls": "Polynomial"},
