@@ -26,8 +26,8 @@ classifiers = [
 # dependencies
 dependencies = [
   "mitosis @ git+https://github.com/Jacob-Stevens-Haas/mitosis",
-  "derivative @ git+https://github.com/Jacob-Stevens-Haas/derivative@x-est-functional",
-  "pysindy >= 2.0.0-rc1",
+  "derivative",
+  "pysindy @ git+https://github.com/dynamicslab/kalman",
   "pytest >= 6.0.0",
   "pytest-cov",
   "flake8",
