@@ -38,7 +38,8 @@ dependencies = [
   "pre-commit",
   "sphinx",
   "codecov",
-  "seaborn"
+  "seaborn",
+  "sqlalchemy<2.0",
 ]
 
 [project.urls]
