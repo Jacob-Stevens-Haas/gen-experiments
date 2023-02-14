@@ -8,6 +8,7 @@ from . import vanderpol
 from . import hopf
 from . import odes
 from . import lorenz_missing
+from . import wrapper
 
 experiments = {
     "sho": (sho, None),
