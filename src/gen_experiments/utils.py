@@ -24,6 +24,8 @@ def gen_data(
     ic_stdev=3,
     noise_stdev=0.1,
     nonnegative=False,
+    dt=0.01,
+    t_end=10,
 ):
     """Generate random training and test data
 
@@ -45,8 +47,7 @@ def gen_data(
     rng = np.random.default_rng(seed)
     if x0_center is None:
         x0_center = np.zeros((n_coord))
-    dt = 0.01
-    t_train = np.arange(0, 10, dt)
+    t_train = np.arange(0, t_end, dt)
     t_train_span = (t_train[0], t_train[-1])
     if nonnegative:
         shape = (x0_center / ic_stdev) ** 2
@@ -295,12 +296,17 @@ def _make_model(
 
     e.g. {"kind": "finitedifference"} instead of FiniteDifference()
     """
-    diff_cls = diff_lookup(diff_params.pop("diffcls"))
-    diff = diff_cls(**diff_params)
-    feature_cls = feature_lookup(feat_params.pop("featcls"))
-    features = feature_cls(**feat_params)
-    opt_cls = opt_lookup(opt_params.pop("optcls"))
-    opt = opt_cls(**opt_params)
+
+    def finalize_param(lookup_func, pdict, lookup_key):
+        cls_name = pdict.pop(lookup_key)
+        param_cls = lookup_func(cls_name)
+        param_final = param_cls(**pdict)
+        pdict[lookup_key] = cls_name
+        return param_final
+
+    diff = finalize_param(diff_lookup, diff_params, "diffcls")
+    features = finalize_param(feature_lookup, feat_params, "featcls")
+    opt = finalize_param(opt_lookup, opt_params, "optcls")
     return ps.SINDy(
         differentiation_method=diff,
         optimizer=opt,

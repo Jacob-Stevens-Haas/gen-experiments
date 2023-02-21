@@ -26,6 +26,16 @@ parser.add_argument(
     "--param",
     action="append",
     help=(
+        "Name of parameters to use with this trial, in format 'key=value'\ne.g."
+        "--param solver=solver_1\nKeys must be understood by the experiment"
+        " being run.  Values reference variables\nstored by the same name in the"
+        " experiment's namespace"
+    ),
+)
+parser.add_argument(
+    "--grid",
+    action="append",
+    help=(
         "Name of parameters to use with this trial, in format 'key=value'\ne.g. --param"
         " seed=1 --param solver=solver_1\nKeys must be understood by the experiment"
         " being run.  Values reference variables\nstored by the same name in the"
@@ -35,7 +45,8 @@ parser.add_argument(
 args = parser.parse_args()
 ex, group = gen_experiments.experiments[args.experiment]
 seed = args.seed
-params = gen_experiments.lookup_params(args.experiment, args.param)
+params = gen_experiments.lookup_params(args.param)
+grid_params = gen_experiments.lookup_grid_params(args.grid)
 trials_folder = Path(__file__).parent.absolute() / "trials"
 if not trials_folder.exists():
     trials_folder.mkdir(parents=True)
@@ -45,6 +56,6 @@ mitosis.run(
     seed=seed,
     group=group,
     logfile=f"trials_{args.experiment}.db",
-    params=params,
+    params=(params + grid_params),
     trials_folder=trials_folder,
 )

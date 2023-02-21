@@ -21,16 +21,42 @@ experiments = {
     "duff": (odes, "duff"),
     "lv": (odes, "lv"),
     "ross": (odes, "ross"),
+    "wrapper": (wrapper, None),
 }
+ex_name = type("identidict", (), {"__getitem__": lambda self, key: key})()
 
 
-def lookup_params(ex_name: str, params: list):
+def lookup_params(params: list[str]) -> list[Parameter]:
     resolved_params = []
     for param in params:
         p_name, p_id = param.split("=")
         choices = globals()[p_name]
         resolved_params.append(Parameter(p_id, p_name, choices[p_id]))
     return resolved_params
+
+
+def lookup_grid_params(params: list[str]) -> list[Parameter]:
+    if not params:
+        return None
+    grid_params = []
+    grid_vals = []
+    grid_decisions = []
+    other_params = {}
+    for param in params:
+        p_name, p_id = param.split("=")
+        if p_name != "grid":
+            other_params[p_name] = globals()[p_name][p_id]
+        else:
+            vals = p_id.split(";")
+            grid_params.append(vals[0])
+            grid_vals.append([float(val) for val in vals[1].split(",")])
+            grid_decisions.append(vals[2])
+    return [
+        Parameter("combo", "grid_params", grid_params),
+        Parameter("combo", "grid_vals", grid_vals),
+        Parameter("combo", "grid_decisions", grid_decisions),
+        Parameter("combo", "other_params", other_params),
+    ]
 
 
 sim_params = {
@@ -51,3 +77,9 @@ feat_params = {
     "test3": {"featcls": "Polynomial", "degree": 3},
 }
 opt_params = {"test": {"optcls": "STLSQ"}}
+# class DynamicParam(dict):
+#     def __getitem__(self, key):
+#         vals=key.split(";")
+#         return {"gp": vals[0], "gv": vals[1], "gd":vals[2]}
+# grid = DynamicParam()
+metrics = {"test": ["coeff_f1", "coeff_mae"]}
