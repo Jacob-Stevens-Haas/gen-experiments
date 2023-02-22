@@ -35,8 +35,9 @@ def run(
     results_shape = (len(metrics), *(len(grid) for grid in grid_vals))
     results = np.zeros(results_shape)
     gridpoint_selector = np.ndindex(results_shape[1:])
+    rng = np.random.default_rng(seed)
     for ind in gridpoint_selector:
-        new_seed = np.random.randint(seed)
+        new_seed = rng.integers(1000)
         for axis_ind, key, val_list in zip(ind, grid_params, grid_vals):
             other_params[key] = val_list[axis_ind]
         curr_results = base_ex.run(new_seed, **other_params, display=False)
@@ -60,7 +61,10 @@ def run(
     fig.suptitle(f"Grid Search on {base_ex.name}")
     fig.tight_layout()
     main_metric_ind = metrics.index("main") if "main" in metrics else 0
-    return {"main": max(grid[main_metric_ind].max() for grid in grid_searches)}
+    return {
+        "results": results,
+        "main": max(grid[main_metric_ind].max() for grid in grid_searches)
+    }
 
 
 def _marginalize_grid_views(

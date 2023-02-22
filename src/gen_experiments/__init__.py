@@ -77,9 +77,17 @@ feat_params = {
     "test3": {"featcls": "Polynomial", "degree": 3},
 }
 opt_params = {"test": {"optcls": "STLSQ"}}
-# class DynamicParam(dict):
-#     def __getitem__(self, key):
-#         vals=key.split(";")
-#         return {"gp": vals[0], "gv": vals[1], "gd":vals[2]}
-# grid = DynamicParam()
+
+# Grid search parameters
 metrics = {"test": ["coeff_f1", "coeff_mae"]}
+other_params = {
+    "test": {
+        "sim_params": sim_params["test"],
+        "diff_params": diff_params["test"],
+        "feat_params": feat_params["test"],
+        "opt_params": opt_params["test"],
+    }
+}
+grid_params = {"test": ["sim_params.t_end"]}
+grid_vals = {"test":[[5,10,15,20]]}
+grid_decisions = {"test": ["plot"]}

@@ -56,6 +56,6 @@ mitosis.run(
     seed=seed,
     group=group,
     logfile=f"trials_{args.experiment}.db",
-    params=(params + grid_params),
+    params=params + (grid_params if grid_params else []),
     trials_folder=trials_folder,
 )
