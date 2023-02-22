@@ -1,3 +1,5 @@
+import numpy as np
+
 from mitosis import Parameter
 
 from . import sho
@@ -35,30 +37,6 @@ def lookup_params(params: list[str]) -> list[Parameter]:
     return resolved_params
 
 
-def lookup_grid_params(params: list[str]) -> list[Parameter]:
-    if not params:
-        return None
-    grid_params = []
-    grid_vals = []
-    grid_decisions = []
-    other_params = {}
-    for param in params:
-        p_name, p_id = param.split("=")
-        if p_name != "grid":
-            other_params[p_name] = globals()[p_name][p_id]
-        else:
-            vals = p_id.split(";")
-            grid_params.append(vals[0])
-            grid_vals.append([float(val) for val in vals[1].split(",")])
-            grid_decisions.append(vals[2])
-    return [
-        Parameter("combo", "grid_params", grid_params),
-        Parameter("combo", "grid_vals", grid_vals),
-        Parameter("combo", "grid_decisions", grid_decisions),
-        Parameter("combo", "other_params", other_params),
-    ]
-
-
 sim_params = {
     "test": {"n_trajectories": 2},
     "test2": {"n_trajectories": 2, "noise_stdev": 0.4},
@@ -76,18 +54,36 @@ feat_params = {
     "test2": {"featcls": "Fourier"},
     "test3": {"featcls": "Polynomial", "degree": 3},
 }
-opt_params = {"test": {"optcls": "STLSQ"}}
+opt_params = {"test": {"optcls": "STLSQ"}, "miosr": {"optcls": "MIOSR"}}
 
 # Grid search parameters
-metrics = {"test": ["coeff_f1", "coeff_mae"]}
+metrics = {
+    "test": ["coeff_f1", "coeff_mae"],
+    "lorenzk": ["coeff_f1", "coeff_precision", "coeff_recall", "coeff_mae"],
+}
 other_params = {
     "test": {
         "sim_params": sim_params["test"],
         "diff_params": diff_params["test"],
         "feat_params": feat_params["test"],
         "opt_params": opt_params["test"],
-    }
+    },
+    "lorenzk": {
+        "sim_params": sim_params["test"],
+        "diff_params": diff_params["kalman"],
+        "feat_params": feat_params["test"],
+        "opt_params": opt_params["test"],
+    },
 }
-grid_params = {"test": ["sim_params.t_end"]}
-grid_vals = {"test":[[5,10,15,20]]}
-grid_decisions = {"test": ["plot"]}
+grid_params = {
+    "test": ["sim_params.t_end"],
+    "lorenzk": ["sim_params.t_end", "sim_params.noise_stdev", "diff_params.alpha"],
+}
+grid_vals = {
+    "test": [[5, 10, 15, 20]],
+    "lorenzk": [[1, 3, 9, 27], [.1, .3, .8], np.logspace(-6,-1,7)],
+}
+grid_decisions = {
+    "test": ["plot"],
+    "lorenzk": ["plot", "plot", "max"]
+}

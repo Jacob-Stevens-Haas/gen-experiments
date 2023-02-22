@@ -128,6 +128,8 @@ def opt_lookup(kind):
         return ps.STLSQ
     elif normalized_kind == "sr3":
         return ps.SR3
+    elif normalized_kind == "miosr":
+        return ps.MIOSR
     else:
         raise ValueError
 

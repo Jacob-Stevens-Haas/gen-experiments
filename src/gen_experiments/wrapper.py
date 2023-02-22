@@ -63,7 +63,7 @@ def run(
     main_metric_ind = metrics.index("main") if "main" in metrics else 0
     return {
         "results": results,
-        "main": max(grid[main_metric_ind].max() for grid in grid_searches)
+        "main": max(grid[main_metric_ind].max() for grid in grid_searches),
     }
 
 
