@@ -1,4 +1,7 @@
+from collections import namedtuple
+
 import numpy as np
+import pysindy as ps
 
 from mitosis import Parameter
 
@@ -32,11 +35,18 @@ def lookup_params(params: list[str]) -> list[Parameter]:
     resolved_params = []
     for param in params:
         p_name, p_id = param.split("=")
-        choices = globals()[p_name]
-        resolved_params.append(Parameter(p_id, p_name, choices[p_id]))
+        choice = globals()[p_name][p_id]
+        try:
+            vals = choice.vals
+            modules = choice.modules
+        except AttributeError:
+            vals = choice
+            modules = []
+        resolved_params.append(Parameter(p_id, p_name, vals, modules))
     return resolved_params
 
 
+ParamDetails = namedtuple("ParamDetails", ["vals", "modules"])
 sim_params = {
     "test": {"n_trajectories": 2},
     "test2": {"n_trajectories": 2, "noise_stdev": 0.4},
@@ -46,6 +56,7 @@ sim_params = {
 diff_params = {
     "test": {"diffcls": "FiniteDifference"},
     "test2": {"diffcls": "SmoothedFiniteDifference"},
+    "tv": {"diffcls": "sindy", "kind": "trend_filtered"},
     "sfd-nox": {"diffcls": "SmoothedFiniteDifference", "save_smooth": False},
     "kalman": {"diffcls": "sindy", "kind": "kalman", "alpha": 0.000055},
 }
@@ -53,8 +64,13 @@ feat_params = {
     "test": {"featcls": "Polynomial"},
     "test2": {"featcls": "Fourier"},
     "test3": {"featcls": "Polynomial", "degree": 3},
+    "testweak": {"featcls": "WeakPDELibrary"} # needs work
 }
-opt_params = {"test": {"optcls": "STLSQ"}, "miosr": {"optcls": "MIOSR"}}
+opt_params = {
+    "test": {"optcls": "STLSQ"},
+    "miosr": {"optcls": "MIOSR"},
+    "enslsq": ParamDetails({"optcls": "ensemble", "opt": ps.STLSQ(), "bagging": True, "n_models":20}, [ps])
+}
 
 # Grid search parameters
 metrics = {
@@ -81,7 +97,7 @@ grid_params = {
 }
 grid_vals = {
     "test": [[5, 10, 15, 20]],
-    "lorenzk": [[1, 3, 9, 27], [.1, .3, .8], np.logspace(-6,-1,7)],
+    "lorenzk": ParamDetails([[1, 3, 9, 27], [.1, .3, .8], np.logspace(-6,-1,7)], [np])
 }
 grid_decisions = {
     "test": ["plot"],

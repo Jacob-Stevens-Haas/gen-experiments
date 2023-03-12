@@ -120,6 +120,10 @@ def feature_lookup(kind):
         return ps.PolynomialLibrary
     elif normalized_kind == "fourier":
         return ps.FourierLibrary
+    elif normalized_kind == "weak":
+        return ps.WeakPDELibrary
+    else:
+        raise ValueError
 
 
 def opt_lookup(kind):

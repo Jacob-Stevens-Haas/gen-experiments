@@ -92,10 +92,3 @@ class NestedDict(defaultdict):
             return self[prefix].__setitem__(suffix, value)
         else:
             return super().__setitem__(key, value)
-
-
-# grid_params =
-# grid_values =
-# grid_decision =
-# other_params =
-# metrics =
