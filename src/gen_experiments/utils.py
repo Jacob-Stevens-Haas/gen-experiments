@@ -134,6 +134,8 @@ def opt_lookup(kind):
         return ps.SR3
     elif normalized_kind == "miosr":
         return ps.MIOSR
+    elif normalized_kind == "ensemble":
+        return ps.EnsembleOptimizer
     else:
         raise ValueError
 

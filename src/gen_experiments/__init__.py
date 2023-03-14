@@ -13,7 +13,7 @@ from . import vanderpol
 from . import hopf
 from . import odes
 from . import lorenz_missing
-from . import wrapper
+from . import gridsearch
 
 experiments = {
     "sho": (sho, None),
@@ -26,7 +26,7 @@ experiments = {
     "duff": (odes, "duff"),
     "lv": (odes, "lv"),
     "ross": (odes, "ross"),
-    "wrapper": (wrapper, None),
+    "wrapper": (gridsearch, None),
 }
 ex_name = type("identidict", (), {"__getitem__": lambda self, key: key})()
 
