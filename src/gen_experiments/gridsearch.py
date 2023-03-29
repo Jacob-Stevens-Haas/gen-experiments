@@ -1,10 +1,11 @@
-from typing import Iterable, Collection
+from typing import Iterable, Sequence
 from collections import defaultdict
 
 import matplotlib.pyplot as plt
 import numpy as np
 
 import gen_experiments
+from .utils import SeriesList, SeriesDef
 
 name = "gridsearch"
 
@@ -12,11 +13,13 @@ name = "gridsearch"
 def run(
     seed: int,
     ex_name: str,
-    grid_params: Collection,
-    grid_vals: Collection,
-    grid_decisions: Collection,
+    grid_params: Sequence,
+    grid_vals: Sequence,
+    grid_decisions: Sequence,
     other_params: dict,
-    metrics: Collection = None,
+    series_params: SeriesList = None,
+    metrics: Sequence = None,
+    display: bool = True,
 ):
     """Run a grid-search wrapper of an experiment.
 
@@ -26,45 +29,87 @@ def run(
             experiment
         grid_vals: kwarg values to grid.  Indices match grid_params
         grid_decisions: What to do with each grid param, e.g.
-            {"plot", "best"}.  Indices match grid_params.
+            {"plot", "max"}.  Indices match grid_params.
         other_params: a dict of other kwargs to pass to experiment
         metrics: names of metrics to record from each wrapped experiment
+        display: whether to plot results.
     """
     other_params = NestedDict(**other_params)
     base_ex, base_group = gen_experiments.experiments[ex_name]
-    results_shape = (len(metrics), *(len(grid) for grid in grid_vals))
-    results = np.zeros(results_shape)
-    gridpoint_selector = np.ndindex(results_shape[1:])
-    rng = np.random.default_rng(seed)
-    for ind in gridpoint_selector:
-        new_seed = rng.integers(1000)
-        for axis_ind, key, val_list in zip(ind, grid_params, grid_vals):
-            other_params[key] = val_list[axis_ind]
-        curr_results = base_ex.run(new_seed, **other_params, display=False)
-        results[(slice(None), *ind)] = [curr_results[metric] for metric in metrics]
-    grid_searches = _marginalize_grid_views(grid_decisions, results)
-    n_row = results_shape[0]
-    n_col = len(grid_searches)
-    fig, subplots = plt.subplots(
-        n_row, n_col, sharey="row", sharex="col", squeeze=False
-    )
+    if series_params is None:
+        series_params = SeriesList(None, None, [SeriesDef(ex_name, {}, [], [])])
+        legends = False
+    else:
+        legends = True
+    n_metrics = len(metrics)
+    n_plotparams = len([decide for decide in grid_decisions if decide == "plot"])
+    grid_searches = []
+    if base_group is not None:
+        other_params["group"] = base_group
+    for series_data in series_params.series_list:
+        if series_params.param_name is not None:
+            other_params[series_params.param_name] = series_data.static
+        new_grid_vals = grid_vals + series_data.grid_vals
+        new_grid_params = grid_params + series_data.grid_params
+        new_grid_decisions = grid_decisions + len(series_data.grid_params) * ["best"]
+        full_results_shape = (len(metrics), *(len(grid) for grid in new_grid_vals))
+        full_results = np.zeros(full_results_shape)
+        gridpoint_selector = np.ndindex(full_results_shape[1:])
+        rng = np.random.default_rng(seed)
+        for ind in gridpoint_selector:
+            new_seed = rng.integers(1000)
+            for axis_ind, key, val_list in zip(ind, new_grid_params, new_grid_vals):
+                other_params[key] = val_list[axis_ind]
+            curr_results = base_ex.run(new_seed, **other_params, display=False)
+            full_results[(slice(None), *ind)] = [
+                curr_results[metric] for metric in metrics
+            ]
+        grid_searches.append(_marginalize_grid_views(new_grid_decisions, full_results))
+
+    if display:
+        fig, subplots = plt.subplots(
+            n_metrics, n_plotparams, sharey="row", sharex="col", squeeze=False
+        )
+        for series_data, series_name in zip(
+            grid_searches, (ser.name for ser in series_params.series_list)
+        ):
+            plot(
+                fig,
+                subplots,
+                metrics,
+                grid_params,
+                grid_vals,
+                series_data,
+                series_name,
+                legends,
+            )
+        if series_params.print_name is not None:
+            title = f"Grid Search on {series_params.print_name} in {ex_name}"
+        else:
+            title = f"Grid Search in {ex_name}"
+        fig.suptitle(title)
+        fig.tight_layout()
+
+    main_metric_ind = metrics.index("main") if "main" in metrics else 0
+    return {
+        "results": grid_searches,
+        "main": max(grid[main_metric_ind].max() for grid in grid_searches),
+    }
+
+
+def plot(fig, subplots, metrics, grid_params, grid_vals, grid_searches, name, legends):
     for m_ind_row, m_name in enumerate(metrics):
         for col, (param_name, x_ticks, param_search) in enumerate(
             zip(grid_params, grid_vals, grid_searches)
         ):
             ax = subplots[m_ind_row, col]
-            ax.plot(x_ticks, param_search[m_ind_row], label=m_name)
+            ax.plot(x_ticks, param_search[m_ind_row], label=name)
             if m_ind_row == 0:
                 ax.set_title(f"{param_name}")
             if col == 0:
                 ax.set_ylabel(f"{m_name}")
-    fig.suptitle(f"Grid Search on {base_ex.name}")
-    fig.tight_layout()
-    main_metric_ind = metrics.index("main") if "main" in metrics else 0
-    return {
-        "results": results,
-        "main": max(grid[main_metric_ind].max() for grid in grid_searches),
-    }
+            if legends:
+                ax.legend()
 
 
 def _marginalize_grid_views(

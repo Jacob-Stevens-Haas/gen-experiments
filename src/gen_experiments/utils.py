@@ -1,6 +1,7 @@
+from dataclasses import dataclass
 from itertools import chain
-from multiprocessing.sharedctypes import Value
-from typing import List, Tuple
+from types import ModuleType
+from typing import Sequence, Mapping
 from math import ceil
 
 import matplotlib.pyplot as plt
@@ -251,8 +252,8 @@ def integration_metrics(model, x_test, t_train, x_dot_test):
 
 
 def unionize_coeff_matrices(
-    model: ps.SINDy, coeff_true: List[dict]
-) -> Tuple[np.ndarray]:
+    model: ps.SINDy, coeff_true: list[dict]
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Reformat true coefficients and coefficient matrix compatibly
 
 
@@ -294,7 +295,7 @@ def unionize_coeff_matrices(
 
 
 def _make_model(
-    input_features: List[str],
+    input_features: list[str],
     dt: float,
     diff_params: dict,
     feat_params: dict,
@@ -430,3 +431,58 @@ def plot_test_trajectories(last_test, model, dt):
         )
     else:
         raise ValueError("Can only plot 2d or 3d data.")
+
+
+@dataclass
+class ParamDetails:
+    vals: Sequence | Mapping
+    modules: Sequence[ModuleType]
+
+
+@dataclass
+class SeriesDef:
+    """The details of constructing the ragged axes of a grid search.
+
+    The concept of a SeriesDef refers to a slice along a single axis of
+    a grid search in conjunction with another axis (or axes) whose size
+    or meaning differs along different slices.
+
+    Attributes:
+        name: The name of the slice, as a label for printing
+        static: the constant (and ideally, unique) paramter to this
+            slice
+        grid_params: the keys of the parameters in the experiment that
+            vary along jagged axis for this slice
+        grid_vals: the values of the parameters in the experiment that
+            vary along jagged axis for this slice
+    """
+
+    name: str
+    static: dict
+    grid_params: Sequence[str]
+    grid_vals: Sequence[Sequence] | ParamDetails
+
+
+@dataclass
+class SeriesList:
+    """Specify the raggedness of a grid search.
+
+    This definition specifies both the axes that are ragged, and the
+    axes along which the ragged axes are ragged.
+
+    As an example, consider a grid search of miles per gallon for
+    different vehicles, in different routes, with different tires.
+    Since different tires fit on different vehicles, the tire axis would
+    be ragged, varying along the vehicle axis.
+
+    Attribtues:
+        param_name: the key of the parameter in the experiment that
+            varies along the series axis.
+        print_name: the print name of the parameter in the experiment
+            that varies along the series axis.
+        series_list: Each element of the series axis
+    """
+
+    param_name: str
+    print_name: str
+    series_list: list[SeriesDef]

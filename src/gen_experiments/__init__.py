@@ -1,5 +1,3 @@
-from collections import namedtuple
-
 import numpy as np
 import pysindy as ps
 
@@ -14,6 +12,7 @@ from . import hopf
 from . import odes
 from . import lorenz_missing
 from . import gridsearch
+from .utils import SeriesDef, SeriesList, ParamDetails
 
 experiments = {
     "sho": (sho, None),
@@ -26,7 +25,7 @@ experiments = {
     "duff": (odes, "duff"),
     "lv": (odes, "lv"),
     "ross": (odes, "ross"),
-    "wrapper": (gridsearch, None),
+    "gridsearch": (gridsearch, None),
 }
 ex_name = type("identidict", (), {"__getitem__": lambda self, key: key})()
 
@@ -46,7 +45,6 @@ def lookup_params(params: list[str]) -> list[Parameter]:
     return resolved_params
 
 
-ParamDetails = namedtuple("ParamDetails", ["vals", "modules"])
 sim_params = {
     "test": {"n_trajectories": 2},
     "test2": {"n_trajectories": 2, "noise_stdev": 0.4},
@@ -56,7 +54,8 @@ sim_params = {
 diff_params = {
     "test": {"diffcls": "FiniteDifference"},
     "test2": {"diffcls": "SmoothedFiniteDifference"},
-    "tv": {"diffcls": "sindy", "kind": "trend_filtered"},
+    "tv": {"diffcls": "sindy", "kind": "trend_filtered", "order": 0},
+    "savgol": {"diffcls": "sindy", "kind": "savitzky_golay"},
     "sfd-nox": {"diffcls": "SmoothedFiniteDifference", "save_smooth": False},
     "kalman": {"diffcls": "sindy", "kind": "kalman", "alpha": 0.000055},
 }
@@ -64,12 +63,14 @@ feat_params = {
     "test": {"featcls": "Polynomial"},
     "test2": {"featcls": "Fourier"},
     "test3": {"featcls": "Polynomial", "degree": 3},
-    "testweak": {"featcls": "WeakPDELibrary"} # needs work
+    "testweak": {"featcls": "WeakPDELibrary"},  # needs work
 }
 opt_params = {
     "test": {"optcls": "STLSQ"},
     "miosr": {"optcls": "MIOSR"},
-    "enslsq": ParamDetails({"optcls": "ensemble", "opt": ps.STLSQ(), "bagging": True, "n_models":20}, [ps])
+    "enslsq": ParamDetails(
+        {"optcls": "ensemble", "opt": ps.STLSQ(), "bagging": True, "n_models": 20}, [ps]
+    ),
 }
 
 # Grid search parameters
@@ -81,6 +82,11 @@ other_params = {
     "test": {
         "sim_params": sim_params["test"],
         "diff_params": diff_params["test"],
+        "feat_params": feat_params["test"],
+        "opt_params": opt_params["test"],
+    },
+    "test2": {
+        "sim_params": sim_params["test"],
         "feat_params": feat_params["test"],
         "opt_params": opt_params["test"],
     },
@@ -97,9 +103,31 @@ grid_params = {
 }
 grid_vals = {
     "test": [[5, 10, 15, 20]],
-    "lorenzk": ParamDetails([[1, 3, 9, 27], [.1, .3, .8], np.logspace(-6,-1,7)], [np])
+    "lorenzk": ParamDetails(
+        [[1, 3, 9, 27], [0.1, 0.3, 0.8], np.logspace(-6, -1, 7)], [np]
+    ),
 }
-grid_decisions = {
-    "test": ["plot"],
-    "lorenzk": ["plot", "plot", "max"]
+grid_decisions = {"test": ["plot"], "lorenzk": ["plot", "plot", "max"]}
+series_params = {
+    "test": ParamDetails(
+        SeriesList(
+            "diff_params",
+            "Differentiation Method",
+            [
+                SeriesDef(
+                    "Kalman",
+                    diff_params["kalman"],
+                    ["diff_params.alpha"],
+                    [np.logspace(-6, -1, 7)],
+                ),
+                SeriesDef(
+                    "TV",
+                    diff_params["tv"],
+                    ["diff_params.alpha"],
+                    [np.logspace(-6, -1, 7)],
+                ),
+            ],
+        ),
+        [np],
+    )
 }
