@@ -497,6 +497,8 @@ class NestedDict(defaultdict):
     def __setitem__(self, key, value):
         if "." in key:
             prefix, suffix = key.split(".", 1)
+            if self.get(prefix) is None:
+                self[prefix] = NestedDict()
             return self[prefix].__setitem__(suffix, value)
         else:
             return super().__setitem__(key, value)

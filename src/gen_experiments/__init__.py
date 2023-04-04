@@ -112,9 +112,7 @@ grid_params = {
 }
 grid_vals = {
     "test": [[5, 10, 15, 20]],
-    "lorenzk": ParamDetails(
-        [[1, 3, 9, 27], [0.1, 0.3, 0.8], np.logspace(-6, -1, 7)], [np]
-    ),
+    "lorenzk": ParamDetails([[1, 9, 27], [0.1, 0.8], np.logspace(-6, -1, 4)], [np]),
 }
 grid_decisions = {"test": ["plot"], "lorenzk": ["plot", "plot", "max"]}
 series_params = {
@@ -139,7 +137,7 @@ series_params = {
                     "Savitsky-Golay",
                     diff_params["sfd-ps"],
                     ["diff_params.smoother_kws.window_length"],
-                    [[3, 5, 7]],
+                    [[5, 7, 15]],
                 ),
             ],
         ),
