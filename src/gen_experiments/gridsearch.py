@@ -1,11 +1,10 @@
 from typing import Iterable, Sequence
-from collections import defaultdict
 
 import matplotlib.pyplot as plt
 import numpy as np
 
 import gen_experiments
-from .utils import SeriesList, SeriesDef
+from .utils import NestedDict, SeriesList, SeriesDef
 
 name = "gridsearch"
 
@@ -124,16 +123,3 @@ def _marginalize_grid_views(
         selection_results = selection_results.reshape(*new_shape[:2], -1).max(-1)
         grid_searches.append(selection_results)
     return grid_searches
-
-
-class NestedDict(defaultdict):
-    def __missing__(self, key):
-        prefix, subkey = key.split(".", 1)
-        return self[prefix][subkey]
-
-    def __setitem__(self, key, value):
-        if "." in key:
-            prefix, suffix = key.split(".", 1)
-            return self[prefix].__setitem__(suffix, value)
-        else:
-            return super().__setitem__(key, value)

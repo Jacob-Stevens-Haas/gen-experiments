@@ -12,7 +12,7 @@ from . import hopf
 from . import odes
 from . import lorenz_missing
 from . import gridsearch
-from .utils import SeriesDef, SeriesList, ParamDetails
+from .utils import NestedDict, ParamDetails, SeriesDef, SeriesList
 
 experiments = {
     "sho": (sho, None),
@@ -45,31 +45,34 @@ def lookup_params(params: list[str]) -> list[Parameter]:
     return resolved_params
 
 
+ND = lambda d: NestedDict(**d)
 sim_params = {
-    "test": {"n_trajectories": 2},
-    "test2": {"n_trajectories": 2, "noise_stdev": 0.4},
-    "med-noise": {"n_trajectories": 2, "noise_stdev": 0.8},
-    "hi-noise": {"n_trajectories": 2, "noise_stdev": 2},
+    "test": ND({"n_trajectories": 2}),
+    "test2": ND({"n_trajectories": 2, "noise_stdev": 0.4}),
+    "med-noise": ND({"n_trajectories": 2, "noise_stdev": 0.8}),
+    "hi-noise": ND({"n_trajectories": 2, "noise_stdev": 2}),
 }
 diff_params = {
-    "test": {"diffcls": "FiniteDifference"},
-    "test2": {"diffcls": "SmoothedFiniteDifference"},
-    "tv": {"diffcls": "sindy", "kind": "trend_filtered", "order": 0},
-    "savgol": {"diffcls": "sindy", "kind": "savitzky_golay"},
-    "sfd-nox": {"diffcls": "SmoothedFiniteDifference", "save_smooth": False},
-    "kalman": {"diffcls": "sindy", "kind": "kalman", "alpha": 0.000055},
+    "test": ND({"diffcls": "FiniteDifference"}),
+    "test2": ND({"diffcls": "SmoothedFiniteDifference"}),
+    "tv": ND({"diffcls": "sindy", "kind": "trend_filtered", "order": 0}),
+    "savgol": ND({"diffcls": "sindy", "kind": "savitzky_golay"}),
+    "sfd-nox": ND({"diffcls": "SmoothedFiniteDifference", "save_smooth": False}),
+    "sfd-ps": ND({"diffcls": "SmoothedFiniteDifference"}),
+    "kalman": ND({"diffcls": "sindy", "kind": "kalman", "alpha": 0.000055}),
 }
 feat_params = {
-    "test": {"featcls": "Polynomial"},
-    "test2": {"featcls": "Fourier"},
-    "test3": {"featcls": "Polynomial", "degree": 3},
-    "testweak": {"featcls": "WeakPDELibrary"},  # needs work
+    "test": ND({"featcls": "Polynomial"}),
+    "test2": ND({"featcls": "Fourier"}),
+    "test3": ND({"featcls": "Polynomial", "degree": 3}),
+    "testweak": ND({"featcls": "WeakPDELibrary"}),  # needs work
 }
 opt_params = {
-    "test": {"optcls": "STLSQ"},
-    "miosr": {"optcls": "MIOSR"},
+    "test": ND({"optcls": "STLSQ"}),
+    "miosr": ND({"optcls": "MIOSR"}),
     "enslsq": ParamDetails(
-        {"optcls": "ensemble", "opt": ps.STLSQ(), "bagging": True, "n_models": 20}, [ps]
+        ND({"optcls": "ensemble", "opt": ps.STLSQ(), "bagging": True, "n_models": 20}),
+        [ps],
     ),
 }
 
@@ -79,23 +82,29 @@ metrics = {
     "lorenzk": ["coeff_f1", "coeff_precision", "coeff_recall", "coeff_mae"],
 }
 other_params = {
-    "test": {
-        "sim_params": sim_params["test"],
-        "diff_params": diff_params["test"],
-        "feat_params": feat_params["test"],
-        "opt_params": opt_params["test"],
-    },
-    "test2": {
-        "sim_params": sim_params["test"],
-        "feat_params": feat_params["test"],
-        "opt_params": opt_params["test"],
-    },
-    "lorenzk": {
-        "sim_params": sim_params["test"],
-        "diff_params": diff_params["kalman"],
-        "feat_params": feat_params["test"],
-        "opt_params": opt_params["test"],
-    },
+    "test": ND(
+        {
+            "sim_params": sim_params["test"],
+            "diff_params": diff_params["test"],
+            "feat_params": feat_params["test"],
+            "opt_params": opt_params["test"],
+        }
+    ),
+    "test2": ND(
+        {
+            "sim_params": sim_params["test"],
+            "feat_params": feat_params["test"],
+            "opt_params": opt_params["test"],
+        }
+    ),
+    "lorenzk": ND(
+        {
+            "sim_params": sim_params["test"],
+            "diff_params": diff_params["kalman"],
+            "feat_params": feat_params["test"],
+            "opt_params": opt_params["test"],
+        }
+    ),
 }
 grid_params = {
     "test": ["sim_params.t_end"],
@@ -118,13 +127,19 @@ series_params = {
                     "Kalman",
                     diff_params["kalman"],
                     ["diff_params.alpha"],
-                    [np.logspace(-6, -1, 7)],
+                    [np.logspace(-6, 0, 3)],
                 ),
                 SeriesDef(
-                    "TV",
+                    "Total Variation",
                     diff_params["tv"],
                     ["diff_params.alpha"],
-                    [np.logspace(-6, -1, 7)],
+                    [np.logspace(-6, 0, 3)],
+                ),
+                SeriesDef(
+                    "Savitsky-Golay",
+                    diff_params["sfd-ps"],
+                    ["diff_params.smoother_kws.window_length"],
+                    [[3, 5, 7]],
                 ),
             ],
         ),

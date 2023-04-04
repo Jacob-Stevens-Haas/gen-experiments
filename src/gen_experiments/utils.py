@@ -1,3 +1,4 @@
+from collections import defaultdict
 from dataclasses import dataclass
 from itertools import chain
 from types import ModuleType
@@ -486,3 +487,16 @@ class SeriesList:
     param_name: str
     print_name: str
     series_list: list[SeriesDef]
+
+
+class NestedDict(defaultdict):
+    def __missing__(self, key):
+        prefix, subkey = key.split(".", 1)
+        return self[prefix][subkey]
+
+    def __setitem__(self, key, value):
+        if "." in key:
+            prefix, suffix = key.split(".", 1)
+            return self[prefix].__setitem__(suffix, value)
+        else:
+            return super().__setitem__(key, value)
