@@ -45,6 +45,9 @@ def gen_data(
         nonnegative (bool): Whether x0 must be nonnegative, such as for
             population models.  If so, a gamma distribution is
             used, rather than a normal distribution.
+
+    Returns:
+        dt, t_train, x_train, x_test, x_dot_test, x_train_true
     """
     rng = np.random.default_rng(seed)
     if x0_center is None:
