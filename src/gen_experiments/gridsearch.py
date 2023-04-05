@@ -67,7 +67,12 @@ def run(
 
     if display:
         fig, subplots = plt.subplots(
-            n_metrics, n_plotparams, sharey="row", sharex="col", squeeze=False
+            n_metrics,
+            n_plotparams,
+            sharey="row",
+            sharex="col",
+            squeeze=False,
+            figsize=(n_plotparams * 3, 0.5 + n_metrics * 2.25),
         )
         for series_data, series_name in zip(
             grid_searches, (ser.name for ser in series_params.series_list)
@@ -107,8 +112,8 @@ def plot(fig, subplots, metrics, grid_params, grid_vals, grid_searches, name, le
                 ax.set_title(f"{param_name}")
             if col == 0:
                 ax.set_ylabel(f"{m_name}")
-            if legends:
-                ax.legend()
+    if legends:
+        ax.legend()
 
 
 def _marginalize_grid_views(
