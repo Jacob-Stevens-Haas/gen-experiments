@@ -55,7 +55,7 @@ sim_params = {
 diff_params = {
     "test": ND({"diffcls": "FiniteDifference"}),
     "test2": ND({"diffcls": "SmoothedFiniteDifference"}),
-    "tv": ND({"diffcls": "sindy", "kind": "trend_filtered", "order": 0}),
+    "tv": ND({"diffcls": "sindy", "kind": "trend_filtered", "order": 0, "alpha": 1}),
     "savgol": ND({"diffcls": "sindy", "kind": "savitzky_golay"}),
     "sfd-nox": ND({"diffcls": "SmoothedFiniteDifference", "save_smooth": False}),
     "sfd-ps": ND({"diffcls": "SmoothedFiniteDifference"}),
@@ -90,6 +90,14 @@ other_params = {
             "opt_params": opt_params["test"],
         }
     ),
+    "tv1": ND(
+        {
+            "sim_params": sim_params["test"],
+            "diff_params": diff_params["tv"],
+            "feat_params": feat_params["test"],
+            "opt_params": opt_params["test"],
+        }
+    ),
     "test2": ND(
         {
             "sim_params": sim_params["test"],
@@ -108,39 +116,83 @@ other_params = {
 }
 grid_params = {
     "test": ["sim_params.t_end"],
+    "tv1": ["diff_params.alpha"],
     "lorenzk": ["sim_params.t_end", "sim_params.noise_stdev", "diff_params.alpha"],
+    "lorenz1": ["sim_params.t_end", "sim_params.noise_stdev"],
 }
 grid_vals = {
     "test": [[5, 10, 15, 20]],
+    "tv1": ParamDetails([np.logspace(-4, 0, 5)], [np]),
+    "tv2": ParamDetails([np.logspace(-3, -1, 5)], [np]),
     "lorenzk": ParamDetails([[1, 9, 27], [0.1, 0.8], np.logspace(-6, -1, 4)], [np]),
+    "lorenz1": [[1, 3, 9, 27], [0.01, 0.1, 1]],
 }
-grid_decisions = {"test": ["plot"], "lorenzk": ["plot", "plot", "max"]}
+grid_decisions = {
+    "test": ["plot"],
+    "lorenzk": ["plot", "plot", "max"],
+    "lorenz1": ["plot", "plot"],
+}
+diff_series = {
+    "kalman1": SeriesDef(
+        "Kalman",
+        diff_params["kalman"],
+        ["diff_params.alpha"],
+        [np.logspace(-6, 0, 3)],
+    ),
+    "kalman2": SeriesDef(
+        "Kalman",
+        diff_params["kalman"],
+        ["diff_params.alpha"],
+        [np.logspace(-4, 0, 5)],
+    ),
+    "tv1": SeriesDef(
+        "Total Variation",
+        diff_params["tv"],
+        ["diff_params.alpha"],
+        [np.logspace(-6, 0, 3)],
+    ),
+    "tv2": SeriesDef(
+        "Total Variation",
+        diff_params["tv"],
+        ["diff_params.alpha"],
+        [np.logspace(-4, 0, 5)],
+    ),
+    "sg1": SeriesDef(
+        "Savitsky-Golay",
+        diff_params["sfd-ps"],
+        ["diff_params.smoother_kws.window_length"],
+        [[5, 7, 15]],
+    ),
+    "sg2": SeriesDef(
+        "Savitsky-Golay",
+        diff_params["sfd-ps"],
+        ["diff_params.smoother_kws.window_length"],
+        [[5, 8, 12, 15]],
+    ),
+}
 series_params = {
     "test": ParamDetails(
         SeriesList(
             "diff_params",
             "Differentiation Method",
             [
-                SeriesDef(
-                    "Kalman",
-                    diff_params["kalman"],
-                    ["diff_params.alpha"],
-                    [np.logspace(-6, 0, 3)],
-                ),
-                SeriesDef(
-                    "Total Variation",
-                    diff_params["tv"],
-                    ["diff_params.alpha"],
-                    [np.logspace(-6, 0, 3)],
-                ),
-                SeriesDef(
-                    "Savitsky-Golay",
-                    diff_params["sfd-ps"],
-                    ["diff_params.smoother_kws.window_length"],
-                    [[5, 7, 15]],
-                ),
+                diff_series["kalman1"],
+                diff_series["tv1"],
+                diff_series["sg1"],
             ],
         ),
         [np],
-    )
+    ),
+    "lorenz1": ParamDetails(
+        SeriesList(
+            "diff_params",
+            "Differentiation Method",
+            [
+                diff_series["kalman2"],
+                diff_series["tv2"],
+                diff_series["sg2"],
+            ],
+        ),
+        [np],
+    ),
 }
