@@ -64,7 +64,7 @@ diff_params = {
 feat_params = {
     "test": ND({"featcls": "Polynomial"}),
     "test2": ND({"featcls": "Fourier"}),
-    "test3": ND({"featcls": "Polynomial", "degree": 3}),
+    "cubic": ND({"featcls": "Polynomial", "degree": 3}),
     "testweak": ND({"featcls": "WeakPDELibrary"}),  # needs work
 }
 opt_params = {
@@ -110,6 +110,13 @@ other_params = {
             "sim_params": sim_params["test"],
             "diff_params": diff_params["kalman"],
             "feat_params": feat_params["test"],
+            "opt_params": opt_params["test"],
+        }
+    ),
+    "cubic": ND(
+        {
+            "sim_params": sim_params["test"],
+            "feat_params": feat_params["cubic"],
             "opt_params": opt_params["test"],
         }
     ),
