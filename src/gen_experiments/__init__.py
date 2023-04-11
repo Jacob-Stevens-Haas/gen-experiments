@@ -48,6 +48,7 @@ def lookup_params(params: list[str]) -> list[Parameter]:
 ND = lambda d: NestedDict(**d)
 sim_params = {
     "test": ND({"n_trajectories": 2}),
+    "10x": ND({"n_trajectories": 10}),
     "test2": ND({"n_trajectories": 2, "noise_stdev": 0.4}),
     "med-noise": ND({"n_trajectories": 2, "noise_stdev": 0.8}),
     "hi-noise": ND({"n_trajectories": 2, "noise_stdev": 2}),
@@ -113,12 +114,26 @@ other_params = {
             "opt_params": opt_params["test"],
         }
     ),
+    "exp1": ParamDetails(ND(
+        {
+            "sim_params": sim_params["10x"],
+            "feat_params": feat_params["test"],
+            "opt_params": opt_params["enslsq"].vals,
+        }), [ps]
+    ),
     "cubic": ND(
         {
             "sim_params": sim_params["test"],
             "feat_params": feat_params["cubic"],
             "opt_params": opt_params["test"],
         }
+    ),
+    "exp2": ParamDetails(ND(
+        {
+            "sim_params": sim_params["10x"],
+            "feat_params": feat_params["cubic"],
+            "opt_params": opt_params["enslsq"].vals,
+        }), [ps]
     ),
 }
 grid_params = {
@@ -133,6 +148,7 @@ grid_vals = {
     "tv2": ParamDetails([np.logspace(-3, -1, 5)], [np]),
     "lorenzk": ParamDetails([[1, 9, 27], [0.1, 0.8], np.logspace(-6, -1, 4)], [np]),
     "lorenz1": [[1, 3, 9, 27], [0.01, 0.1, 1]],
+    "lorenz2": [[.25, 1, 4, 16], [0.1, .5, 1, 2, 4, 8]],
 }
 grid_decisions = {
     "test": ["plot"],
