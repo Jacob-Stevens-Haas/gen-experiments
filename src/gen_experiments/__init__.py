@@ -49,9 +49,9 @@ ND = lambda d: NestedDict(**d)
 sim_params = {
     "test": ND({"n_trajectories": 2}),
     "10x": ND({"n_trajectories": 10}),
-    "test2": ND({"n_trajectories": 2, "noise_stdev": 0.4}),
-    "med-noise": ND({"n_trajectories": 2, "noise_stdev": 0.8}),
-    "hi-noise": ND({"n_trajectories": 2, "noise_stdev": 2}),
+    "test2": ND({"n_trajectories": 2, "noise_abs": 0.4}),
+    "med-noise": ND({"n_trajectories": 2, "noise_abs": 0.8}),
+    "hi-noise": ND({"n_trajectories": 2, "noise_abs": 2}),
 }
 diff_params = {
     "test": ND({"diffcls": "FiniteDifference"}),
@@ -139,8 +139,8 @@ other_params = {
 grid_params = {
     "test": ["sim_params.t_end"],
     "tv1": ["diff_params.alpha"],
-    "lorenzk": ["sim_params.t_end", "sim_params.noise_stdev", "diff_params.alpha"],
-    "lorenz1": ["sim_params.t_end", "sim_params.noise_stdev"],
+    "lorenzk": ["sim_params.t_end", "sim_params.noise_abs", "diff_params.alpha"],
+    "lorenz1": ["sim_params.t_end", "sim_params.noise_abs"],
 }
 grid_vals = {
     "test": [[5, 10, 15, 20]],

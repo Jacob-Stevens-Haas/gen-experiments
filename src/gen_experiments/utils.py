@@ -24,7 +24,8 @@ def gen_data(
     n_trajectories=1,
     x0_center=None,
     ic_stdev=3,
-    noise_stdev=0.1,
+    noise_abs=None,
+    noise_rel=None,
     nonnegative=False,
     dt=0.01,
     t_end=10,
@@ -41,7 +42,11 @@ def gen_data(
         x0_center (np.array): center of random initial conditions
         ic_stdev (float): standard deviation for generating initial
             conditions
-        noise_stdev (float): measurement noise standard deviation
+        noise_abs (float): measurement noise standard deviation
+        noise_rel (float): measurement noise relative to amplitude of
+            true data.  Amplitude of data is calculated as the max value
+             of the power spectrum.  Either noise_abs or noise_rel must
+             be None.
         nonnegative (bool): Whether x0 must be nonnegative, such as for
             population models.  If so, a gamma distribution is
             used, rather than a normal distribution.
@@ -49,6 +54,10 @@ def gen_data(
     Returns:
         dt, t_train, x_train, x_test, x_dot_test, x_train_true
     """
+    if noise_abs is not None and noise_rel is not None:
+        raise ValueError("Cannot specify both noise_abs and noise_rel")
+    elif noise_abs is None and noise_rel is None:
+        noise_abs = .1
     rng = np.random.default_rng(seed)
     if x0_center is None:
         x0_center = np.zeros((n_coord))
@@ -98,12 +107,17 @@ def gen_data(
     x_test = np.array(x_test)
     x_dot_test = np.array([[rhs_func(0, xij) for xij in xi] for xi in x_test])
     x_train_true = np.copy(x_train)
-    x_train = x_train + noise_stdev * rng.standard_normal(x_train.shape)
+    if noise_rel is not None:
+        noise_abs = _max_amplitude(x_dot_test)
+    x_train = x_train + noise_abs * rng.standard_normal(x_train.shape)
     x_train = [xi for xi in x_train]
     x_test = [xi for xi in x_test]
     x_dot_test = [xi for xi in x_dot_test]
     return dt, t_train, x_train, x_test, x_dot_test, x_train_true
 
+
+def _max_amplitude(signal: np.ndarray):
+    return scipy.fft.rfft(signal).max()/len(signal)
 
 def diff_lookup(kind):
     normalized_kind = kind.lower().replace(" ", "")
@@ -311,7 +325,12 @@ def _make_model(
     """
 
     def finalize_param(lookup_func, pdict, lookup_key):
-        cls_name = pdict.pop(lookup_key)
+        try:
+            cls_name = pdict.pop(lookup_key)
+        except AttributeError:
+            cls_name = pdict.vals.pop(lookup_key)
+            pdict = pdict.vals
+
         param_cls = lookup_func(cls_name)
         param_final = param_cls(**pdict)
         pdict[lookup_key] = cls_name
