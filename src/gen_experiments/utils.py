@@ -495,7 +495,7 @@ class SeriesDef:
     name: str
     static_param: dict
     grid_params: Optional[Sequence[str]]
-    grid_vals: Optional[Sequence[Sequence] | ParamDetails]
+    grid_vals: Optional[list[Sequence]]
 
 
 @dataclass

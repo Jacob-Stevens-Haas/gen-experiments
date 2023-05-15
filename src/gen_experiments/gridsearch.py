@@ -12,8 +12,8 @@ name = "gridsearch"
 def run(
     seed: int,
     ex_name: str,
-    grid_params: Sequence[str],
-    grid_vals: Sequence[Sequence],
+    grid_params: list[str],
+    grid_vals: list[Sequence],
     grid_decisions: Sequence[str],
     other_params: dict,
     series_params: Optional[SeriesList] = None,
@@ -48,12 +48,13 @@ def run(
     for series_data in series_params.series_list:
         if series_params.param_name is not None:
             other_params[series_params.param_name] = series_data.static_param
-        new_grid_vals = grid_vals + series_data.grid_vals
+        new_grid_vals: list = grid_vals + series_data.grid_vals
         new_grid_params = grid_params + series_data.grid_params
         new_grid_decisions = grid_decisions + len(series_data.grid_params) * ["best"]
+        ind_plot = [ind for ind, decision in enumerate(new_grid_decisions)]
         full_results_shape = (len(metrics), *(len(grid) for grid in new_grid_vals))
-        full_results = np.zeros(full_results_shape)
-        gridpoint_selector = np.ndindex(full_results_shape[1:])
+        full_results = np.empty(full_results_shape).fill(-np.inf)
+        gridpoint_selector = _ndindex_skinny(full_results_shape[1:], ind_plot)
         rng = np.random.default_rng(seed)
         for ind in gridpoint_selector:
             new_seed = rng.integers(1000)
