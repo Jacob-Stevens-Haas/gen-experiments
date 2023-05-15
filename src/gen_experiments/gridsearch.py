@@ -128,3 +128,52 @@ def _marginalize_grid_views(
         selection_results = selection_results.reshape(*new_shape[:2], -1).max(-1)
         grid_searches.append(selection_results)
     return grid_searches
+
+
+def _ndindex_skinny(
+        shape: tuple[int],
+        thin_axes: Optional[Sequence[int]] = None,
+        thin_slices: Optional[Sequence[tuple | int]] = None
+    ):
+    """
+    Return an iterator like ndindex, but only traverse thin_axes once
+
+    This is useful for grid searches with multiple plot axes, where
+    searching across all combinations of plot axes is undesireable.
+    Slow for big arrays!
+
+    Args:
+        shape: array shape
+        thin_axes: axes for which you don't want the cross product
+        where_axes: the indexes for other thin axes when traversing
+            a particular thin axis. Defaults to 0th index
+    """
+    if thin_axes is None and thin_slices is None:
+        thin_axes = tuple()
+        thin_slices = tuple()
+    elif thin_axes is None:
+        raise ValueError("Must pass thin_axes if thin_slices is not None")
+    elif thin_slices is None:  # slice other thin axes at 0th index
+        n_thin = len(thin_axes)
+        thin_slices = (n_thin * ((n_thin-1) * (0,),))
+    full_indexes = np.ndindex(shape)
+
+    def ind_checker(multi_index):
+        """Check if a multi_index meets thin index criteria"""
+        for ax, where_others in zip(thin_axes, thin_slices):
+            other_axes = set(thin_axes) - {ax}
+            if all(
+                # to handle negative slice indexes
+                multi_index[ax] == range(shape[ax])[slice_ind]
+                for ax, slice_ind in zip(other_axes, where_others)
+            ):
+                return True
+        return False
+
+    while True:
+        try:
+            ind = next(full_indexes)
+        except StopIteration:
+            break
+        if ind_checker(ind):
+            yield ind
