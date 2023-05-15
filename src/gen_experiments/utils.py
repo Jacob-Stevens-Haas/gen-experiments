@@ -2,7 +2,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from itertools import chain
 from types import ModuleType
-from typing import Sequence, Mapping
+from typing import Sequence, Mapping, Optional
 from math import ceil
 
 import matplotlib.pyplot as plt
@@ -467,36 +467,47 @@ class SeriesDef:
     """The details of constructing the ragged axes of a grid search.
 
     The concept of a SeriesDef refers to a slice along a single axis of
-    a grid search in conjunction with another axis (or axes) whose size
-    or meaning differs along different slices.
+    a grid search in conjunction with another axis (or axes)
+    whose size or meaning differs along different slices.
 
     Attributes:
         name: The name of the slice, as a label for printing
-        static: the constant (and ideally, unique) paramter to this
-            slice
+        static_param: the constant paramter to this slice. Then key is
+            the name of the parameter, as understood by the experiment
+            Conceptually, the key serves as an index of this slice in
+            the gridsearch.
         grid_params: the keys of the parameters in the experiment that
             vary along jagged axis for this slice
         grid_vals: the values of the parameters in the experiment that
             vary along jagged axis for this slice
+
+    Example:
+
+        truck_wheels = SeriesDef(
+            "Truck",
+            {"vehicle": "flatbed_truck"},
+            ["vehicle.n_wheels"],
+            [[10, 18]]
+        )
+
     """
 
     name: str
-    static: dict
-    grid_params: Sequence[str]
-    grid_vals: Sequence[Sequence] | ParamDetails
+    static_param: dict
+    grid_params: Optional[Sequence[str]]
+    grid_vals: Optional[Sequence[Sequence] | ParamDetails]
 
 
 @dataclass
 class SeriesList:
-    """Specify the raggedness of a grid search.
-
-    This definition specifies both the axes that are ragged, and the
-    axes along which the ragged axes are ragged.
+    """Specify the ragged slices of a grid search.
 
     As an example, consider a grid search of miles per gallon for
     different vehicles, in different routes, with different tires.
     Since different tires fit on different vehicles, the tire axis would
     be ragged, varying along the vehicle axis.
+
+        Truck = SeriesDef("trucks")
 
     Attribtues:
         param_name: the key of the parameter in the experiment that
@@ -504,10 +515,31 @@ class SeriesList:
         print_name: the print name of the parameter in the experiment
             that varies along the series axis.
         series_list: Each element of the series axis
+
+    Example:
+
+        truck_wheels = SeriesDef(
+            "Truck",
+            {"vehicle": "flatbed_truck"},
+            ["vehicle.n_wheels"],
+            [[10, 18]]
+        )
+        bike_tires = SeriesDef(
+            "Bike",
+            {"vehicle": "bicycle"},
+            ["vehicle.tires"],
+            [["gravel_tires", "road_tires"]]
+        )
+        VehicleOptions = SeriesList(
+            "vehicle",
+            "Vehicle Types",
+            [truck_wheels, bike_tires]
+        )
+
     """
 
-    param_name: str
-    print_name: str
+    param_name: Optional[str]
+    print_name: Optional[str]
     series_list: list[SeriesDef]
 
 

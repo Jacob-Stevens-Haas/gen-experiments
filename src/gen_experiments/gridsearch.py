@@ -1,10 +1,10 @@
-from typing import Iterable, Sequence
+from typing import Iterable, Sequence, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
 
 import gen_experiments
-from .utils import NestedDict, SeriesList, SeriesDef
+from gen_experiments.utils import NestedDict, SeriesList, SeriesDef
 
 name = "gridsearch"
 
@@ -12,12 +12,12 @@ name = "gridsearch"
 def run(
     seed: int,
     ex_name: str,
-    grid_params: Sequence,
-    grid_vals: Sequence,
-    grid_decisions: Sequence,
+    grid_params: Sequence[str],
+    grid_vals: Sequence[Sequence],
+    grid_decisions: Sequence[str],
     other_params: dict,
-    series_params: SeriesList = None,
-    metrics: Sequence = None,
+    series_params: Optional[SeriesList] = None,
+    metrics: Optional[Sequence] = None,
     display: bool = True,
 ):
     """Run a grid-search wrapper of an experiment.
@@ -47,7 +47,7 @@ def run(
         other_params["group"] = base_group
     for series_data in series_params.series_list:
         if series_params.param_name is not None:
-            other_params[series_params.param_name] = series_data.static
+            other_params[series_params.param_name] = series_data.static_param
         new_grid_vals = grid_vals + series_data.grid_vals
         new_grid_params = grid_params + series_data.grid_params
         new_grid_decisions = grid_decisions + len(series_data.grid_params) * ["best"]
