@@ -1,6 +1,7 @@
 commit-msg
 todo
 gen_experiments/trials/
+scratch/
 
 # IDE files
 .vscode
