@@ -42,11 +42,12 @@ def gen_data(
         x0_center (np.array): center of random initial conditions
         ic_stdev (float): standard deviation for generating initial
             conditions
-        noise_abs (float): measurement noise standard deviation
+        noise_abs (float): measurement noise standard deviation.
+            Defaults to .1 if noise_rel is None.
         noise_rel (float): measurement noise relative to amplitude of
             true data.  Amplitude of data is calculated as the max value
              of the power spectrum.  Either noise_abs or noise_rel must
-             be None.
+             be None.  Defaults to None.
         nonnegative (bool): Whether x0 must be nonnegative, such as for
             population models.  If so, a gamma distribution is
             used, rather than a normal distribution.

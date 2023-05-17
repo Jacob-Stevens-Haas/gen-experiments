@@ -1,7 +1,7 @@
 commit-msg
 todo
 gen_experiments/trials/
-scratch/
+scratch/*.ipynb
 
 # IDE files
 .vscode
