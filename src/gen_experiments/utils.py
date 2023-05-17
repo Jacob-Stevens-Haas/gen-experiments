@@ -428,7 +428,7 @@ def plot_test_trajectories(last_test, model, dt):
     t_test = np.arange(len(last_test) * dt, step=dt)
     x_test_sim = model.simulate(last_test[0], t_test)
     fig, axs = plt.subplots(last_test.shape[1], 1, sharex=True, figsize=(7, 9))
-    plt.suptitle("Trajectories by Dimension")
+    plt.suptitle("Test Trajectories by Dimension")
     for i in range(last_test.shape[1]):
         axs[i].plot(t_test, last_test[:, i], "k", label="true trajectory")
         axs[i].plot(t_test, x_test_sim[:, i], "r--", label="model simulation")
@@ -436,7 +436,7 @@ def plot_test_trajectories(last_test, model, dt):
         axs[i].set(xlabel="t", ylabel="$x_{}$".format(i))
 
     fig = plt.figure(figsize=(10, 4.5))
-    plt.suptitle("Full trajectories")
+    plt.suptitle("Full Test Trajectories")
     if last_test.shape[1] == 2:
         ax1 = fig.add_subplot(121)
         ax1.plot(last_test[:, 0], last_test[:, 1], "k")
