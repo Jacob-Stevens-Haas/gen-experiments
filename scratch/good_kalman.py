@@ -107,8 +107,6 @@ print(new_alpha)
 diff_params["alpha"] = new_alpha
 gen_experiments.odes.run(seed, group, sim_params, diff_params, feat_params, opt_params)
 
-
-
 # %% [markdown]
 
 # # Run with default alpha
