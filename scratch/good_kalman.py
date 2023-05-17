@@ -87,7 +87,7 @@ def heuristic_alpha(
             obs_variance = np.mean([(diff ** 2).mean(axis=0) for diff in diffs])
             dt = (times[1] - times[0]) * (attempt + 1)
             t_exponent = dt ** 3 / 3
-            scaled_obs_variance = (obs_variance - meas_var) / t_exponent
+            scaled_obs_variance = (obs_variance - 2 * meas_var) / t_exponent
             scaled_obs_variance = scaled_obs_variance
             result = meas_var / scaled_obs_variance
             if result > 0 and result < max_alpha:
