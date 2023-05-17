@@ -351,10 +351,10 @@ def _make_model(
 
 def plot_training_data(last_train, last_train_true, smoothed_last_train):
     """Plot training data (and smoothed training data, if different)."""
-    plt.figure(figsize=[6, 6])
     ax = plt.gca()
+    fig, axs = plt.subplots(1, 2, figsize=(12, 6))
     if last_train.shape[1] == 2:
-        ax.plot(
+        axs[0].plot(
             last_train_true[:, 0],
             last_train_true[:, 1],
             ".",
@@ -362,7 +362,7 @@ def plot_training_data(last_train, last_train_true, smoothed_last_train):
             color=PAL[0],
             **PLOT_KWS,
         )
-        ax.plot(
+        axs[0].plot(
             last_train[:, 0],
             last_train[:, 1],
             ".",
@@ -374,7 +374,7 @@ def plot_training_data(last_train, last_train_true, smoothed_last_train):
             np.linalg.norm(smoothed_last_train - last_train) / smoothed_last_train.size
             > 1e-12
         ):
-            ax.plot(
+            axs[0].plot(
                 smoothed_last_train[:, 0],
                 smoothed_last_train[:, 1],
                 ".",
@@ -382,10 +382,10 @@ def plot_training_data(last_train, last_train_true, smoothed_last_train):
                 color=PAL[2],
                 **PLOT_KWS,
             )
-        ax.set(xlabel="$x_0$", ylabel="$x_1$")
+        axs[0].set(xlabel="$x_0$", ylabel="$x_1$")
     elif last_train.shape[1] == 3:
-        ax = plt.axes(projection="3d")
-        ax.plot(
+        axs[0] = plt.axes(projection="3d")
+        axs[0].plot(
             last_train_true[:, 0],
             last_train_true[:, 1],
             last_train_true[:, 2],
@@ -394,7 +394,7 @@ def plot_training_data(last_train, last_train_true, smoothed_last_train):
             **PLOT_KWS,
         )
 
-        ax.plot(
+        axs[0].plot(
             last_train[:, 0],
             last_train[:, 1],
             last_train[:, 2],
@@ -407,7 +407,7 @@ def plot_training_data(last_train, last_train_true, smoothed_last_train):
             np.linalg.norm(smoothed_last_train - last_train) / smoothed_last_train.size
             > 1e-12
         ):
-            ax.plot(
+            axs[0].plot(
                 smoothed_last_train[:, 0],
                 smoothed_last_train[:, 1],
                 smoothed_last_train[:, 2],
@@ -416,11 +416,15 @@ def plot_training_data(last_train, last_train_true, smoothed_last_train):
                 label="Smoothed values",
                 alpha=0.3,
             )
-        ax.set(xlabel="$x$", ylabel="$y$", zlabel="$z$")
+        axs[0].set(xlabel="$x$", ylabel="$y$", zlabel="$z$")
     else:
         raise ValueError("Can only plot 2d or 3d data.")
-    ax.set(title="Training data")
-    ax.legend()
+    axs[0].set(title="Training data")
+    axs[0].legend()
+    axs[1].semilogy(np.abs(scipy.fft.rfft(last_train, axis=0))/len(last_train))
+    axs[1].set(title="Training data Fourier Modes")
+    axs[1].set(xlabel="Wavenumber")
+    axs[1].set(ylabel="Magnitude")
     return ax
 
 

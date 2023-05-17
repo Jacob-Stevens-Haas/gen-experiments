@@ -48,7 +48,12 @@ def lookup_params(params: list[str]) -> list[Parameter]:
 ND = lambda d: NestedDict(**d)
 sim_params = {
     "test": ND({"n_trajectories": 2}),
+    "test1-r1": ND({"n_trajectories": 2, "noise_rel": .01}),
+    "test-r2": ND({"n_trajectories": 2, "noise_rel": .1}),
+    "test-r3": ND({"n_trajectories": 2, "noise_rel": .3}),
     "10x": ND({"n_trajectories": 10}),
+    "10x-r1": ND({"n_trajectories": 10, "noise_rel": .01}),
+    "10x-r2": ND({"n_trajectories": 10, "noise_rel": .05}),
     "test2": ND({"n_trajectories": 2, "noise_abs": 0.4}),
     "med-noise": ND({"n_trajectories": 2, "noise_abs": 0.8}),
     "hi-noise": ND({"n_trajectories": 2, "noise_abs": 2}),
@@ -141,6 +146,7 @@ grid_params = {
     "tv1": ["diff_params.alpha"],
     "lorenzk": ["sim_params.t_end", "sim_params.noise_abs", "diff_params.alpha"],
     "lorenz1": ["sim_params.t_end", "sim_params.noise_abs"],
+    "rel_noise": ["sim_params.t_end", "sim_params.noise_rel"],
 }
 grid_vals = {
     "test": [[5, 10, 15, 20]],
@@ -149,6 +155,7 @@ grid_vals = {
     "lorenzk": ParamDetails([[1, 9, 27], [0.1, 0.8], np.logspace(-6, -1, 4)], [np]),
     "lorenz1": [[1, 3, 9, 27], [0.01, 0.1, 1]],
     "lorenz2": [[.25, 1, 4, 16], [0.1, .5, 1, 2, 4, 8]],
+    "rel_noise": [[.25, 1, 4, 16], [0.05, .1, .15, .2, .25, .3]],
 }
 grid_decisions = {
     "test": ["plot"],
