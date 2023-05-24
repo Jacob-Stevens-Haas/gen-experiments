@@ -351,7 +351,6 @@ def _make_model(
 
 def plot_training_data(last_train, last_train_true, smoothed_last_train):
     """Plot training data (and smoothed training data, if different)."""
-    ax = plt.gca()
     fig, axs = plt.subplots(1, 2, figsize=(12, 6))
     if last_train.shape[1] == 2:
         axs[0].plot(

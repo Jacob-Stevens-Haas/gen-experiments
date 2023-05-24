@@ -48,7 +48,7 @@ def lookup_params(params: list[str]) -> list[Parameter]:
 ND = lambda d: NestedDict(**d)
 sim_params = {
     "test": ND({"n_trajectories": 2}),
-    "test1-r1": ND({"n_trajectories": 2, "noise_rel": .01}),
+    "test-r1": ND({"n_trajectories": 2, "noise_rel": .01}),
     "test-r2": ND({"n_trajectories": 2, "noise_rel": .1}),
     "test-r3": ND({"n_trajectories": 2, "noise_rel": .3}),
     "10x": ND({"n_trajectories": 10}),
@@ -56,6 +56,7 @@ sim_params = {
     "10x-r2": ND({"n_trajectories": 10, "noise_rel": .05}),
     "test2": ND({"n_trajectories": 2, "noise_abs": 0.4}),
     "med-noise": ND({"n_trajectories": 2, "noise_abs": 0.8}),
+    "med-noise-many": ND({"n_trajectories": 10, "noise_abs": 0.8}),
     "hi-noise": ND({"n_trajectories": 2, "noise_abs": 2}),
 }
 diff_params = {
@@ -66,6 +67,7 @@ diff_params = {
     "sfd-nox": ND({"diffcls": "SmoothedFiniteDifference", "save_smooth": False}),
     "sfd-ps": ND({"diffcls": "SmoothedFiniteDifference"}),
     "kalman": ND({"diffcls": "sindy", "kind": "kalman", "alpha": 0.000055}),
+    "kalman-auto": ND({"diffcls": "sindy", "kind": "kalman", "alpha": None, "meas_var": .8}),
 }
 feat_params = {
     "test": ND({"featcls": "Polynomial"}),
@@ -80,12 +82,17 @@ opt_params = {
         ND({"optcls": "ensemble", "opt": ps.STLSQ(), "bagging": True, "n_models": 20}),
         [ps],
     ),
+    "ensmio-lorenz": ParamDetails(
+        ND({"optcls": "ensemble", "opt": ps.MIOSR(target_sparsity=7), "bagging": True, "n_models": 20}),
+        [ps],
+    ),
 }
 
 # Grid search parameters
 metrics = {
     "test": ["coeff_f1", "coeff_mae"],
     "lorenzk": ["coeff_f1", "coeff_precision", "coeff_recall", "coeff_mae"],
+    "1": ["coeff_f1", "coeff_precision", "coeff_mse", "coeff_mae"],
 }
 other_params = {
     "test": ND(
@@ -140,12 +147,19 @@ other_params = {
             "opt_params": opt_params["enslsq"].vals,
         }), [ps]
     ),
+    "abs-exp3": ParamDetails(ND(
+        {
+            "sim_params": sim_params["med-noise-many"],
+            "feat_params": feat_params["cubic"],
+            "opt_params": opt_params["ensmio-lorenz"].vals,
+        }), [ps]
+    ),
 }
 grid_params = {
     "test": ["sim_params.t_end"],
     "tv1": ["diff_params.alpha"],
     "lorenzk": ["sim_params.t_end", "sim_params.noise_abs", "diff_params.alpha"],
-    "lorenz1": ["sim_params.t_end", "sim_params.noise_abs"],
+    "duration-absnoise": ["sim_params.t_end", "sim_params.noise_abs"],
     "rel_noise": ["sim_params.t_end", "sim_params.noise_rel"],
 }
 grid_vals = {
@@ -174,6 +188,12 @@ diff_series = {
         diff_params["kalman"],
         ["diff_params.alpha"],
         [np.logspace(-4, 0, 5)],
+    ),
+    "kalman-auto": SeriesDef(
+        "Kalman",
+        diff_params["kalman"],
+        ["diff_params.alpha", "diff_params.meas_var"],
+        [(None,), (.8,)],
     ),
     "tv1": SeriesDef(
         "Total Variation",
@@ -219,6 +239,18 @@ series_params = {
             "Differentiation Method",
             [
                 diff_series["kalman2"],
+                diff_series["tv2"],
+                diff_series["sg2"],
+            ],
+        ),
+        [np],
+    ),
+    "lorenz-auto": ParamDetails(
+        SeriesList(
+            "diff_params",
+            "Differentiation Method",
+            [
+                diff_series["kalman-auto"],
                 diff_series["tv2"],
                 diff_series["sg2"],
             ],

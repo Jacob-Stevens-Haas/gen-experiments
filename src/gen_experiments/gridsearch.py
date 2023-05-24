@@ -1,5 +1,6 @@
 from typing import Iterable, Sequence, Optional
 
+from scipy.stats import kstest
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -108,8 +109,23 @@ def plot(fig, subplots, metrics, grid_params, grid_vals, grid_searches, name, le
         for col, (param_name, x_ticks, param_search) in enumerate(
             zip(grid_params, grid_vals, grid_searches)
         ):
-            ax = subplots[m_ind_row, col]
             ax.plot(x_ticks, param_search[m_ind_row], label=name)
+            if m_name in ("coeff_mse", "coeff_mae"):
+                ax.set_yscale("log")
+            x_ticks_normalized = (
+                (x_ticks - x_ticks.min())
+                / (x_ticks.max() - x_ticks.min())
+            )
+            x_ticks_lognormalized = (
+                (np.log(x_ticks) - np.log(x_ticks).min())
+                / (np.log(x_ticks.max()) - np.log(x_ticks).min())
+            )
+            ax = subplots[m_ind_row, col]
+            if (
+                kstest(x_ticks_normalized, "uniform")
+                < kstest(x_ticks_lognormalized, "uniform")
+            ):
+                ax.set_xscale("log")
             if m_ind_row == 0:
                 ax.set_title(f"{param_name}")
             if col == 0:
