@@ -154,6 +154,13 @@ other_params = {
             "opt_params": opt_params["ensmio-lorenz"].vals,
         }), [ps]
     ),
+    "rel-exp3-lorenz": ParamDetails(ND(
+        {
+            "sim_params": sim_params["10x"],
+            "feat_params": feat_params["cubic"],
+            "opt_params": opt_params["ensmio-lorenz"].vals,
+        }), [ps]
+    ),
 }
 grid_params = {
     "test": ["sim_params.t_end"],
@@ -174,7 +181,7 @@ grid_vals = {
 grid_decisions = {
     "test": ["plot"],
     "lorenzk": ["plot", "plot", "max"],
-    "lorenz1": ["plot", "plot"],
+    "plot2": ["plot", "plot"],
 }
 diff_series = {
     "kalman1": SeriesDef(
@@ -189,7 +196,7 @@ diff_series = {
         ["diff_params.alpha"],
         [np.logspace(-4, 0, 5)],
     ),
-    "kalman-auto": SeriesDef(
+    "lorenz-auto": SeriesDef(
         "Kalman",
         diff_params["kalman"],
         ["diff_params.alpha", "diff_params.meas_var"],
@@ -245,12 +252,12 @@ series_params = {
         ),
         [np],
     ),
-    "lorenz-auto": ParamDetails(
+    "kalman-auto": ParamDetails(
         SeriesList(
             "diff_params",
             "Differentiation Method",
             [
-                diff_series["kalman-auto"],
+                diff_series["lorenz-auto"],
                 diff_series["tv2"],
                 diff_series["sg2"],
             ],

@@ -2,6 +2,7 @@ commit-msg
 todo
 gen_experiments/trials/
 scratch/*.ipynb
+scratch/run_exps.sh
 
 # IDE files
 .vscode
