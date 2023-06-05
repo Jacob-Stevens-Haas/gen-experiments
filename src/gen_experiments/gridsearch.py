@@ -29,7 +29,7 @@ def run(
             experiment
         grid_vals: kwarg values to grid.  Indices match grid_params
         grid_decisions: What to do with each grid param, e.g.
-            {"plot", "max"}.  Indices match grid_params.
+            {"plot", "best"}.  Indices match grid_params.
         other_params: a dict of other kwargs to pass to experiment
         metrics: names of metrics to record from each wrapped experiment
         display: whether to plot results.
@@ -164,7 +164,7 @@ def _ndindex_skinny(
     Args:
         shape: array shape
         thin_axes: axes for which you don't want the cross product
-        where_axes: the indexes for other thin axes when traversing
+        thin_slices: the indexes for other thin axes when traversing
             a particular thin axis. Defaults to 0th index
     """
     if thin_axes is None and thin_slices is None:
@@ -180,7 +180,8 @@ def _ndindex_skinny(
     def ind_checker(multi_index):
         """Check if a multi_index meets thin index criteria"""
         for ax, where_others in zip(thin_axes, thin_slices):
-            other_axes = set(thin_axes) - {ax}
+            other_axes = list(thin_axes)
+            other_axes.remove(ax)
             if all(
                 # to handle negative slice indexes
                 multi_index[ax] == range(shape[ax])[slice_ind]
