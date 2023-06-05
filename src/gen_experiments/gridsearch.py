@@ -1,4 +1,4 @@
-from typing import Iterable, Sequence, Optional
+from typing import Iterable, Sequence, Optional, Callable
 
 from scipy.stats import kstest
 import matplotlib.pyplot as plt
@@ -52,7 +52,9 @@ def run(
         new_grid_vals: list = grid_vals + series_data.grid_vals
         new_grid_params = grid_params + series_data.grid_params
         new_grid_decisions = grid_decisions + len(series_data.grid_params) * ["best"]
-        ind_plot = [ind for ind, decision in enumerate(new_grid_decisions)]
+        ind_plot = [
+            ind for ind, decide in enumerate(new_grid_decisions) if decide=="plot"
+        ]
         full_results_shape = (len(metrics), *(len(grid) for grid in new_grid_vals))
         full_results = np.empty(full_results_shape)
         full_results.fill(-np.inf)
@@ -147,11 +149,11 @@ def _marginalize_grid_views(
         grid_searches.append(selection_results)
     return grid_searches
 
-
+OtherDef = tuple[int | Callable]
 def _ndindex_skinny(
         shape: tuple[int],
         thin_axes: Optional[Sequence[int]] = None,
-        thin_slices: Optional[Sequence[tuple | int]] = None
+        thin_slices: Optional[Sequence[OtherDef]] = None
     ):
     """
     Return an iterator like ndindex, but only traverse thin_axes once
@@ -166,6 +168,12 @@ def _ndindex_skinny(
         thin_axes: axes for which you don't want the cross product
         thin_slices: the indexes for other thin axes when traversing
             a particular thin axis. Defaults to 0th index
+
+    Example:
+
+    >>> set(_ndindex_skinny((2,2), (0,1), ((0,), (lambda x: x,))))
+
+    {(0, 0), (0, 1), (1, 1)}
     """
     if thin_axes is None and thin_slices is None:
         thin_axes = tuple()
@@ -179,16 +187,19 @@ def _ndindex_skinny(
 
     def ind_checker(multi_index):
         """Check if a multi_index meets thin index criteria"""
-        for ax, where_others in zip(thin_axes, thin_slices):
+        matches = []
+        # check whether multi_index matches criteria of any thin_axis
+        for ax1, where_others in zip(thin_axes, thin_slices):
             other_axes = list(thin_axes)
-            other_axes.remove(ax)
-            if all(
-                # to handle negative slice indexes
-                multi_index[ax] == range(shape[ax])[slice_ind]
-                for ax, slice_ind in zip(other_axes, where_others)
-            ):
-                return True
-        return False
+            other_axes.remove(ax1)
+            match = True
+            # check whether multi_index meets criteria of a particular thin_axis
+            for ax2, slice_ind in zip(other_axes, where_others):
+                if callable(slice_ind):
+                    slice_ind = slice_ind(multi_index[ax1])
+                match *= (multi_index[ax2] == range(shape[ax2])[slice_ind])
+            matches.append(match)
+        return any(matches)
 
     while True:
         try:
