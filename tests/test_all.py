@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 import gen_experiments
 from gen_experiments import gridsearch
@@ -35,5 +36,17 @@ def test_thin_indexing_default():
         (1,1,0),
         (0,0,1),
         (0,1,1),
+    }
+    assert result == expected
+
+def test_thin_indexing_callable():
+    result = set(gridsearch._ndindex_skinny((2,2,2), (0,2), ((0,), (lambda x: x,))))
+    expected = {
+        (0,0,0),
+        (0,1,0),
+        (1,0,0),
+        (1,1,0),
+        (1,0,1),
+        (1,1,1),
     }
     assert result == expected
