@@ -8,6 +8,7 @@ import gen_experiments
 from gen_experiments.utils import NestedDict, SeriesList, SeriesDef
 
 name = "gridsearch"
+OtherSliceDef = tuple[int | Callable]
 
 
 def run(
@@ -20,6 +21,7 @@ def run(
     series_params: Optional[SeriesList] = None,
     metrics: Optional[Sequence] = None,
     display: bool = True,
+    skinny_specs: Optional[tuple[tuple[str, ...], tuple[OtherSliceDef, ...]]] = None,
 ):
     """Run a grid-search wrapper of an experiment.
 
@@ -33,6 +35,12 @@ def run(
         other_params: a dict of other kwargs to pass to experiment
         metrics: names of metrics to record from each wrapped experiment
         display: whether to plot results.
+        skinny_specs: Allow only conducting some of the grid search,
+            where axes are all searched, but not all combinates are
+            searched.  The first element is a sequence of grid_names to
+            skinnify.  The second is the thin_slices criteria (see
+            docstring for _ndindex_skinny).  By default, all plot axes
+            are made skinny with respect to each other.
     """
     other_params = NestedDict(**other_params)
     base_ex, base_group = gen_experiments.experiments[ex_name]
@@ -52,13 +60,18 @@ def run(
         new_grid_vals: list = grid_vals + series_data.grid_vals
         new_grid_params = grid_params + series_data.grid_params
         new_grid_decisions = grid_decisions + len(series_data.grid_params) * ["best"]
-        ind_plot = [
-            ind for ind, decide in enumerate(new_grid_decisions) if decide=="plot"
-        ]
+        if skinny_specs is not None:
+            ind_plot = [
+                ind for ind, decide in enumerate(new_grid_decisions) if decide=="plot"
+            ]
+            where_others = None
+        else:
+            ind_plot = [grid_params.index(pname) for pname in skinny_specs[0]]
+            where_others = skinny_specs[1]
         full_results_shape = (len(metrics), *(len(grid) for grid in new_grid_vals))
         full_results = np.empty(full_results_shape)
         full_results.fill(-np.inf)
-        gridpoint_selector = _ndindex_skinny(full_results_shape[1:], ind_plot)
+        gridpoint_selector = _ndindex_skinny(full_results_shape[1:], ind_plot, where_others)
         rng = np.random.default_rng(seed)
         for ind in gridpoint_selector:
             new_seed = rng.integers(1000)
@@ -149,11 +162,10 @@ def _marginalize_grid_views(
         grid_searches.append(selection_results)
     return grid_searches
 
-OtherDef = tuple[int | Callable]
 def _ndindex_skinny(
         shape: tuple[int],
         thin_axes: Optional[Sequence[int]] = None,
-        thin_slices: Optional[Sequence[OtherDef]] = None
+        thin_slices: Optional[Sequence[OtherSliceDef]] = None
     ):
     """
     Return an iterator like ndindex, but only traverse thin_axes once
