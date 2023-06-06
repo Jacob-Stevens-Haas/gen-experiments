@@ -424,7 +424,7 @@ def plot_training_data(last_train, last_train_true, smoothed_last_train):
     axs[1].set(title="Training data Fourier Modes")
     axs[1].set(xlabel="Wavenumber")
     axs[1].set(ylabel="Magnitude")
-    return ax
+    return axs
 
 
 def plot_test_trajectories(last_test, model, dt):
