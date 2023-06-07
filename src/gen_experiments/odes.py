@@ -17,6 +17,8 @@ name = "odes"
 p_duff = [0.2, 0.05, 1]
 p_lotka = [1, 10]
 p_ross = [0.2, 0.2, 5.7]
+p_hopf = [-0.05, 1, 1]
+
 ode_setup = {
     "duff": {
         "rhsfunc": ps.utils.odes.duffing,
@@ -48,6 +50,48 @@ ode_setup = {
             {"1": p_ross[1], "z": -p_ross[2], "x z": 1},
         ],
     },
+    "lorenz": {
+        "rhsfunc": ps.utils.lorenz,
+        "input_features": ["x", "y", "z"],
+        "coeff_true": [
+            {"x": -10, "y": 10},
+            {"y": 28, "y": -1, "x z": -1},
+            {"z": -8 / 3, "x y": 1},
+        ],
+        "x0_center": np.array([0, 0, 15])
+    },
+    "hopf": {
+        "rhsfunc": ps.utils.hopf,
+        "input_features": ["x", "y"],
+        "coeff_true": [
+            {"x": p_hopf[0], "y": -p_hopf[1], "x^3": -p_hopf[2], "x y^2": -p_hopf[2]},
+            {"x": p_hopf[1], "y": p_hopf[0], "x^2 y": -p_hopf[2], "y^3": -p_hopf[2]},
+        ],
+    },
+    "sho": {
+        "rhsfunc": ps.utils.linear_damped_SHO,
+        "input_features": ["x", "y"],
+        "coeff_true": [
+            {"x": -0.1, "y": 2},
+            {"x": -2, "y": -0.1},
+        ]
+    },
+    "cubic_ho": {
+        "rhsfunc": ps.utils.cubic_damped_SHO,
+        "input_features": ["x", "y"],
+        "coeff_true": [
+            {"x^3": -0.1, "y^3": 2},
+            {"x^3": -2, "y^3": -0.1},
+        ]
+    },
+    "vdp": {
+        "rhsfunc": ps.utils.van_der_pol,
+        "input_features": ["x", "x'"],
+        "coeff_true": [
+            {"x'": 1},
+            {"x": -1, "x'": 0.5, "x^2 x'": -0.5},
+        ]
+    },
 }
 
 
@@ -67,7 +111,7 @@ def run(
     try:
         x0_center = ode_setup[group]["x0_center"]
     except KeyError:
-        x0_center = np.zeros(len(input_features))
+        x0_center = None
     try:
         nonnegative = ode_setup[group]["nonnegative"]
     except KeyError:
@@ -102,13 +146,3 @@ def run(
     metrics = coeff_metrics(coefficients, coeff_true)
     metrics.update(integration_metrics(model, x_test, t_train, x_dot_test))
     return metrics
-
-
-if __name__ == "__main__":
-    exp = "duffing"
-    exp.run(
-        seed=1,
-        group_name="duffing",
-        diff_params={"kind": "FiniteDifference"},
-        opt_params={"kind": "stlsq"},
-    )

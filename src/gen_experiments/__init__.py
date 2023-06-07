@@ -3,25 +3,20 @@ import pysindy as ps
 
 from mitosis import Parameter
 
-from . import sho
-from . import lorenz
 from . import nonlinear_pendulum
-from . import cubic_oscillator
-from . import vanderpol
-from . import hopf
 from . import odes
 from . import lorenz_missing
 from . import gridsearch
 from .utils import NestedDict, ParamDetails, SeriesDef, SeriesList
 
 experiments = {
-    "sho": (sho, None),
-    "lorenz": (lorenz, None),
+    "sho": (odes, "sho"),
+    "lorenz": (odes, "lorenz"),
     "lorenz_2d": (lorenz_missing, None),
     "pendulum": (nonlinear_pendulum, None),
-    "cubic_ho": (cubic_oscillator, None),
-    "vdp": (vanderpol, None),
-    "hopf": (hopf, None),
+    "cubic_ho": (odes, "cubic_ho"),
+    "vdp": (odes, "vdp"),
+    "hopf": (odes, "hopf"),
     "duff": (odes, "duff"),
     "lv": (odes, "lv"),
     "ross": (odes, "ross"),

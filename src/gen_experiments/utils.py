@@ -65,8 +65,8 @@ def gen_data(
     t_train = np.arange(0, t_end, dt)
     t_train_span = (t_train[0], t_train[-1])
     if nonnegative:
-        shape = (x0_center / ic_stdev) ** 2
-        scale = ic_stdev**2 / x0_center
+        shape = ((x0_center + 1) / ic_stdev) ** 2
+        scale = ic_stdev**2 / (x0_center + 1)
         x0_train = np.array(
             [rng.gamma(k, theta, n_trajectories) for k, theta in zip(shape, scale)]
         ).T
@@ -257,10 +257,14 @@ def coeff_metrics(coefficients, coeff_true):
 
 def integration_metrics(model, x_test, t_train, x_dot_test):
     metrics = {}
-    metrics["mse"] = model.score(
-        x_test, t_train, x_dot_test, multiple_trajectories=True
+    metrics["mse-plot"] = model.score(
+        x_test,
+        t_train,
+        x_dot_test,
+        multiple_trajectories=True,
+        metric=sklearn.metrics.mean_squared_error,
     )
-    metrics["mae"] = model.score(
+    metrics["mae-plot"] = model.score(
         x_test,
         t_train,
         x_dot_test,
