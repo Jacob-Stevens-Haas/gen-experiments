@@ -195,7 +195,7 @@ diff_series = {
         "Kalman",
         diff_params["kalman"],
         ["diff_params.alpha", "diff_params.meas_var"],
-        [(None,), (.8,)],
+        [(None,), (0.1, .5, 1, 2, 4, 8)],
     ),
     "tv1": SeriesDef(
         "Total Variation",
@@ -259,4 +259,10 @@ series_params = {
         ),
         [np],
     ),
+}
+skinny_specs = {
+    "exp3": (
+        ("sim_params.noise_abs", "diff_params.meas_var"),
+        (lambda x: x, lambda x: x)
+    )
 }

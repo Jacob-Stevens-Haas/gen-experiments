@@ -20,7 +20,7 @@ def run(
     other_params: dict,
     series_params: Optional[SeriesList] = None,
     metrics: Optional[Sequence] = None,
-    display: bool = True,
+    plot_prefs: bool = True,
     skinny_specs: Optional[tuple[tuple[str, ...], tuple[OtherSliceDef, ...]]] = None,
 ):
     """Run a grid-search wrapper of an experiment.
@@ -34,7 +34,9 @@ def run(
             {"plot", "best"}.  Indices match grid_params.
         other_params: a dict of other kwargs to pass to experiment
         metrics: names of metrics to record from each wrapped experiment
-        display: whether to plot results.
+        plot_prefs: whether to plot results, and if so, a function to
+            intercept and modify plot data.  Use this for applying any
+            scaling or conversions.
         skinny_specs: Allow only conducting some of the grid search,
             where axes are all searched, but not all combinates are
             searched.  The first element is a sequence of grid_names to
@@ -86,7 +88,8 @@ def run(
             ]
         grid_searches.append(_marginalize_grid_views(new_grid_decisions, full_results))
 
-    if display:
+    if plot_prefs:
+        grid_vals, grid_params = plot_prefs(grid_vals, grid_params, )
         fig, subplots = plt.subplots(
             n_metrics,
             n_plotparams,
