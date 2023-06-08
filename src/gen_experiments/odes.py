@@ -153,7 +153,8 @@ def run(
                 "x_train": x_train,
                 "x_test": x_test,
                 "x_dot_test": x_dot_test,
-                "x_train_true": x_train_true
+                "x_train_true": x_train_true,
+                "model": model,
             }
         )
     return metrics

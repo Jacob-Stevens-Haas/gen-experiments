@@ -79,7 +79,7 @@ def run(
                 other_params[key] = val_list[axis_ind]
                 curr_results = base_ex.run(new_seed, **other_params, display=False, return_all=True)
                 if base_ex == gen_experiments.odes:
-                    sim_data = curr_results[1]
+                    trial_data = curr_results[1]
                     curr_results = curr_results[0]
             full_results[(slice(None), *ind)] = [
                 curr_results[metric] for metric in metrics
@@ -117,8 +117,16 @@ def run(
         if base_ex == gen_experiments.odes:
             # x_train_true = curr_data["x_train_true"]
             # calc_rel_noise = gen_experiments.utils._max_amplitude()
+            x_train = trial_data["x_train"][-1]
+            x_true = trial_data["x_train_true"][-1]
+            x_smooth = trial_data["model"].differentiation_method.smoothed_x_
             fig = plt.figure()
-            fig.plot(sim_data["x_train"][-1])
+            ax = fig.gca()
+            ax.se_title("How effectively did differentiation method smooth the noisy data?")
+            ax.plot(x_train[:, 0], x_train[:, 1], "rx", label="measured")
+            ax.plot(x_true[:, 0], x_true[:, 1], "g-", label="true")
+            ax.plot(x_smooth[:,0], x_smooth[:, 1], "k-", label="smoothed")
+            ax.legend()
 
     main_metric_ind = metrics.index("main") if "main" in metrics else 0
     return {
