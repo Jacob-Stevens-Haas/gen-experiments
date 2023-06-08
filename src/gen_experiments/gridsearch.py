@@ -1,14 +1,31 @@
 from typing import Iterable, Sequence, Optional, Callable
+from dataclasses import dataclass, field
 
 from scipy.stats import kstest
 import matplotlib.pyplot as plt
 import numpy as np
 
 import gen_experiments
-from gen_experiments.utils import NestedDict, SeriesList, SeriesDef
-
+from gen_experiments.utils import (
+    NestedDict,
+    SeriesList,
+    SeriesDef,
+    plot_training_data,
+    plot_test_trajectories,
+    compare_coefficient_plots
+)
 name = "gridsearch"
 OtherSliceDef = tuple[int | Callable]
+
+
+@dataclass(frozen=True)
+class _PlotPrefs:
+    plot: bool = True
+    rel_noise: bool = False
+    grid_plot_match: dict = field(default_factory=dict)
+
+    def __bool__(self):
+        return self.plot
 
 
 def run(
@@ -20,7 +37,7 @@ def run(
     other_params: dict,
     series_params: Optional[SeriesList] = None,
     metrics: Optional[Sequence] = None,
-    display: bool = True,
+    plot_prefs: _PlotPrefs = _PlotPrefs(True, False, ()),
     skinny_specs: Optional[tuple[tuple[str, ...], tuple[OtherSliceDef, ...]]] = None,
 ):
     """Run a grid-search wrapper of an experiment.
@@ -34,7 +51,9 @@ def run(
             {"plot", "best"}.  Indices match grid_params.
         other_params: a dict of other kwargs to pass to experiment
         metrics: names of metrics to record from each wrapped experiment
-        display: whether to plot results.
+        plot_prefs: whether to plot results, and if so, a function to
+            intercept and modify plot data.  Use this for applying any
+            scaling or conversions.
         skinny_specs: Allow only conducting some of the grid search,
             where axes are all searched, but not all combinates are
             searched.  The first element is a sequence of grid_names to
@@ -77,16 +96,18 @@ def run(
             new_seed = rng.integers(1000)
             for axis_ind, key, val_list in zip(ind, new_grid_params, new_grid_vals):
                 other_params[key] = val_list[axis_ind]
-                curr_results = base_ex.run(new_seed, **other_params, display=False, return_all=True)
-                if base_ex == gen_experiments.odes:
-                    trial_data = curr_results[1]
-                    curr_results = curr_results[0]
+            curr_results = base_ex.run(new_seed, **other_params, display=False, return_all=True)
+            if base_ex == gen_experiments.odes:
+                if _params_match(other_params, plot_prefs.grid_plot_match):
+                    plot_gridpoint(curr_results[1], other_params)
+                curr_results = curr_results[0]
             full_results[(slice(None), *ind)] = [
                 curr_results[metric] for metric in metrics
             ]
         grid_searches.append(_marginalize_grid_views(new_grid_decisions, full_results))
 
-    if display:
+    if plot_prefs:
+        # grid_vals, grid_params = plot_prefs(grid_vals, grid_params)
         fig, subplots = plt.subplots(
             n_metrics,
             n_plotparams,
@@ -114,19 +135,6 @@ def run(
             title = f"Grid Search in {ex_name}"
         fig.suptitle(title)
         fig.tight_layout()
-        if base_ex == gen_experiments.odes:
-            # x_train_true = curr_data["x_train_true"]
-            # calc_rel_noise = gen_experiments.utils._max_amplitude()
-            x_train = trial_data["x_train"][-1]
-            x_true = trial_data["x_train_true"][-1]
-            x_smooth = trial_data["model"].differentiation_method.smoothed_x_
-            fig = plt.figure()
-            ax = fig.gca()
-            ax.se_title("How effectively did differentiation method smooth the noisy data?")
-            ax.plot(x_train[:, 0], x_train[:, 1], "rx", label="measured")
-            ax.plot(x_true[:, 0], x_true[:, 1], "g-", label="true")
-            ax.plot(x_smooth[:,0], x_smooth[:, 1], "k-", label="smoothed")
-            ax.legend()
 
     main_metric_ind = metrics.index("main") if "main" in metrics else 0
     return {
@@ -167,6 +175,32 @@ def plot(fig, subplots, metrics, grid_params, grid_vals, grid_searches, name, le
         ax.legend()
 
 
+def _params_match(exp_params, plot_prefs) -> bool:
+    """Determine whether experimental parameters match a specification"""
+    for pref_or in plot_prefs:
+        if all(exp_params[param] == value for param, value in pref_or.items()):
+            return True
+    return False
+
+
+def plot_gridpoint(grid_data: dict, other_params: dict):
+    print("Results for params: ", other_params)
+    sim_ind = -1
+    x_train = grid_data["x_train"][sim_ind]
+    x_true = grid_data["x_train_true"][sim_ind]
+    model = grid_data["model"]
+    model.print()
+    smooth_train = model.differentiation_method.smoothed_x_
+    plot_training_data(x_train, x_true, smooth_train)
+    compare_coefficient_plots(
+        grid_data["coefficients"],
+        grid_data["coeff_true"],
+        input_features=grid_data["input_features"],
+        feature_names=grid_data["feature_names"],
+    )
+    plot_test_trajectories(grid_data["x_test"][sim_ind], model, grid_data["dt"])
+
+
 def _marginalize_grid_views(
     grid_decision: Iterable, results: np.ndarray
 ) -> list[np.ndarray]:
@@ -195,7 +229,8 @@ def _ndindex_skinny(
 
     Args:
         shape: array shape
-        thin_axes: axes for which you don't want the cross product
+        thin_axes: axes for which you don't want the product of all
+            indexes
         thin_slices: the indexes for other thin axes when traversing
             a particular thin axis. Defaults to 0th index
 

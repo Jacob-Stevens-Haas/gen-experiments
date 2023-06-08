@@ -50,3 +50,9 @@ def test_thin_indexing_callable():
         (1,1,1),
     }
     assert result == expected
+
+
+def test_plot_param_match():
+    plot_prefs = {"sim_params.t_end": 20}
+    exp_params = {"sim_params"}
+    _params_match(exp_params, plot_prefs)

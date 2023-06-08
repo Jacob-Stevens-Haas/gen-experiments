@@ -279,13 +279,11 @@ def unionize_coeff_matrices(
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Reformat true coefficients and coefficient matrix compatibly
 
-
     In order to calculate accuracy metrics between true and estimated
     coefficients, this function compares the names of true coefficients
-    and a the fitted model's features in order to create comparable true
-    and estimated coefficient matrices.
-
-    That is, it embeds the correct coefficient matrix and the estimated
+    and a the fitted model's features in order to create comparable 
+    (i.e. non-ragged) true and estimated coefficient matrices.  In
+    a word, it stacks the correct coefficient matrix and the estimated
     coefficient matrix in a matrix that represents the union of true
     features and modeled features.
 
@@ -553,7 +551,10 @@ class SeriesList:
 
 class NestedDict(defaultdict):
     def __missing__(self, key):
-        prefix, subkey = key.split(".", 1)
+        try:
+            prefix, subkey = key.split(".", 1)
+        except ValueError:
+            raise KeyError(key)
         return self[prefix][subkey]
 
     def __setitem__(self, key, value):

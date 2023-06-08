@@ -149,6 +149,11 @@ def run(
     if return_all:
         return (
             metrics, {
+                "dt": dt,
+                "coeff_true": coeff_true,
+                "coefficients": coefficients,
+                "feature_names": feature_names,
+                "input_features": input_features,
                 "t_train": t_train,
                 "x_train": x_train,
                 "x_test": x_test,
