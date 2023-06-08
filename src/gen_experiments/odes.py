@@ -104,6 +104,7 @@ def run(
     feat_params: dict,
     opt_params: dict,
     display: bool = True,
+    return_all: bool = False,
 ) -> dict:
     rhsfunc = ode_setup[group]["rhsfunc"]
     input_features = ode_setup[group]["input_features"]
@@ -145,4 +146,14 @@ def run(
     # calculate metrics
     metrics = coeff_metrics(coefficients, coeff_true)
     metrics.update(integration_metrics(model, x_test, t_train, x_dot_test))
+    if return_all:
+        return (
+            metrics, {
+                "t_train": t_train,
+                "x_train": x_train,
+                "x_test": x_test,
+                "x_dot_test": x_dot_test,
+                "x_train_true": x_train_true
+            }
+        )
     return metrics

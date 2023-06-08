@@ -42,6 +42,7 @@ def run(
     feat_params: dict,
     opt_params: dict,
     display: bool = True,
+    **kwargs,
 ) -> dict:
     dt, t_train, x_train, x_test, x_dot_test, x_train_true = gen_data(
         nonlinear_pendulum, 2, seed, ic_stdev=1, **sim_params

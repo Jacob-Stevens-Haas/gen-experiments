@@ -109,7 +109,7 @@ def gen_data(
     x_dot_test = np.array([[rhs_func(0, xij) for xij in xi] for xi in x_test])
     x_train_true = np.copy(x_train)
     if noise_rel is not None:
-        noise_abs = _max_amplitude(x_dot_test) * noise_rel
+        noise_abs = _max_amplitude(x_test) * noise_rel
     x_train = x_train + noise_abs * rng.standard_normal(x_train.shape)
     x_train = [xi for xi in x_train]
     x_test = [xi for xi in x_test]

@@ -23,6 +23,7 @@ def run(
     feat_params: dict,
     opt_params: dict,
     display: bool = True,
+    **kwargs
 ) -> dict:
     x0_center = np.array([0, 0, 15])
     dt, t_train, x_train, x_test, x_dot_test, x_train_true = gen_data(
@@ -39,10 +40,7 @@ def run(
     model.fit(x_train, quiet=True, multiple_trajectories=True)
     coeff_true = [
         {"x": -10, "y": 10},
-        {
-            "x": 28,
-            "y": -1,
-        },
+        {"x": 28, "y": -1},
     ]
     coeff_true, coefficients, feature_names = unionize_coeff_matrices(model, coeff_true)
 

@@ -61,13 +61,13 @@ def run(
         new_grid_params = grid_params + series_data.grid_params
         new_grid_decisions = grid_decisions + len(series_data.grid_params) * ["best"]
         if skinny_specs is not None:
+            ind_plot = [grid_params.index(pname) for pname in skinny_specs[0]]
+            where_others = skinny_specs[1]
+        else:
             ind_plot = [
                 ind for ind, decide in enumerate(new_grid_decisions) if decide=="plot"
             ]
             where_others = None
-        else:
-            ind_plot = [grid_params.index(pname) for pname in skinny_specs[0]]
-            where_others = skinny_specs[1]
         full_results_shape = (len(metrics), *(len(grid) for grid in new_grid_vals))
         full_results = np.empty(full_results_shape)
         full_results.fill(-np.inf)
@@ -77,7 +77,10 @@ def run(
             new_seed = rng.integers(1000)
             for axis_ind, key, val_list in zip(ind, new_grid_params, new_grid_vals):
                 other_params[key] = val_list[axis_ind]
-            curr_results = base_ex.run(new_seed, **other_params, display=False)
+                curr_results = base_ex.run(new_seed, **other_params, display=False, return_all=True)
+                if base_ex == gen_experiments.odes:
+                    sim_data = curr_results[1]
+                    curr_results = curr_results[0]
             full_results[(slice(None), *ind)] = [
                 curr_results[metric] for metric in metrics
             ]
@@ -111,6 +114,11 @@ def run(
             title = f"Grid Search in {ex_name}"
         fig.suptitle(title)
         fig.tight_layout()
+        if base_ex == gen_experiments.odes:
+            # x_train_true = curr_data["x_train_true"]
+            # calc_rel_noise = gen_experiments.utils._max_amplitude()
+            fig = plt.figure()
+            fig.plot(sim_data["x_train"][-1])
 
     main_metric_ind = metrics.index("main") if "main" in metrics else 0
     return {
@@ -124,7 +132,9 @@ def plot(fig, subplots, metrics, grid_params, grid_vals, grid_searches, name, le
         for col, (param_name, x_ticks, param_search) in enumerate(
             zip(grid_params, grid_vals, grid_searches)
         ):
+            ax = subplots[m_ind_row, col]
             ax.plot(x_ticks, param_search[m_ind_row], label=name)
+            x_ticks = np.array(x_ticks)
             if m_name in ("coeff_mse", "coeff_mae"):
                 ax.set_yscale("log")
             x_ticks_normalized = (
