@@ -422,8 +422,8 @@ def plot_training_data(last_train, last_train_true, smoothed_last_train):
         raise ValueError("Can only plot 2d or 3d data.")
     axs[0].set(title="Training data")
     axs[0].legend()
-    axs[1].semilogy(np.abs(scipy.fft.rfft(last_train, axis=0))/len(last_train))
-    axs[1].set(title="Training data Fourier Modes")
+    axs[1].loglog(np.abs(scipy.fft.rfft(last_train, axis=0))/len(last_train))
+    axs[1].set(title="Training Data Absolute Spectral Density")
     axs[1].set(xlabel="Wavenumber")
     axs[1].set(ylabel="Magnitude")
     return axs
