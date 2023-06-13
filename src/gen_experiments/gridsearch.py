@@ -1,5 +1,4 @@
 from typing import Iterable, Sequence, Optional, Callable
-from dataclasses import dataclass, field
 
 from scipy.stats import kstest
 import matplotlib.pyplot as plt
@@ -7,6 +6,7 @@ import numpy as np
 
 import gen_experiments
 from gen_experiments.utils import (
+    _PlotPrefs,
     NestedDict,
     SeriesList,
     SeriesDef,
@@ -16,16 +16,6 @@ from gen_experiments.utils import (
 )
 name = "gridsearch"
 OtherSliceDef = tuple[int | Callable]
-
-
-@dataclass(frozen=True)
-class _PlotPrefs:
-    plot: bool = True
-    rel_noise: bool = False
-    grid_plot_match: dict = field(default_factory=dict)
-
-    def __bool__(self):
-        return self.plot
 
 
 def run(
@@ -69,6 +59,7 @@ def run(
     else:
         legends = True
     n_metrics = len(metrics)
+    plot_prefs = _PlotPrefs(True, False, ({"sim_params.t_end": 20},))
     n_plotparams = len([decide for decide in grid_decisions if decide == "plot"])
     grid_searches = []
     if base_group is not None:

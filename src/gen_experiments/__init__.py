@@ -7,7 +7,7 @@ from . import nonlinear_pendulum
 from . import odes
 from . import lorenz_missing
 from . import gridsearch
-from .utils import NestedDict, ParamDetails, SeriesDef, SeriesList
+from .utils import NestedDict, ParamDetails, SeriesDef, SeriesList, _PlotPrefs
 
 experiments = {
     "sho": (odes, "sho"),
@@ -41,6 +41,9 @@ def lookup_params(params: list[str]) -> list[Parameter]:
 
 
 ND = lambda d: NestedDict(**d)
+plot_prefs = {
+    "test": _PlotPrefs(True, False, {"sim_params.t_end": 20}),
+}
 sim_params = {
     "test": ND({"n_trajectories": 2}),
     "test-r1": ND({"n_trajectories": 2, "noise_rel": .01}),

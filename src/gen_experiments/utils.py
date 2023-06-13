@@ -1,5 +1,5 @@
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from itertools import chain
 from types import ModuleType
 from typing import Sequence, Mapping, Optional
@@ -565,3 +565,12 @@ class NestedDict(defaultdict):
             return self[prefix].__setitem__(suffix, value)
         else:
             return super().__setitem__(key, value)
+
+@dataclass(frozen=True)
+class _PlotPrefs:
+    plot: bool = True
+    rel_noise: bool = False
+    grid_plot_match: dict = field(default_factory=dict)
+
+    def __bool__(self):
+        return self.plot
