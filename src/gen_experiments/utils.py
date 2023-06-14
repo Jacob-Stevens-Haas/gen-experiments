@@ -118,7 +118,7 @@ def gen_data(
 
 
 def _max_amplitude(signal: np.ndarray):
-    return np.abs(scipy.fft.rfft(signal, axis=0)).max()/len(signal)
+    return np.abs(scipy.fft.rfft(signal, axis=0)[1:]).max()/np.sqrt(len(signal))
 
 def diff_lookup(kind):
     normalized_kind = kind.lower().replace(" ", "")
