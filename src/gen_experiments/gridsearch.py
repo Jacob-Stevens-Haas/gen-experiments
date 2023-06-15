@@ -169,8 +169,11 @@ def plot(fig, subplots, metrics, grid_params, grid_vals, grid_searches, name, le
 def _params_match(exp_params, plot_prefs) -> bool:
     """Determine whether experimental parameters match a specification"""
     for pref_or in plot_prefs:
-        if all(exp_params[param] == value for param, value in pref_or.items()):
-            return True
+        try:
+            if all(exp_params[param] == value for param, value in pref_or.items()):
+                return True
+        except KeyError:
+            pass
     return False
 
 
