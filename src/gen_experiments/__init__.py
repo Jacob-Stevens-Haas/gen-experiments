@@ -59,9 +59,20 @@ ND = lambda d: NestedDict(**d)
 plot_prefs = {
     "test": _PlotPrefs(True, False, ({"sim_params.t_end": 20},)),
     "test-absrel": ParamDetails(
-        _PlotPrefs(True, _convert_abs_rel_noise, ({"sim_params.noise_abs": 2}, )),
+        _PlotPrefs(True, _convert_abs_rel_noise, ({"sim_params.noise_abs": 1}, )),
         [utils, importlib.import_module(__name__)]
-    )
+    ),
+    "test-absrel2": ParamDetails(
+        _PlotPrefs(True, _convert_abs_rel_noise, (
+            {"sim_params.noise_abs": .1},
+            {"sim_params.noise_abs": .5},
+            {"sim_params.noise_abs": 1},
+            {"sim_params.noise_abs": 2},
+            {"sim_params.noise_abs": 4},
+            {"sim_params.noise_abs": 8},
+        )),
+        [utils, importlib.import_module(__name__)]
+    ),
 }
 sim_params = {
     "test": ND({"n_trajectories": 2}),
@@ -84,6 +95,7 @@ diff_params = {
     "sfd-nox": ND({"diffcls": "SmoothedFiniteDifference", "save_smooth": False}),
     "sfd-ps": ND({"diffcls": "SmoothedFiniteDifference"}),
     "kalman": ND({"diffcls": "sindy", "kind": "kalman", "alpha": 0.000055}),
+    "kalman-empty": ND({"diffcls": "sindy", "kind": "kalman"}),
     "kalman-auto": ND({"diffcls": "sindy", "kind": "kalman", "alpha": None, "meas_var": .8}),
 }
 feat_params = {
@@ -135,6 +147,14 @@ other_params = {
             "opt_params": opt_params["test"],
         }
     ),
+    "test-kalman-heuristic": ND(
+        {
+            "sim_params": sim_params["test"],
+            "diff_params": diff_params["kalman-empty"],
+            "feat_params": feat_params["test"],
+            "opt_params": opt_params["test"],
+        }
+    ),
     "lorenzk": ND(
         {
             "sim_params": sim_params["test"],
@@ -182,6 +202,7 @@ other_params = {
 grid_params = {
     "test": ["sim_params.t_end"],
     "abs_noise": ["sim_params.noise_abs"],
+    "abs_noise-kalman": ["sim_params.noise_abs", "diff_params.meas_var"],
     "tv1": ["diff_params.alpha"],
     "lorenzk": ["sim_params.t_end", "sim_params.noise_abs", "diff_params.alpha"],
     "duration-absnoise": ["sim_params.t_end", "sim_params.noise_abs"],
@@ -190,6 +211,7 @@ grid_params = {
 grid_vals = {
     "test": [[5, 10, 15, 20]],
     "abs_noise": [[0.1, .5, 1, 2, 4, 8]],
+    "abs_noise-kalman": [[0.1, .5, 1, 2, 4, 8], [0.1, .5, 1, 2, 4, 8]],
     "tv1": ParamDetails([np.logspace(-4, 0, 5)], [np]),
     "tv2": ParamDetails([np.logspace(-3, -1, 5)], [np]),
     "lorenzk": ParamDetails([[1, 9, 27], [0.1, 0.8], np.logspace(-6, -1, 4)], [np]),
@@ -199,6 +221,7 @@ grid_vals = {
 }
 grid_decisions = {
     "test": ["plot"],
+    "plot1": ["plot", "max"],
     "lorenzk": ["plot", "plot", "max"],
     "plot2": ["plot", "plot"],
 }
@@ -284,9 +307,22 @@ series_params = {
         [np],
     ),
 }
+
+
+# To allow pickling
+def identity(x): return x
+
+
 skinny_specs = {
-    "exp3": (
-        ("sim_params.noise_abs", "diff_params.meas_var"),
-        (lambda x: x, lambda x: x)
+    "exp3": ParamDetails(
+        (
+            ("sim_params.noise_abs", "diff_params.meas_var"),
+            ((identity,), (identity,))
+        ),
+        [importlib.import_module(__name__)]
+    ),
+    "abs_noise-kalman": ParamDetails(
+        (tuple(grid_params["abs_noise-kalman"]), ((identity,), (identity,))),
+        [importlib.import_module(__name__)]
     )
 }
