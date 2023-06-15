@@ -2,7 +2,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from itertools import chain
 from types import ModuleType
-from typing import Sequence, Mapping, Optional
+from typing import Sequence, Mapping, Optional, Collection
 from math import ceil
 
 import matplotlib.pyplot as plt
@@ -119,6 +119,7 @@ def gen_data(
 
 def _max_amplitude(signal: np.ndarray):
     return np.abs(scipy.fft.rfft(signal, axis=0)[1:]).max()/np.sqrt(len(signal))
+
 
 def diff_lookup(kind):
     normalized_kind = kind.lower().replace(" ", "")
@@ -422,7 +423,7 @@ def plot_training_data(last_train, last_train_true, smoothed_last_train):
         raise ValueError("Can only plot 2d or 3d data.")
     axs[0].set(title="Training data")
     axs[0].legend()
-    axs[1].loglog(np.abs(scipy.fft.rfft(last_train, axis=0))/len(last_train))
+    axs[1].loglog(np.abs(scipy.fft.rfft(last_train, axis=0))/np.sqrt(len(last_train)))
     axs[1].set(title="Training Data Absolute Spectral Density")
     axs[1].set(xlabel="Wavenumber")
     axs[1].set(ylabel="Magnitude")
@@ -570,7 +571,7 @@ class NestedDict(defaultdict):
 class _PlotPrefs:
     plot: bool = True
     rel_noise: bool = False
-    grid_plot_match: dict = field(default_factory=dict)
+    grid_plot_match: Collection[dict] = field(default_factory=lambda: (dict(),))
 
     def __bool__(self):
         return self.plot

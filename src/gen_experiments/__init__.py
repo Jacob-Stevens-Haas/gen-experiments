@@ -1,3 +1,5 @@
+import importlib
+
 import numpy as np
 import pysindy as ps
 
@@ -7,7 +9,10 @@ from . import nonlinear_pendulum
 from . import odes
 from . import lorenz_missing
 from . import gridsearch
-from .utils import NestedDict, ParamDetails, SeriesDef, SeriesList, _PlotPrefs
+from .utils import (
+    NestedDict, ParamDetails, SeriesDef, SeriesList, _PlotPrefs, _max_amplitude
+)
+from . import utils
 
 experiments = {
     "sho": (odes, "sho"),
@@ -40,9 +45,23 @@ def lookup_params(params: list[str]) -> list[Parameter]:
     return resolved_params
 
 
+def _convert_abs_rel_noise(grid_vals, grid_params, recent_results):
+    """Convert abs_noise grid_vals to rel_noise"""
+    signal = recent_results["x_train_true"]
+    signal_amplitude = _max_amplitude(signal)
+    ind = grid_params.index("sim_params.noise_abs")
+    grid_vals[ind] = grid_vals[ind]/signal_amplitude
+    grid_params[ind] = "sim_params.noise_rel"
+    return grid_vals, grid_params
+
+
 ND = lambda d: NestedDict(**d)
 plot_prefs = {
-    "test": _PlotPrefs(True, False, {"sim_params.t_end": 20}),
+    "test": _PlotPrefs(True, False, ({"sim_params.t_end": 20},)),
+    "test-absrel": ParamDetails(
+        _PlotPrefs(True, _convert_abs_rel_noise, ({"sim_params.noise_abs": 2}, )),
+        [utils, importlib.import_module(__name__)]
+    )
 }
 sim_params = {
     "test": ND({"n_trajectories": 2}),
@@ -162,6 +181,7 @@ other_params = {
 }
 grid_params = {
     "test": ["sim_params.t_end"],
+    "abs_noise": ["sim_params.noise_abs"],
     "tv1": ["diff_params.alpha"],
     "lorenzk": ["sim_params.t_end", "sim_params.noise_abs", "diff_params.alpha"],
     "duration-absnoise": ["sim_params.t_end", "sim_params.noise_abs"],
@@ -169,6 +189,7 @@ grid_params = {
 }
 grid_vals = {
     "test": [[5, 10, 15, 20]],
+    "abs_noise": [[0.1, .5, 1, 2, 4, 8]],
     "tv1": ParamDetails([np.logspace(-4, 0, 5)], [np]),
     "tv2": ParamDetails([np.logspace(-3, -1, 5)], [np]),
     "lorenzk": ParamDetails([[1, 9, 27], [0.1, 0.8], np.logspace(-6, -1, 4)], [np]),

@@ -48,5 +48,6 @@ mitosis.run(
     logfile=f"trials_{args.experiment}.db",
     params=params,
     trials_folder=trials_folder,
+    untracked_params=("plot_prefs",),
     addl_mods_and_names=[(gen_experiments.utils, ["NestedDict"])],
 )

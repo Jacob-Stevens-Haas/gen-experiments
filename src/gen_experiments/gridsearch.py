@@ -1,4 +1,4 @@
-from typing import Iterable, Sequence, Optional, Callable
+from typing import Iterable, Sequence, Optional, Callable, Collection
 
 from scipy.stats import kstest
 import matplotlib.pyplot as plt
@@ -12,7 +12,8 @@ from gen_experiments.utils import (
     SeriesDef,
     plot_training_data,
     plot_test_trajectories,
-    compare_coefficient_plots
+    compare_coefficient_plots,
+    _max_amplitude
 )
 name = "gridsearch"
 OtherSliceDef = tuple[int | Callable]
@@ -59,7 +60,6 @@ def run(
     else:
         legends = True
     n_metrics = len(metrics)
-    plot_prefs = _PlotPrefs(True, False, ({"sim_params.t_end": 20},))
     n_plotparams = len([decide for decide in grid_decisions if decide == "plot"])
     grid_searches = []
     if base_group is not None:
@@ -89,8 +89,9 @@ def run(
                 other_params[key] = val_list[axis_ind]
             curr_results = base_ex.run(new_seed, **other_params, display=False, return_all=True)
             if base_ex == gen_experiments.odes:
+                recent_results = curr_results[1]
                 if _params_match(other_params, plot_prefs.grid_plot_match):
-                    plot_gridpoint(curr_results[1], other_params)
+                    plot_gridpoint(recent_results, other_params)
                 curr_results = curr_results[0]
             full_results[(slice(None), *ind)] = [
                 curr_results[metric] for metric in metrics
@@ -98,7 +99,8 @@ def run(
         grid_searches.append(_marginalize_grid_views(new_grid_decisions, full_results))
 
     if plot_prefs:
-        # grid_vals, grid_params = plot_prefs(grid_vals, grid_params)
+        if plot_prefs.rel_noise:
+            grid_vals, grid_params = plot_prefs.rel_noise(grid_vals, grid_params, recent_results)
         fig, subplots = plt.subplots(
             n_metrics,
             n_plotparams,
@@ -166,9 +168,9 @@ def plot(fig, subplots, metrics, grid_params, grid_vals, grid_searches, name, le
         ax.legend()
 
 
-def _params_match(exp_params, plot_prefs) -> bool:
+def _params_match(exp_params: dict, plot_params: Collection[dict]) -> bool:
     """Determine whether experimental parameters match a specification"""
-    for pref_or in plot_prefs:
+    for pref_or in plot_params:
         try:
             if all(exp_params[param] == value for param, value in pref_or.items()):
                 return True
