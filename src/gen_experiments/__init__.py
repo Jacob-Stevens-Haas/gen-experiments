@@ -111,7 +111,19 @@ opt_params = {
         ND({"optcls": "ensemble", "opt": ps.STLSQ(), "bagging": True, "n_models": 20}),
         [ps],
     ),
-    "ensmio-lorenz": ParamDetails(
+    "ensmio-ho-vdp-lv-duff": ParamDetails(
+        ND({"optcls": "ensemble", "opt": ps.MIOSR(target_sparsity=4), "bagging": True, "n_models": 20}),
+        [ps],
+    ),
+    "ensmio-hopf": ParamDetails(
+        ND({"optcls": "ensemble", "opt": ps.MIOSR(target_sparsity=8), "bagging": True, "n_models": 20}),
+        [ps],
+    ),
+    "ensmio-lorenz-ross": ParamDetails(
+        ND({"optcls": "ensemble", "opt": ps.MIOSR(target_sparsity=7), "bagging": True, "n_models": 20}),
+        [ps],
+    ),
+    "ensmio-lorenz-ross": ParamDetails(
         ND({"optcls": "ensemble", "opt": ps.MIOSR(target_sparsity=7), "bagging": True, "n_models": 20}),
         [ps],
     ),
