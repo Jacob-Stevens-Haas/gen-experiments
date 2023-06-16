@@ -222,6 +222,20 @@ other_params = {
             "opt_params": opt_params["ensmio-lorenz-ross"].vals,
         }), [ps]
     ),
+    "10-4nonzero-cubic": ParamDetails(ND(
+        {
+            "sim_params": sim_params["10x"],
+            "feat_params": feat_params["cubic"],
+            "opt_params": opt_params["ensmio-hopf"].vals,
+        }), [ps]
+    ),
+    "10-hopf-cubic": ParamDetails(ND(
+        {
+            "sim_params": sim_params["10x"],
+            "feat_params": feat_params["cubic"],
+            "opt_params": opt_params["ensmio-ho-vdp-lv-duff"].vals,
+        }), [ps]
+    ),
 }
 grid_params = {
     "test": ["sim_params.t_end"],
