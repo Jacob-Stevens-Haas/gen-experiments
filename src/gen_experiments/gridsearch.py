@@ -1,3 +1,4 @@
+from copy import copy
 from typing import Iterable, Sequence, Optional, Callable, Collection
 
 from scipy.stats import kstest
@@ -65,8 +66,9 @@ def run(
     if base_group is not None:
         other_params["group"] = base_group
     for series_data in series_params.series_list:
+        curr_other_params = copy(other_params)
         if series_params.param_name is not None:
-            other_params[series_params.param_name] = series_data.static_param
+            curr_other_params[series_params.param_name] = series_data.static_param
         new_grid_vals: list = grid_vals + series_data.grid_vals
         new_grid_params = grid_params + series_data.grid_params
         new_grid_decisions = grid_decisions + len(series_data.grid_params) * ["best"]
@@ -90,13 +92,12 @@ def run(
         for ind in gridpoint_selector:
             new_seed = rng.integers(1000)
             for axis_ind, key, val_list in zip(ind, new_grid_params, new_grid_vals):
-                other_params[key] = val_list[axis_ind]
-            curr_results = base_ex.run(new_seed, **other_params, display=False, return_all=True)
-            if base_ex == gen_experiments.odes:
-                recent_results = curr_results[1]
-                if _params_match(other_params, plot_prefs.grid_plot_match):
-                    plot_gridpoint(recent_results, other_params)
-                curr_results = curr_results[0]
+                curr_other_params[key] = val_list[axis_ind]
+            curr_results, recent_data = base_ex.run(
+                new_seed, **curr_other_params, display=False, return_all=True
+            )
+            if _params_match(curr_other_params, plot_prefs.grid_plot_match) and plot_prefs:
+                plot_gridpoint(recent_data, curr_other_params)
             full_results[(slice(None), *ind)] = [
                 curr_results[metric] for metric in metrics
             ]
@@ -104,7 +105,7 @@ def run(
 
     if plot_prefs:
         if plot_prefs.rel_noise:
-            grid_vals, grid_params = plot_prefs.rel_noise(grid_vals, grid_params, recent_results)
+            grid_vals, grid_params = plot_prefs.rel_noise(grid_vals, grid_params, recent_data)
         fig, subplots = plt.subplots(
             n_metrics,
             n_plotparams,

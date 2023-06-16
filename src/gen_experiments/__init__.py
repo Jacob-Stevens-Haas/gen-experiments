@@ -1,18 +1,45 @@
 import importlib
+from collections import defaultdict
 
 import numpy as np
 import pysindy as ps
 
 from mitosis import Parameter
 
-from . import nonlinear_pendulum
-from . import odes
-from . import lorenz_missing
-from . import gridsearch
-from .utils import (
+from gen_experiments import nonlinear_pendulum
+from gen_experiments import odes
+from gen_experiments import lorenz_missing
+from gen_experiments import gridsearch
+from gen_experiments.utils import (
     NestedDict, ParamDetails, SeriesDef, SeriesList, _PlotPrefs, _max_amplitude
 )
-from . import utils
+from gen_experiments import utils
+
+this_module = importlib.import_module(__name__)
+
+
+class NoExperiment:
+    @staticmethod
+    def run(*args, return_all=True, **kwargs):
+        metrics = defaultdict(lambda: 1)
+        if return_all:
+            return (
+                metrics, {
+                    "dt": 1,
+                    "coeff_true": 1,
+                    "coefficients": 1,
+                    "feature_names": 1,
+                    "input_features": 1,
+                    "t_train": 1,
+                    "x_train": 1,
+                    "x_test": 1,
+                    "x_dot_test": 1,
+                    "x_train_true": 1,
+                    "model": 1,
+                }
+            )
+        return metrics
+
 
 experiments = {
     "sho": (odes, "sho"),
@@ -26,6 +53,7 @@ experiments = {
     "lv": (odes, "lv"),
     "ross": (odes, "ross"),
     "gridsearch": (gridsearch, None),
+    "none": (NoExperiment, None)
 }
 ex_name = type("identidict", (), {"__getitem__": lambda self, key: key})()
 
@@ -60,7 +88,7 @@ plot_prefs = {
     "test": _PlotPrefs(True, False, ({"sim_params.t_end": 20},)),
     "test-absrel": ParamDetails(
         _PlotPrefs(True, _convert_abs_rel_noise, ({"sim_params.noise_abs": 1}, )),
-        [utils, importlib.import_module(__name__)]
+        [utils, this_module]
     ),
     "test-absrel2": ParamDetails(
         _PlotPrefs(True, _convert_abs_rel_noise, (
@@ -71,15 +99,15 @@ plot_prefs = {
             {"sim_params.noise_abs": 4},
             {"sim_params.noise_abs": 8},
         )),
-        [utils, importlib.import_module(__name__)]
+        [utils, this_module]
     ),
     "test-absrel2": ParamDetails(
         _PlotPrefs(True, _convert_abs_rel_noise, (
-            {"diff_params.noise_abs": 1, "diff_params.smoother_kws.window_length": 15},
-            {"diff_params.noise_abs": 1, "diff_params.meas_var": 1},
-            {"diff_params.noise_abs": 1, "diff_params.alpha": 1e0},
+            {"sim_params.noise_abs": 1, "diff_params.smoother_kws.window_length": 15},
+            {"sim_params.noise_abs": 1, "diff_params.meas_var": 1},
+            {"sim_params.noise_abs": 1, "diff_params.alpha": 1e0},
         )),
-        [utils, importlib.import_module(__name__)]
+        [utils, this_module]
     ),
 }
 sim_params = {
@@ -357,11 +385,11 @@ skinny_specs = {
             ("sim_params.noise_abs", "diff_params.meas_var"),
             ((identity,), (identity,))
         ),
-        [importlib.import_module(__name__)]
+        [this_module]
     ),
     "abs_noise-kalman": ParamDetails(
         (tuple(grid_params["abs_noise-kalman"]), ((identity,), (identity,))),
-        [importlib.import_module(__name__)]
+        [this_module]
     ),
     "duration-noise-kalman": ParamDetails(
         (
@@ -372,6 +400,6 @@ skinny_specs = {
                 (-1, identity,),
             )
         ),
-        [importlib.import_module(__name__)]
+        [this_module]
     ),
 }
