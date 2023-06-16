@@ -71,7 +71,11 @@ def run(
         new_grid_params = grid_params + series_data.grid_params
         new_grid_decisions = grid_decisions + len(series_data.grid_params) * ["best"]
         if skinny_specs is not None:
-            ind_plot = [grid_params.index(pname) for pname in skinny_specs[0]]
+            ind_plot = [
+                new_grid_params.index(pname)
+                for pname in skinny_specs[0]
+                if pname in new_grid_params
+            ]
             where_others = skinny_specs[1]
         else:
             ind_plot = [
