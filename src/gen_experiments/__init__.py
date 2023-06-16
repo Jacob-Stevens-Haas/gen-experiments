@@ -73,6 +73,14 @@ plot_prefs = {
         )),
         [utils, importlib.import_module(__name__)]
     ),
+    "test-absrel2": ParamDetails(
+        _PlotPrefs(True, _convert_abs_rel_noise, (
+            {"diff_params.noise_abs": 1, "diff_params.smoother_kws.window_length": 15},
+            {"diff_params.noise_abs": 1, "diff_params.meas_var": 1},
+            {"diff_params.noise_abs": 1, "diff_params.alpha": 1e0},
+        )),
+        [utils, importlib.import_module(__name__)]
+    ),
 }
 sim_params = {
     "test": ND({"n_trajectories": 2}),
@@ -123,15 +131,12 @@ opt_params = {
         ND({"optcls": "ensemble", "opt": ps.MIOSR(target_sparsity=7), "bagging": True, "n_models": 20}),
         [ps],
     ),
-    "ensmio-lorenz-ross": ParamDetails(
-        ND({"optcls": "ensemble", "opt": ps.MIOSR(target_sparsity=7), "bagging": True, "n_models": 20}),
-        [ps],
-    ),
 }
 
 # Grid search parameters
 metrics = {
     "test": ["coeff_f1", "coeff_mae"],
+    "all-coeffs": ["coeff_f1", "coeff_mae", "coeff_mse"],
     "lorenzk": ["coeff_f1", "coeff_precision", "coeff_recall", "coeff_mae"],
     "1": ["coeff_f1", "coeff_precision", "coeff_mse", "coeff_mae"],
 }
@@ -200,14 +205,21 @@ other_params = {
         {
             "sim_params": sim_params["med-noise-many"],
             "feat_params": feat_params["cubic"],
-            "opt_params": opt_params["ensmio-lorenz"].vals,
+            "opt_params": opt_params["ensmio-lorenz-ross"].vals,
         }), [ps]
     ),
     "rel-exp3-lorenz": ParamDetails(ND(
         {
             "sim_params": sim_params["10x"],
             "feat_params": feat_params["cubic"],
-            "opt_params": opt_params["ensmio-lorenz"].vals,
+            "opt_params": opt_params["ensmio-lorenz-ross"].vals,
+        }), [ps]
+    ),
+    "10-lor-ross-cubic": ParamDetails(ND(
+        {
+            "sim_params": sim_params["10x"],
+            "feat_params": feat_params["cubic"],
+            "opt_params": opt_params["ensmio-lorenz-ross"].vals,
         }), [ps]
     ),
 }
@@ -228,7 +240,7 @@ grid_vals = {
     "tv2": ParamDetails([np.logspace(-3, -1, 5)], [np]),
     "lorenzk": ParamDetails([[1, 9, 27], [0.1, 0.8], np.logspace(-6, -1, 4)], [np]),
     "lorenz1": [[1, 3, 9, 27], [0.01, 0.1, 1]],
-    "lorenz2": [[.25, 1, 4, 16], [0.1, .5, 1, 2, 4, 8]],
+    "duration-absnoise": [[.5, 1, 2, 4, 8, 16], [0.1, .5, 1, 2, 4, 8]],
     "rel_noise": [[.25, 1, 4, 16], [0.05, .1, .15, .2, .25, .3]],
 }
 grid_decisions = {
@@ -250,7 +262,7 @@ diff_series = {
         ["diff_params.alpha"],
         [np.logspace(-4, 0, 5)],
     ),
-    "lorenz-auto": SeriesDef(
+    "auto-kalman": SeriesDef(
         "Kalman",
         diff_params["kalman"],
         ["diff_params.alpha", "diff_params.meas_var"],
@@ -311,7 +323,7 @@ series_params = {
             "diff_params",
             "Differentiation Method",
             [
-                diff_series["lorenz-auto"],
+                diff_series["auto-kalman"],
                 diff_series["tv2"],
                 diff_series["sg2"],
             ],
@@ -336,5 +348,16 @@ skinny_specs = {
     "abs_noise-kalman": ParamDetails(
         (tuple(grid_params["abs_noise-kalman"]), ((identity,), (identity,))),
         [importlib.import_module(__name__)]
-    )
+    ),
+    "duration-noise-kalman": ParamDetails(
+        (
+            ("sim_params.t_end", "sim_params.noise_abs", "diff_params.meas_var"),
+            (
+                (1, 1),
+                (-1, identity,),
+                (-1, identity,),
+            )
+        ),
+        [importlib.import_module(__name__)]
+    ),
 }
