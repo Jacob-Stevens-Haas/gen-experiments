@@ -165,6 +165,7 @@ opt_params = {
 metrics = {
     "test": ["coeff_f1", "coeff_mae"],
     "all-coeffs": ["coeff_f1", "coeff_mae", "coeff_mse"],
+    "all": ["coeff_f1", "coeff_precision", "coeff_recall", "coeff_mae", "coeff_mse"],
     "lorenzk": ["coeff_f1", "coeff_precision", "coeff_recall", "coeff_mae"],
     "1": ["coeff_f1", "coeff_precision", "coeff_mse", "coeff_mae"],
 }
