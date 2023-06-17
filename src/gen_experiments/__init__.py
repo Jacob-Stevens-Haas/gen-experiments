@@ -101,7 +101,7 @@ plot_prefs = {
         )),
         [utils, this_module]
     ),
-    "test-absrel2": ParamDetails(
+    "test-absrel3": ParamDetails(
         _PlotPrefs(True, _convert_abs_rel_noise, (
             {"sim_params.noise_abs": 1, "diff_params.smoother_kws.window_length": 15},
             {"sim_params.noise_abs": 1, "diff_params.meas_var": 1},
