@@ -1,3 +1,5 @@
+import warnings
+
 from collections import defaultdict
 from dataclasses import dataclass, field
 from itertools import chain
@@ -432,7 +434,11 @@ def plot_training_data(last_train, last_train_true, smoothed_last_train):
 
 def plot_test_trajectories(last_test, model, dt):
     t_test = np.arange(len(last_test) * dt, step=dt)
-    x_test_sim = model.simulate(last_test[0], t_test)
+    try:
+        x_test_sim = model.simulate(last_test[0], t_test)
+    except ValueError:
+        warnings.warn(message="Simulation blew up; returning zeros")
+        x_test_sim = np.zeros_like(last_test)
     fig, axs = plt.subplots(last_test.shape[1], 1, sharex=True, figsize=(7, 9))
     plt.suptitle("Test Trajectories by Dimension")
     for i in range(last_test.shape[1]):
