@@ -109,6 +109,17 @@ plot_prefs = {
         )),
         [utils, this_module]
     ),
+    "test-absrel4": ParamDetails(
+        _PlotPrefs(True, _convert_abs_rel_noise, (
+            {"sim_params.noise_abs": 1, "diff_params.smoother_kws.window_length": 15},
+            {"sim_params.noise_abs": 1, "diff_params.meas_var": 1},
+            {"sim_params.noise_abs": 1, "diff_params.alpha": 1e0},
+            {"sim_params.noise_abs": 4, "diff_params.smoother_kws.window_length": 15},
+            {"sim_params.noise_abs": 4, "diff_params.meas_var": 1},
+            {"sim_params.noise_abs": 4, "diff_params.alpha": 1e0},
+        )),
+        [utils, this_module]
+    ),
 }
 sim_params = {
     "test": ND({"n_trajectories": 2}),
@@ -244,25 +255,25 @@ other_params = {
             "opt_params": opt_params["ensmio-lorenz-ross"].vals,
         }), [ps]
     ),
-    "10-lor-ross-cubic": ParamDetails(ND(
+    "lor-ross-cubic": ParamDetails(ND(
         {
             "sim_params": sim_params["10x"],
             "feat_params": feat_params["cubic"],
             "opt_params": opt_params["ensmio-lorenz-ross"].vals,
         }), [ps]
     ),
-    "10-4nonzero-cubic": ParamDetails(ND(
-        {
-            "sim_params": sim_params["10x"],
-            "feat_params": feat_params["cubic"],
-            "opt_params": opt_params["ensmio-hopf"].vals,
-        }), [ps]
-    ),
-    "10-hopf-cubic": ParamDetails(ND(
+    "4nonzero-cubic": ParamDetails(ND(
         {
             "sim_params": sim_params["10x"],
             "feat_params": feat_params["cubic"],
             "opt_params": opt_params["ensmio-ho-vdp-lv-duff"].vals,
+        }), [ps]
+    ),
+    "hopf-cubic": ParamDetails(ND(
+        {
+            "sim_params": sim_params["10x"],
+            "feat_params": feat_params["cubic"],
+            "opt_params": opt_params["ensmio-hopf"].vals,
         }), [ps]
     ),
 }
