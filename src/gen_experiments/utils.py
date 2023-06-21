@@ -1,11 +1,10 @@
-import warnings
-
 from collections import defaultdict
 from dataclasses import dataclass, field
 from itertools import chain
 from types import ModuleType
 from typing import Sequence, Mapping, Optional, Collection
 from math import ceil
+from warnings import warn
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -95,6 +94,21 @@ def gen_data(
                 **INTEGRATOR_KEYWORDS,
             ).y.T
         )
+
+    def _drop_and_warn(arrs):
+        maxlen = max(arr.shape[0] for arr in arrs)
+        def _alert_short(arr):
+            if arr.shape[0] < maxlen:
+                warn(message="Dropping simulation due to blow-up")
+                return False
+            return True
+        arrs = list(filter(_alert_short, arrs))
+        if len(arrs) == 0:
+            raise ValueError(
+                "Simulations failed due to blow-up.  System is too stiff for solver's numerical tolerance"
+            )
+        return arrs
+    x_train = _drop_and_warn(x_train)
     x_train = np.stack(x_train)
     x_test = []
     for traj in range(ceil(n_trajectories / 2)):
@@ -107,6 +121,7 @@ def gen_data(
                 **INTEGRATOR_KEYWORDS,
             ).y.T
         )
+    x_test = _drop_and_warn(x_test)
     x_test = np.array(x_test)
     x_dot_test = np.array([[rhs_func(0, xij) for xij in xi] for xi in x_test])
     x_train_true = np.copy(x_train)
