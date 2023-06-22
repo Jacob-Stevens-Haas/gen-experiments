@@ -185,7 +185,7 @@ def _params_match(exp_params: dict, plot_params: Collection[dict]) -> bool:
 
 
 def plot_gridpoint(grid_data: dict, other_params: dict):
-    print("Results for params: ", other_params)
+    print("Results for params: ", other_params, flush=True)
     sim_ind = -1
     x_train = grid_data["x_train"][sim_ind]
     x_true = grid_data["x_train_true"][sim_ind]
@@ -200,6 +200,7 @@ def plot_gridpoint(grid_data: dict, other_params: dict):
         feature_names=grid_data["feature_names"],
     )
     plot_test_trajectories(grid_data["x_test"][sim_ind], model, grid_data["dt"])
+    plt.show()
 
 
 def _marginalize_grid_views(
