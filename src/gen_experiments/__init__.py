@@ -21,21 +21,32 @@ this_module = importlib.import_module(__name__)
 class NoExperiment:
     @staticmethod
     def run(*args, return_all=True, **kwargs):
+        boring_array = np.ones((2,2))
         metrics = defaultdict(lambda: 1)
         if return_all:
             return (
                 metrics, {
                     "dt": 1,
-                    "coeff_true": 1,
-                    "coefficients": 1,
-                    "feature_names": 1,
-                    "input_features": 1,
-                    "t_train": 1,
-                    "x_train": 1,
-                    "x_test": 1,
-                    "x_dot_test": 1,
-                    "x_train_true": 1,
-                    "model": 1,
+                    "coeff_true": boring_array,
+                    "coefficients": boring_array,
+                    "feature_names": ["1"],
+                    "input_features": ["x", "y"],
+                    "t_train": np.arange(0,1,1),
+                    "x_train": [boring_array],
+                    "x_test": [boring_array],
+                    "x_dot_test": [boring_array],
+                    "x_train_true": [boring_array],
+                    "model": type(
+                        "FakeModel",
+                        (),
+                        {
+                            "print": lambda self: print("fake model"),
+                            "simulate": lambda self, x0, ts: boring_array,
+                            "differentiation_method": type(
+                                "FakeDiff", (), {"smoothed_x_": np.ones((1,2))}
+                            )()
+                        }
+                    )(),
                 }
             )
         return metrics
@@ -75,7 +86,7 @@ def lookup_params(params: list[str]) -> list[Parameter]:
 
 def _convert_abs_rel_noise(grid_vals, grid_params, recent_results):
     """Convert abs_noise grid_vals to rel_noise"""
-    signal = recent_results["x_train_true"]
+    signal = np.stack(recent_results["x_train_true"], axis=-1)
     signal_amplitude = _max_amplitude(signal)
     ind = grid_params.index("sim_params.noise_abs")
     grid_vals[ind] = grid_vals[ind]/signal_amplitude

@@ -369,7 +369,11 @@ def _make_model(
     )
 
 
-def plot_training_data(last_train, last_train_true, smoothed_last_train):
+def plot_training_data(
+    last_train: np.ndarray,
+    last_train_true: np.ndarray,
+    smoothed_last_train: np.ndarray
+):
     """Plot training data (and smoothed training data, if different)."""
     fig, axs = plt.subplots(1, 2, figsize=(12, 6))
     if last_train.shape[1] == 2:
