@@ -50,3 +50,13 @@ def test_thin_indexing_callable():
         (1,1,1),
     }
     assert result == expected
+
+def test_curr_skinny_specs():
+    grid_params = ["a", "c", "e", "f"]
+    skinny_specs = (
+        ("a", "b", "c", "d", "e"),
+        ((1,2,3,4), (0,2,3,4), (0,1,3,4), (0,1,2,4), (0,1,2,3))
+    )
+    ind_skinny, where_others = gridsearch._curr_skinny_specs(skinny_specs, grid_params)
+    assert ind_skinny == [0,1,2]
+    assert where_others == ((2,4), (0,4), (0,2))

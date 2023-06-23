@@ -18,7 +18,7 @@ from gen_experiments.utils import (
 )
 name = "gridsearch"
 OtherSliceDef = tuple[int | Callable]
-
+SkinnySpecs = Optional[tuple[tuple[str, ...], tuple[OtherSliceDef, ...]]]
 
 def run(
     seed: int,
@@ -30,7 +30,7 @@ def run(
     series_params: Optional[SeriesList] = None,
     metrics: Optional[Sequence] = None,
     plot_prefs: _PlotPrefs = _PlotPrefs(True, False, ()),
-    skinny_specs: Optional[tuple[tuple[str, ...], tuple[OtherSliceDef, ...]]] = None,
+    skinny_specs: SkinnySpecs = None,
 ):
     """Run a grid-search wrapper of an experiment.
 
@@ -73,21 +73,16 @@ def run(
         new_grid_params = grid_params + series_data.grid_params
         new_grid_decisions = grid_decisions + len(series_data.grid_params) * ["best"]
         if skinny_specs is not None:
-            ind_plot = [
-                new_grid_params.index(pname)
-                for pname in skinny_specs[0]
-                if pname in new_grid_params
-            ]
-            where_others = skinny_specs[1]
+            ind_skinny, where_others = _curr_skinny_specs(skinny_specs, new_grid_params)
         else:
-            ind_plot = [
+            ind_skinny = [
                 ind for ind, decide in enumerate(new_grid_decisions) if decide=="plot"
             ]
             where_others = None
         full_results_shape = (len(metrics), *(len(grid) for grid in new_grid_vals))
         full_results = np.empty(full_results_shape)
         full_results.fill(-np.inf)
-        gridpoint_selector = _ndindex_skinny(full_results_shape[1:], ind_plot, where_others)
+        gridpoint_selector = _ndindex_skinny(full_results_shape[1:], ind_skinny, where_others)
         rng = np.random.default_rng(seed)
         for ind in gridpoint_selector:
             new_seed = rng.integers(1000)
@@ -256,14 +251,15 @@ def _ndindex_skinny(
         """Check if a multi_index meets thin index criteria"""
         matches = []
         # check whether multi_index matches criteria of any thin_axis
-        for ax1, where_others in zip(thin_axes, thin_slices):
+        for ax1, where_others in zip(thin_axes, thin_slices, strict=True):
             other_axes = list(thin_axes)
             other_axes.remove(ax1)
             match = True
             # check whether multi_index meets criteria of a particular thin_axis
-            for ax2, slice_ind in zip(other_axes, where_others):
+            for ax2, slice_ind in zip(other_axes, where_others, strict=True):
                 if callable(slice_ind):
                     slice_ind = slice_ind(multi_index[ax1])
+                # would check: "== slice_ind", but must allow slice_ind = -1
                 match *= (multi_index[ax2] == range(shape[ax2])[slice_ind])
             matches.append(match)
         return any(matches)
@@ -275,3 +271,37 @@ def _ndindex_skinny(
             break
         if ind_checker(ind):
             yield ind
+
+
+def _curr_skinny_specs(
+    skinny_specs: SkinnySpecs, grid_params: list[str]
+) -> tuple[Sequence[int], Sequence[OtherSliceDef]]:
+    """Calculate which skinny specs apply to current parameters"""
+    skinny_param_inds = [
+        grid_params.index(pname)
+        for pname in skinny_specs[0]
+        if pname in grid_params
+    ]
+    missing_sk_inds = [
+        skinny_specs[0].index(pname)
+        for pname in skinny_specs[0]
+        if pname not in grid_params
+    ]
+    where_others = []
+    for orig_sk_ind, match_criteria in zip(
+        range(len(skinny_specs[0])),
+        skinny_specs[1],
+        strict=True
+    ):
+        if orig_sk_ind in missing_sk_inds:
+            continue
+        missing_criterion_inds = tuple(
+            sk_ind if sk_ind < orig_sk_ind else sk_ind-1 for sk_ind in missing_sk_inds
+        )
+        new_criteria = tuple(
+            match_criterion
+            for cr_ind, match_criterion in enumerate(match_criteria)
+            if cr_ind not in missing_criterion_inds
+        )
+        where_others.append(new_criteria)
+    return skinny_param_inds, tuple(where_others)
