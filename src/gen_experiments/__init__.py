@@ -126,7 +126,7 @@ plot_prefs = {
             {"sim_params.noise_abs": 1, "diff_params.meas_var": 1},
             {"sim_params.noise_abs": 1, "diff_params.alpha": 1e0},
             {"sim_params.noise_abs": 4, "diff_params.smoother_kws.window_length": 15},
-            {"sim_params.noise_abs": 4, "diff_params.meas_var": 1},
+            {"sim_params.noise_abs": 4, "diff_params.meas_var": 4},
             {"sim_params.noise_abs": 4, "diff_params.alpha": 1e0},
         )),
         [utils, this_module]
