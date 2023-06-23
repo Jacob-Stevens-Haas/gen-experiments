@@ -375,9 +375,10 @@ def plot_training_data(
     smoothed_last_train: np.ndarray
 ):
     """Plot training data (and smoothed training data, if different)."""
-    fig, axs = plt.subplots(1, 2, figsize=(12, 6))
+    fig = plt.figure(figsize=(12, 6))
     if last_train.shape[1] == 2:
-        axs[0].plot(
+        ax = fig.add_subplot(1, 2, 1)
+        ax.plot(
             last_train_true[:, 0],
             last_train_true[:, 1],
             ".",
@@ -385,7 +386,7 @@ def plot_training_data(
             color=PAL[0],
             **PLOT_KWS,
         )
-        axs[0].plot(
+        ax.plot(
             last_train[:, 0],
             last_train[:, 1],
             ".",
@@ -397,7 +398,7 @@ def plot_training_data(
             np.linalg.norm(smoothed_last_train - last_train) / smoothed_last_train.size
             > 1e-12
         ):
-            axs[0].plot(
+            ax.plot(
                 smoothed_last_train[:, 0],
                 smoothed_last_train[:, 1],
                 ".",
@@ -405,10 +406,10 @@ def plot_training_data(
                 color=PAL[2],
                 **PLOT_KWS,
             )
-        axs[0].set(xlabel="$x_0$", ylabel="$x_1$")
+        ax.set(xlabel="$x_0$", ylabel="$x_1$")
     elif last_train.shape[1] == 3:
-        axs[0] = plt.axes(projection="3d")
-        axs[0].plot(
+        ax = fig.add_subplot(1, 2, 1, projection="3d")
+        ax.plot(
             last_train_true[:, 0],
             last_train_true[:, 1],
             last_train_true[:, 2],
@@ -417,7 +418,7 @@ def plot_training_data(
             **PLOT_KWS,
         )
 
-        axs[0].plot(
+        ax.plot(
             last_train[:, 0],
             last_train[:, 1],
             last_train[:, 2],
@@ -430,7 +431,7 @@ def plot_training_data(
             np.linalg.norm(smoothed_last_train - last_train) / smoothed_last_train.size
             > 1e-12
         ):
-            axs[0].plot(
+            ax.plot(
                 smoothed_last_train[:, 0],
                 smoothed_last_train[:, 1],
                 smoothed_last_train[:, 2],
@@ -439,16 +440,17 @@ def plot_training_data(
                 label="Smoothed values",
                 alpha=0.3,
             )
-        axs[0].set(xlabel="$x$", ylabel="$y$", zlabel="$z$")
+        ax.set(xlabel="$x$", ylabel="$y$", zlabel="$z$")
     else:
         raise ValueError("Can only plot 2d or 3d data.")
-    axs[0].set(title="Training data")
-    axs[0].legend()
-    axs[1].loglog(np.abs(scipy.fft.rfft(last_train, axis=0))/np.sqrt(len(last_train)))
-    axs[1].set(title="Training Data Absolute Spectral Density")
-    axs[1].set(xlabel="Wavenumber")
-    axs[1].set(ylabel="Magnitude")
-    return axs
+    ax.set(title="Training data")
+    ax.legend()
+    ax = fig.add_subplot(1, 2, 2)
+    ax.loglog(np.abs(scipy.fft.rfft(last_train, axis=0))/np.sqrt(len(last_train)))
+    ax.set(title="Training Data Absolute Spectral Density")
+    ax.set(xlabel="Wavenumber")
+    ax.set(ylabel="Magnitude")
+    return fig
 
 
 def plot_test_trajectories(last_test, model, dt):
@@ -456,7 +458,7 @@ def plot_test_trajectories(last_test, model, dt):
     try:
         x_test_sim = model.simulate(last_test[0], t_test)
     except ValueError:
-        warnings.warn(message="Simulation blew up; returning zeros")
+        warn(message="Simulation blew up; returning zeros")
         x_test_sim = np.zeros_like(last_test)
     fig, axs = plt.subplots(last_test.shape[1], 1, sharex=True, figsize=(7, 9))
     plt.suptitle("Test Trajectories by Dimension")
