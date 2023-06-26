@@ -116,7 +116,7 @@ plot_prefs = {
         _PlotPrefs(True, _convert_abs_rel_noise, (
             {"sim_params.noise_abs": 1, "diff_params.smoother_kws.window_length": 15},
             {"sim_params.noise_abs": 1, "diff_params.meas_var": 1},
-            {"sim_params.noise_abs": 1, "diff_params.alpha": 1e0},
+            {"sim_params.noise_abs": 1, "diff_params.alpha": 1e-2},
         )),
         [utils, this_module]
     ),
@@ -125,9 +125,9 @@ plot_prefs = {
             {"sim_params.noise_abs": 1, "diff_params.smoother_kws.window_length": 15},
             {"sim_params.noise_abs": 1, "diff_params.meas_var": 1},
             {"sim_params.noise_abs": 1, "diff_params.alpha": 1e0},
-            {"sim_params.noise_abs": 4, "diff_params.smoother_kws.window_length": 15},
-            {"sim_params.noise_abs": 4, "diff_params.meas_var": 4},
-            {"sim_params.noise_abs": 4, "diff_params.alpha": 1e0},
+            {"sim_params.noise_abs": 2, "diff_params.smoother_kws.window_length": 15},
+            {"sim_params.noise_abs": 2, "diff_params.meas_var": 4},
+            {"sim_params.noise_abs": 2, "diff_params.alpha": 1e-1},
         )),
         [utils, this_module]
     ),
@@ -153,7 +153,7 @@ diff_params = {
     "sfd-nox": ND({"diffcls": "SmoothedFiniteDifference", "save_smooth": False}),
     "sfd-ps": ND({"diffcls": "SmoothedFiniteDifference"}),
     "kalman": ND({"diffcls": "sindy", "kind": "kalman", "alpha": 0.000055}),
-    "kalman-empty": ND({"diffcls": "sindy", "kind": "kalman"}),
+    "kalman-empty2": ND({"diffcls": "sindy", "kind": "kalman", "alpha": None}),
     "kalman-auto": ND({"diffcls": "sindy", "kind": "kalman", "alpha": None, "meas_var": .8}),
 }
 feat_params = {
@@ -215,10 +215,10 @@ other_params = {
             "opt_params": opt_params["test"],
         }
     ),
-    "test-kalman-heuristic": ND(
+    "test-kalman-heuristic2": ND(
         {
             "sim_params": sim_params["test"],
-            "diff_params": diff_params["kalman-empty"],
+            "diff_params": diff_params["kalman-empty2"],
             "feat_params": feat_params["test"],
             "opt_params": opt_params["test"],
         }
@@ -301,6 +301,7 @@ grid_vals = {
     "test": [[5, 10, 15, 20]],
     "abs_noise": [[0.1, .5, 1, 2, 4, 8]],
     "abs_noise-kalman": [[0.1, .5, 1, 2, 4, 8], [0.1, .5, 1, 2, 4, 8]],
+    "abs_noise-kalman2": [[0.1, .5, 1, 2, 4, 8], [0.01, .25, 1, 4, 16, 64]],
     "tv1": ParamDetails([np.logspace(-4, 0, 5)], [np]),
     "tv2": ParamDetails([np.logspace(-3, -1, 5)], [np]),
     "lorenzk": ParamDetails([[1, 9, 27], [0.1, 0.8], np.logspace(-6, -1, 4)], [np]),
@@ -332,6 +333,12 @@ diff_series = {
         diff_params["kalman"],
         ["diff_params.alpha", "diff_params.meas_var"],
         [(None,), (0.1, .5, 1, 2, 4, 8)],
+    ),
+    "auto-kalman2": SeriesDef(
+        "Kalman",
+        diff_params["kalman"],
+        ["diff_params.alpha", "diff_params.meas_var"],
+        [(None,), (0.01, .25, 1, 4, 16, 64)],
     ),
     "tv1": SeriesDef(
         "Total Variation",
@@ -389,6 +396,18 @@ series_params = {
             "Differentiation Method",
             [
                 diff_series["auto-kalman"],
+                diff_series["tv2"],
+                diff_series["sg2"],
+            ],
+        ),
+        [np],
+    ),
+    "kalman-auto2": ParamDetails(
+        SeriesList(
+            "diff_params",
+            "Differentiation Method",
+            [
+                diff_series["auto-kalman2"],
                 diff_series["tv2"],
                 diff_series["sg2"],
             ],
