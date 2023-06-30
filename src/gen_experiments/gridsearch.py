@@ -62,7 +62,7 @@ def run(
         legends = True
     n_metrics = len(metrics)
     n_plotparams = len([decide for decide in grid_decisions if decide == "plot"])
-    grid_searches = []
+    series_searches = []
     if base_group is not None:
         other_params["group"] = base_group
     for series_data in series_params.series_list:
@@ -96,7 +96,7 @@ def run(
             full_results[(slice(None), *ind)] = [
                 curr_results[metric] for metric in metrics
             ]
-        grid_searches.append(_marginalize_grid_views(new_grid_decisions, full_results))
+        series_searches.append(_marginalize_grid_views(new_grid_decisions, full_results))
 
     if plot_prefs:
         if plot_prefs.rel_noise:
@@ -110,7 +110,7 @@ def run(
             figsize=(n_plotparams * 3, 0.5 + n_metrics * 2.25),
         )
         for series_data, series_name in zip(
-            grid_searches, (ser.name for ser in series_params.series_list)
+            series_searches, (ser.name for ser in series_params.series_list)
         ):
             plot(
                 fig,
@@ -131,8 +131,8 @@ def run(
 
     main_metric_ind = metrics.index("main") if "main" in metrics else 0
     return {
-        "results": grid_searches,
-        "main": max(grid[main_metric_ind].max() for grid in grid_searches),
+        "results": series_searches,
+        "main": max(grid[main_metric_ind].max() for grid in series_searches),
     }
 
 
@@ -199,10 +199,10 @@ def plot_gridpoint(grid_data: dict, other_params: dict):
 
 
 def _marginalize_grid_views(
-    grid_decision: Iterable, results: np.ndarray
+    grid_decisions: Iterable, results: np.ndarray
 ) -> list[np.ndarray]:
     """Marginalize unnecessary dimensions by taking max across axes."""
-    plot_param_inds = [ind for ind, val in enumerate(grid_decision) if val == "plot"]
+    plot_param_inds = [ind for ind, val in enumerate(grid_decisions) if val == "plot"]
     grid_searches = []
     for param_ind in plot_param_inds:
         selection_results = np.moveaxis(results, param_ind + 1, 1)
