@@ -114,3 +114,8 @@ gen_experiments.odes.run(seed, group, sim_params, diff_params, feat_params, opt_
 # %%
 diff_params["alpha"] = heuristic_alpha(x_train, t_train)
 gen_experiments.odes.run(seed, group, sim_params, diff_params, feat_params, opt_params)
+
+
+# %% 
+#  # High noise
+sim_params = gen_experiments.sim_params["hi-noise"]
