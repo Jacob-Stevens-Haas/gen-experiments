@@ -9,19 +9,19 @@ warnings.resetwarnings()
 
 # %% [markdown]
 
-# We want to generate a sample trajectory with a known estimated process 
+# We want to generate a sample trajectory with a known estimated process
 # variance = 1
 
 # %%
 
 dt = 1
 T = 1000
-t = np.arange(0,T,dt)
+t = np.arange(0, T, dt)
 
 
 rng = np.random.default_rng(1)
-meas_var = .01
-dx = rng.normal(scale = np.sqrt(dt **3 /3), size = t.shape)
+meas_var = 0.01
+dx = rng.normal(scale=np.sqrt(dt**3 / 3), size=t.shape)
 x = dx.cumsum()
 
 # %% [markdown]
@@ -33,7 +33,7 @@ x = dx.cumsum()
 n_trials = 100
 est_proc_vars = []
 for _ in range(n_trials):
-    err = np.sqrt(meas_var) * rng.standard_normal(size = t.shape)
+    err = np.sqrt(meas_var) * rng.standard_normal(size=t.shape)
     z = x + err
     alpha = Kalman._heuristic_alpha(z, t, meas_var, max_trials=1)
     est_proc_vars.append(meas_var / alpha)
@@ -41,7 +41,9 @@ for _ in range(n_trials):
 # %%
 
 plt.hist(est_proc_vars, density=True)
-plt.title("With a good amount of widely-spaced data,\n we can get a pretty good distribution")
+plt.title(
+    "With a good amount of widely-spaced data,\n we can get a pretty good distribution"
+)
 plt.xlabel(f"Estimated Proc variance (correct = {meas_var})")
 plt.ylabel("Density")
 # %% [markdown]
@@ -62,12 +64,12 @@ dts = np.logspace(0, -1, 4)
 for dt in dts:
     T = N * dt
     t = np.arange(0, T, dt)
-    meas_var = .01
-    dx = rng.normal(scale = np.sqrt(dt **3 /3), size = t.shape)
+    meas_var = 0.01
+    dx = rng.normal(scale=np.sqrt(dt**3 / 3), size=t.shape)
     x = dx.cumsum()
     est_proc_vars = []
     for _ in range(n_trials):
-        err = np.sqrt(meas_var) * rng.standard_normal(size = t.shape)
+        err = np.sqrt(meas_var) * rng.standard_normal(size=t.shape)
         z = x + err
         alpha = Kalman._heuristic_alpha(z, t, meas_var, max_trials=1)
         est_proc_vars.append(alpha)
@@ -75,9 +77,7 @@ for dt in dts:
 
 ax.set_xscale("log")
 bins = np.logspace(
-    np.log10(np.array(all_data).min()),
-    np.log10(np.array(all_data).max()),
-    100
+    np.log10(np.array(all_data).min()), np.log10(np.array(all_data).max()), 100
 )
 for trial_ind, dt in enumerate(dts):
     ax.hist(all_data[trial_ind], bins=bins, label=f"{dt:.03}", log=True, density=True)
@@ -89,7 +89,7 @@ ax.set_xlabel(f"Estimated alpha (variance ratio).  Correct is {meas_var}, defaul
 # %%
 rng = np.random.default_rng(1)
 
-dt = .1
+dt = 0.1
 n_trials = 20
 fig = plt.figure()
 ax = plt.gca()
@@ -98,12 +98,12 @@ all_data = []
 for N in np.logspace(1, 4, 4):
     T = N * dt
     t = np.arange(0, T, dt)
-    meas_var = .01
-    dx = rng.normal(scale = np.sqrt(dt **3 /3), size = t.shape)
+    meas_var = 0.01
+    dx = rng.normal(scale=np.sqrt(dt**3 / 3), size=t.shape)
     x = dx.cumsum()
     est_proc_vars = []
     for _ in range(n_trials):
-        err = np.sqrt(meas_var) * rng.standard_normal(size = t.shape)
+        err = np.sqrt(meas_var) * rng.standard_normal(size=t.shape)
         z = x + err
         alpha = Kalman._heuristic_alpha(z, t, meas_var, max_trials=1)
         est_proc_vars.append(alpha)
@@ -111,9 +111,7 @@ for N in np.logspace(1, 4, 4):
 
 ax.set_xscale("log")
 bins = np.logspace(
-    np.log10(np.array(all_data).min()),
-    np.log10(np.array(all_data).max()),
-    100
+    np.log10(np.array(all_data).min()), np.log10(np.array(all_data).max()), 100
 )
 for trial_ind, N in enumerate(np.logspace(1, 4, 4)):
     ax.hist(all_data[trial_ind], bins=bins, label=N, log=True, density=True)
@@ -135,12 +133,12 @@ all_data = []
 for N in np.logspace(1, 4, 4):
     T = N * dt
     t = np.arange(0, T, dt)
-    meas_var = .01
-    dx = rng.normal(scale = np.sqrt(dt **3 /3), size = t.shape)
+    meas_var = 0.01
+    dx = rng.normal(scale=np.sqrt(dt**3 / 3), size=t.shape)
     x = dx.cumsum()
     est_proc_vars = []
     for _ in range(n_trials):
-        err = np.sqrt(meas_var) * rng.standard_normal(size = t.shape)
+        err = np.sqrt(meas_var) * rng.standard_normal(size=t.shape)
         z = x + err
         alpha = Kalman._heuristic_alpha(z, t, meas_var, max_trials=1)
         est_proc_vars.append(alpha)
@@ -148,9 +146,7 @@ for N in np.logspace(1, 4, 4):
 
 ax.set_xscale("log")
 bins = np.logspace(
-    np.log10(np.array(all_data).min()),
-    np.log10(np.array(all_data).max()),
-    100
+    np.log10(np.array(all_data).min()), np.log10(np.array(all_data).max()), 100
 )
 for trial_ind, N in enumerate(np.logspace(1, 4, 4)):
     ax.hist(all_data[trial_ind], bins=bins, label=N, log=True, density=True)

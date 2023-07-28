@@ -9,7 +9,7 @@ from scipy import sparse, optimize, stats
 from new_heuristics import (
     find_alpha_complex_witheld,
     find_alpha_generalized,
-    find_alpha_barratt
+    find_alpha_barratt,
 )
 
 # %%
@@ -29,7 +29,7 @@ x_hat, x_dot_hat, _, _, _ = kalman.solve(measurements, H, times, meas_var, proc_
 
 
 fig = plt.figure()
-ax = fig.add_subplot(1,1,1)
+ax = fig.add_subplot(1, 1, 1)
 ln1 = ax.plot(times, x, label="x", color="C0")
 ln2 = ax.plot(times, x_hat, ".", label=r"$\hat x$", color="C0")
 lnz = ax.plot(times, measurements, "x", color="C2", label="z")
@@ -51,7 +51,7 @@ x_hat, x_dot_hat, _, _, _ = kalman.solve(measurements, H, times, meas_var, proc_
 
 
 fig = plt.figure()
-ax = fig.add_subplot(1,1,1)
+ax = fig.add_subplot(1, 1, 1)
 ln1 = ax.plot(times, x, label="x", color="C0")
 ln2 = ax.plot(times, x_hat, ".", label=r"$\hat x$", color="C0")
 lnz = ax.plot(times, measurements, "x", color="C2", label="z")
@@ -68,7 +68,7 @@ plt.savefig("generated.png")
 # %%
 
 n_sims = 10
-meas_var = .5
+meas_var = 0.5
 true_alpha = meas_var / proc_var
 
 # %%
@@ -76,7 +76,7 @@ alphas1 = []
 ress = []
 for sim in range(n_sims):
     measurements, x, x_dot, H, times = kalman.gen_data(
-        rng.integers(0,100), stop=stop, nt=nt, meas_var=meas_var, process_var=proc_var
+        rng.integers(0, 100), stop=stop, nt=nt, meas_var=meas_var, process_var=proc_var
     )
     result = find_alpha_complex_witheld(times, measurements, alpha0=1, detail=True)
     alphas1.append(result.x[0])
@@ -146,7 +146,7 @@ alphas3 = []
 ress = []
 for sim in range(n_sims):
     measurements, x, x_dot, H, times = kalman.gen_data(
-        rng.integers(0,100), stop=stop, nt=nt, meas_var=meas_var, process_var=proc_var
+        rng.integers(0, 100), stop=stop, nt=nt, meas_var=meas_var, process_var=proc_var
     )
     result = find_alpha_barratt(times, measurements, alpha0=1, detail=True)
     alphas3.append(result[0])
