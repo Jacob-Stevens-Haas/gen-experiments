@@ -7,9 +7,15 @@ import matplotlib.pyplot as plt
 from scipy import sparse, optimize, stats
 
 from new_heuristics import (
+    observation_operator,
+    kalman_matrices,
     find_alpha_complex_witheld,
     find_alpha_generalized,
     find_alpha_barratt,
+    loss_validation_alpha,
+    loss_training_alpha,
+    grad_validation_alpha,
+    scalar_grad_check
 )
 
 # %%
@@ -87,6 +93,61 @@ fig = plt.figure()
 plt.hist(alphas1)
 plt.savefig("alphadist.png")
 pass
+# %%
+alphas = np.logspace(-8, 7, 21)
+fig = plt.figure()
+ax = fig.gca()
+# ax2 = plt.twinx(ax)
+ax3 = plt.twinx(ax)
+ax.set_xlabel("alpha")
+ax.set_ylabel("validation loss", color="C0")
+ax.tick_params("y", color="C0", labelcolor="C0")
+# ax2.set_ylim(-1, 1)
+# ax2.set_ylabel("gradient", color="C1")
+# ax2.tick_params("y", color="C1", labelcolor="C1")
+ax3.set_ylabel("training loss", color="C1")
+ax3.tick_params("y", color="C1", labelcolor="C1")
+seeds = [7, 57, 54, 86, 70]
+for trial in range(5):
+    # seed = rng.integers(0, 100)
+    seed = seeds[trial]
+    print(seed)
+    measurements, x, x_dot, H, times = kalman.gen_data(
+        seed, stop=stop, nt=nt, meas_var=meas_var, process_var=proc_var
+    )
+    valid_losses = []
+    training_losses = []
+    grads = []
+    for alpha in alphas:
+        witheld_mask = np.zeros_like(times, dtype=bool)
+        witheld_mask[::4] = True
+        H_witheld = observation_operator(times, witheld_mask)
+
+        train_measurements = measurements[~witheld_mask]
+        validation_measurements = measurements[~witheld_mask]
+        Qinv, H, G = kalman_matrices(times, ~witheld_mask)
+        H_witheld = observation_operator(times, witheld_mask)
+        rhs = H.T @ train_measurements.reshape((-1, 1))
+
+        loss_fun = lambda a: loss_validation_alpha(a, H_witheld, validation_measurements, G, Qinv, H, rhs, 1e-6)
+        loss_grad = lambda a: grad_validation_alpha(a, H_witheld, validation_measurements, G, Qinv, H, rhs, 1e-6)
+        scalar_grad_check(np.array([1]), 1e-6, loss_fun, loss_grad)
+
+
+        v_loss = loss_validation_alpha(np.array([alpha]), H_witheld, validation_measurements,G, Qinv, H, rhs, 1e-6)
+        t_loss = loss_training_alpha(np.array([alpha]), train_measurements,G, Qinv, H, rhs, 1e-6)
+        grad = grad_validation_alpha(np.array([alpha]), H_witheld, validation_measurements,G, Qinv, H, rhs, 1e-6)
+        valid_losses.append(v_loss)
+        training_losses.append(t_loss)
+        grads.append(grad)
+
+    ax.semilogx(alphas, (valid_losses-min(valid_losses))/(max(valid_losses)-min(valid_losses)), color=f"C0")
+    ax3.semilogx(alphas, (training_losses-min(training_losses))/(max(training_losses)-min(training_losses)), color=f"C1")
+    # ax2.semilogx(alphas, grads, color="C1")
+    
+ax.set_title("Training Loss is pointed the wrong way\nValidation loss may have local minima")
+plt.savefig("comlex_loss.png")
+
 
 # %%
 # alphas2 = []
