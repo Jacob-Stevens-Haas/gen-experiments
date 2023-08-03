@@ -81,11 +81,12 @@ def find_alpha_complex_witheld(
     h = 1e-6
     witheld_mask = np.zeros_like(times, dtype=bool)
     witheld_mask[::4] = True
+    measurements = np.reshape(measurements, (-1, 1))
     train_measurements = measurements[~witheld_mask]
     validation_measurements = measurements[~witheld_mask]
     Qinv, H, G = kalman_matrices(times, ~witheld_mask)
     H_witheld = observation_operator(times, witheld_mask)
-    rhs = H.T @ train_measurements.reshape((-1, 1))
+    rhs = H.T @ train_measurements
 
     loss_fun = lambda a: loss_validation_alpha(a, H_witheld, validation_measurements, G, Qinv, H, rhs, h)
     loss_grad = lambda a: grad_validation_alpha(a, H_witheld, validation_measurements, G, Qinv, H, rhs, h)
@@ -110,6 +111,7 @@ def _loss_validation_alpha(
     rhs: np.ndarray,
     h: float,
 ) -> tuple[float, float]:
+    _check_shapes(H_witheld, validation_z, G, Qinv, H, rhs)
     lhs = H.T @ H + G.T @ (curr_alpha * Qinv) @ G
     sol = np.linalg.solve(lhs.toarray(), rhs)
     loss = ((H_witheld @ sol - validation_z) ** 2).sum()
@@ -143,6 +145,11 @@ def loss_validation_alpha(
     curr_alpha = curr_alpha + h * 1j
     return _loss_validation_alpha(curr_alpha[0], H_witheld, validation_z, G, Qinv, H, rhs, h)[0]
 
+
+def _check_shapes(*args):
+    assert all(arg.ndim == 2 for arg in args)
+
+
 def _loss_training_alpha(
     curr_alpha: complex,
     train_z: np.ndarray,
@@ -152,6 +159,7 @@ def _loss_training_alpha(
     rhs: np.ndarray,
     h: float,
 ) -> tuple[float, float]:
+    _check_shapes(train_z, G, Qinv, H, rhs)
     lhs = H.T @ H + G.T @ (curr_alpha * Qinv) @ G
     sol = np.linalg.solve(lhs.toarray(), rhs)
     loss = ((H @ sol - train_z) ** 2).sum()
@@ -288,7 +296,7 @@ def find_alpha_barratt(
     return est_alpha, info
 
 
-HashableArray = tuple(tuple[float, ...], tuple[int, ...])
+HashableArray = tuple[tuple[float, ...], tuple[int, ...]]
 def _array_to_hashable(arr: np.ndarray) -> HashableArray:
     shape = arr.shape
     data = tuple(arr.ravel())
