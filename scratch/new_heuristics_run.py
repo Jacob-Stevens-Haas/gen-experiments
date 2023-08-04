@@ -22,7 +22,7 @@ from new_heuristics import (
 seed = 98
 rng = np.random.default_rng(seed)
 stop = 2 * np.pi
-nt = 100
+nt = 1000
 
 times = np.linspace(0, stop, nt)
 meas_var = 1
@@ -73,26 +73,40 @@ plt.savefig("generated.png")
 
 # %%
 
-n_sims = 10
+n_sims = 20
 meas_var = 1
 true_alpha = meas_var / proc_var
+seeds = rng.integers(0, 1000, size=n_sims)
 
 # %%
 alphas1 = []
 ress = []
-for sim in range(n_sims):
+for seed in seeds:
     measurements, x, x_dot, H, times = kalman.gen_data(
-        rng.integers(0, 100), stop=stop, nt=nt, meas_var=meas_var, process_var=proc_var
+        seed, stop=stop, nt=nt, meas_var=meas_var, process_var=proc_var
     )
     measurements = np.reshape(measurements, (-1, 1))
-    result = find_alpha_complex_witheld(times, measurements, alpha0=1, detail=True)
+    result = find_alpha_complex_witheld(times, measurements, alpha0=1e0, detail=True)
     alphas1.append(result.x[0])
     ress.append(result)
 
 
-fig = plt.figure()
-plt.hist(alphas1)
-plt.savefig("alphadist.png")
+fig = plt.figure(figsize = [8, 4])
+fig.suptitle(f"Performance of LBFGS/Complex Step GCV Search on {n_sims} simulations")
+ax1 = fig.add_subplot(1, 2, 1)
+ax1.hist(alphas1, bins=np.geomspace(min(alphas1), max(alphas1), 2 * len(alphas1) // 3))
+ax1.set_xscale("log")
+ax1.set_title(r"Distribution of $\hat \alpha")
+ax1.set_xlabel(r"$\hat \alpha$")
+ax1.set_ylabel("Frequency")
+
+ax2 = fig.add_subplot(1, 2, 2)
+ax2.hist([res.nit for res in ress])
+ax2.set_title("Distribution of LBFGS iterations")
+ax2.set_xlabel("Iteration")
+plt.tight_layout()
+plt.savefig("complex_step_lbfgs2.png")
+
 pass
 # %%
 nt = 1000
@@ -178,18 +192,30 @@ plt.savefig("alphadist2.png")
 # %%
 alphas3 = []
 ress = []
-for sim in range(n_sims):
+for seed in seeds:
     measurements, x, x_dot, H, times = kalman.gen_data(
-        rng.integers(0, 100), stop=stop, nt=nt, meas_var=meas_var, process_var=proc_var
+        seed, stop=stop, nt=nt, meas_var=meas_var, process_var=proc_var
     )
-    result = find_alpha_barratt(times, measurements, alpha0=1, detail=True)
+    result = find_alpha_barratt(times, measurements, alpha0=1e0, detail=True)
     alphas3.append(result[0])
     ress.append(result)
 
 
-fig = plt.figure()
-plt.hist(alphas3)
-plt.savefig("alphadist3.png")
+fig = plt.figure(figsize=[8, 4])
+fig.suptitle(f"Performance of Boyd/Barrett GCV Search on {n_sims} simulations")
+ax1 = fig.add_subplot(1, 2, 1)
+ax1.hist(alphas3, bins=np.geomspace(min(alphas3), max(alphas3), 2 * len(alphas3) // 3))
+ax1.set_xscale("log")
+ax1.set_title(r"Distribution of $\hat \alpha (\alpha_0=\alpha=1)$")
+ax1.set_xlabel(r"$\hat \alpha$")
+ax1.set_ylabel("Frequency")
 
-pass
+ax2 = fig.add_subplot(1, 2, 2)
+for res in ress:
+    ax2.semilogy(res[1]["losses"], color="C0")
+ax2.set_title("Loss during training to 200 iterations")
+ax2.set_xlabel("Iteration")
+ax2.set_ylabel("Witheld loss")
+fig.tight_layout()
+plt.savefig("alphadist3.png")
 # %%

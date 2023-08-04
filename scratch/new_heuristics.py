@@ -83,7 +83,7 @@ def find_alpha_complex_witheld(
     witheld_mask[::4] = True
     measurements = np.reshape(measurements, (-1, 1))
     train_measurements = measurements[~witheld_mask]
-    validation_measurements = measurements[~witheld_mask]
+    validation_measurements = measurements[witheld_mask]
     Qinv, H, G = kalman_matrices(times, ~witheld_mask)
     H_witheld = observation_operator(times, witheld_mask)
     rhs = H.T @ train_measurements
@@ -93,7 +93,8 @@ def find_alpha_complex_witheld(
     scalar_grad_check(np.array([alpha0]), 1e-6, loss_fun, loss_grad)
 
     res = optimize.minimize(
-        loss_fun, alpha0, jac=loss_grad, method="l-bfgs-b", bounds=[(0, np.inf)]
+        loss_fun, alpha0, jac=loss_grad, method="l-bfgs-b", bounds=[(0, np.inf)],
+        tol = 1e-10
     )
     if detail:
         return res
@@ -197,7 +198,7 @@ def scalar_grad_check(x0: Any, dx: Any, loss_fun: Callable, grad_fun: Callable):
     f1 = loss_fun(x0 + dx)
     g1 = grad_fun(x0 + dx)
     # Should be O(dx^2)
-    assert np.abs(g1 * dx + g0 * dx - 2 * (f1 - f0)) < dx * 10
+    assert np.abs(g1 * dx + g0 * dx - 2 * (f1 - f0)) / f0 < dx * 10
 
 
 
