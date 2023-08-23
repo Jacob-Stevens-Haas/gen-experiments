@@ -124,7 +124,7 @@ def run(
     )
     model = _make_model(input_features, dt, diff_params, feat_params, opt_params)
 
-    model.fit(x_train, quiet=True, multiple_trajectories=True)
+    model.fit(x_train)
     coeff_true, coefficients, feature_names = unionize_coeff_matrices(model, coeff_true)
 
     # make the plots

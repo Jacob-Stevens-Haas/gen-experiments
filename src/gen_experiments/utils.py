@@ -281,14 +281,12 @@ def integration_metrics(model, x_test, t_train, x_dot_test):
         x_test,
         t_train,
         x_dot_test,
-        multiple_trajectories=True,
         metric=sklearn.metrics.mean_squared_error,
     )
     metrics["mae-plot"] = model.score(
         x_test,
         t_train,
         x_dot_test,
-        multiple_trajectories=True,
         metric=sklearn.metrics.mean_absolute_error,
     )
     return metrics
