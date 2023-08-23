@@ -341,6 +341,12 @@ diff_series = {
         ["diff_params.alpha", "diff_params.meas_var"],
         [(None,), (0.01, .25, 1, 4, 16, 64)],
     ),
+    "auto-kalman3": SeriesDef(
+        "Kalman",
+        diff_params["kalman"],
+        ["diff_params.alpha"],
+        [(None,)],
+    ),
     "tv1": SeriesDef(
         "Total Variation",
         diff_params["tv"],
@@ -409,6 +415,18 @@ series_params = {
             "Differentiation Method",
             [
                 diff_series["auto-kalman2"],
+                diff_series["tv2"],
+                diff_series["sg2"],
+            ],
+        ),
+        [np],
+    ),
+    "kalman-auto3": ParamDetails(
+        SeriesList(
+            "diff_params",
+            "Differentiation Method",
+            [
+                diff_series["auto-kalman3"],
                 diff_series["tv2"],
                 diff_series["sg2"],
             ],
