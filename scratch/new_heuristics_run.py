@@ -193,6 +193,7 @@ plt.savefig("alphadist2.png")
 alphas3 = []
 ress = []
 for seed in seeds:
+    print(seed)
     measurements, x, x_dot, H, times = kalman.gen_data(
         seed, stop=stop, nt=nt, meas_var=meas_var, process_var=proc_var
     )

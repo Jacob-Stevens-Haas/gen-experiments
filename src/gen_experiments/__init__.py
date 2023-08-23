@@ -147,6 +147,7 @@ sim_params = {
 }
 diff_params = {
     "test": ND({"diffcls": "FiniteDifference"}),
+    "autoks": ND({"diffcls": "sindy", "kind": "kalman", "alpha": "gcv"}),
     "test2": ND({"diffcls": "SmoothedFiniteDifference"}),
     "tv": ND({"diffcls": "sindy", "kind": "trend_filtered", "order": 0, "alpha": 1}),
     "savgol": ND({"diffcls": "sindy", "kind": "savitzky_golay"}),
