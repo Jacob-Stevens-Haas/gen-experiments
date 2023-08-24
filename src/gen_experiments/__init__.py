@@ -131,6 +131,20 @@ plot_prefs = {
         )),
         [utils, this_module]
     ),
+    "test-absrel5": ParamDetails(
+        _PlotPrefs(True, _convert_abs_rel_noise, (
+            {"sim_params.noise_abs": 1, "diff_params.smoother_kws.window_length": 15},
+            {"sim_params.noise_abs": 1, "diff_params.kind": "kalman"},
+            {"sim_params.noise_abs": 1, "diff_params.alpha": 1e0},
+            {"sim_params.noise_abs": 2, "diff_params.smoother_kws.window_length": 15},
+            {"sim_params.noise_abs": 2, "diff_params.kind": "kalman"},
+            {"sim_params.noise_abs": 2, "diff_params.alpha": 1e0},
+            {"sim_params.noise_abs": 4, "diff_params.smoother_kws.window_length": 15},
+            {"sim_params.noise_abs": 4, "diff_params.kind": "kalman"},
+            {"sim_params.noise_abs": 4, "diff_params.alpha": 1e0},
+        )),
+        [utils, this_module]
+    ),
 }
 sim_params = {
     "test": ND({"n_trajectories": 2}),
@@ -459,6 +473,16 @@ skinny_specs = {
                 (1, 1),
                 (-1, identity,),
                 (-1, identity,),
+            )
+        ),
+        [this_module]
+    ),
+    "duration-noise": ParamDetails(
+        (
+            ("sim_params.t_end", "sim_params.noise_abs"),
+            (
+                (1,),
+                (-1,),
             )
         ),
         [this_module]
