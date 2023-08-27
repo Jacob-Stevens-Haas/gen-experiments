@@ -116,6 +116,75 @@ def gen_data(
     x_dot_test = [xi for xi in x_dot_test]
     return dt, t_train, x_train, x_test, x_dot_test, x_train_true
 
+def gen_pde_data(
+    rhs_func,
+    init_cond,
+    args,
+    seed=None,
+    noise_abs=None,
+    noise_rel=None,
+    nonnegative=False,
+    dt=0.01,
+    t_end=10,
+):
+    """Generate random training and test data
+
+    Note that test data has no noise.
+
+    Arguments:
+        rhs_func (Callable): the function to integrate
+        init_cond (List): Initial Conditions for the PDE
+        args (Tuple): Arguments for rhsfunc 
+        seed (int): the random seed for number generation
+        n_trajectories (int): number of trajectories of training data
+        noise_abs (float): measurement noise standard deviation.
+            Defaults to .1 if noise_rel is None.
+        noise_rel (float): measurement noise relative to amplitude of
+            true data.  Amplitude of data is calculated as the max value
+             of the power spectrum.  Either noise_abs or noise_rel must
+             be None.  Defaults to None.
+        nonnegative (bool): Whether x0 must be nonnegative, such as for
+            population models.  If so, a gamma distribution is
+            used, rather than a normal distribution.
+
+    Returns:
+        dt, t_train, x_train, x_test, x_dot_test, x_train_true
+    """
+    if noise_abs is not None and noise_rel is not None:
+        raise ValueError("Cannot specify both noise_abs and noise_rel")
+    elif noise_abs is None and noise_rel is None:
+        noise_abs = .1
+    rng = np.random.default_rng(seed)
+    t_train = np.arange(0, t_end, dt)
+    t_train_span = (t_train[0], t_train[-1])
+    x_train = []
+    for i in range(len(init_cond)):
+        x_train.append(
+                scipy.integrate.solve_ivp(
+                rhs_func,
+                t_train_span,
+                init_cond[i],
+                t_eval=t_train,
+                args=args, 
+                **INTEGRATOR_KEYWORDS
+            ).y.T
+        )
+    x_train = np.stack(x_train, axis=-1)
+    x_test = x_train
+    x_test = np.moveaxis(x_test, -1, 0)
+    x_dot_test = np.array(
+        [[rhs_func(0, xij, args[0], args[1]) for xij in xi] for xi in x_test]
+    )
+    x_train_true = np.copy(x_train)
+    if noise_rel is not None:
+        noise_abs = _max_amplitude(x_test) * noise_rel
+    x_train = x_train + noise_abs * rng.standard_normal(x_train.shape)
+    x_train = np.moveaxis(x_train, 0, -2)
+    x_train_true = np.moveaxis(x_train_true, 0, -2)
+    x_test = np.moveaxis(x_test, [0, 1], [-1, -2])
+    x_dot_test = np.moveaxis(x_dot_test, [0, 1], [-1, -2])
+    return dt, t_train, x_train, x_test, x_dot_test, x_train_true
+
 
 def _max_amplitude(signal: np.ndarray):
     return np.abs(scipy.fft.rfft(signal, axis=0)).max()/len(signal)
