@@ -15,7 +15,7 @@ from .utils import (
 name = "pendulum"
 
 
-def nonlinear_pendulum(t, x, m=1, L=1, g=9.81, forcing=0):
+def nonlinear_pendulum(t, x, m=1, L=1, g=9.81, forcing=0, return_all=True):
     """Simple pendulum equation of motion
 
     Arguments:
@@ -73,6 +73,22 @@ def run(
     # calculate metrics
     metrics = coeff_metrics(coefficients, coeff_true)
     metrics.update(integration_metrics(model, x_test, t_train, x_dot_test))
+    if return_all:
+        return (
+            metrics, {
+                "dt": dt,
+                "coeff_true": coeff_true,
+                "coefficients": coefficients,
+                "feature_names": feature_names,
+                "input_features": input_features,
+                "t_train": t_train,
+                "x_train": x_train,
+                "x_test": x_test,
+                "x_dot_test": x_dot_test,
+                "x_train_true": x_train_true,
+                "model": model,
+            }
+        )
     return metrics
 
 

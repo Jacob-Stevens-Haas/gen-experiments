@@ -23,6 +23,7 @@ def run(
     feat_params: dict,
     opt_params: dict,
     display: bool = True,
+    return_all: bool = True,
     **kwargs
 ) -> dict:
     x0_center = np.array([0, 0, 15])
@@ -60,6 +61,22 @@ def run(
     # calculate metrics
     metrics = coeff_metrics(coefficients, coeff_true)
     metrics.update(integration_metrics(model, x_test, t_train, x_dot_test))
+    if return_all:
+        return (
+            metrics, {
+                "dt": dt,
+                "coeff_true": coeff_true,
+                "coefficients": coefficients,
+                "feature_names": feature_names,
+                "input_features": input_features,
+                "t_train": t_train,
+                "x_train": x_train,
+                "x_test": x_test,
+                "x_dot_test": x_dot_test,
+                "x_train_true": x_train_true,
+                "model": model,
+            }
+        )
     return metrics
 
 
