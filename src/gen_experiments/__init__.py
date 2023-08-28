@@ -488,9 +488,3 @@ skinny_specs = {
         [this_module]
     ),
 }
-skinny_specs = {
-    "exp3": (
-        ("sim_params.noise_abs", "diff_params.meas_var"),
-        (lambda x: x, lambda x: x)
-    )
-}
