@@ -455,16 +455,19 @@ def plot_training_data(
 
 def plot_test_trajectories(last_test, model, dt):
     t_test = np.arange(len(last_test) * dt, step=dt)
+    t_sim = t_test
     try:
         x_test_sim = model.simulate(last_test[0], t_test)
     except ValueError:
         warn(message="Simulation blew up; returning zeros")
         x_test_sim = np.zeros_like(last_test)
+    # truncate if integration returns wrong number of points
+    t_sim = t_test[:len(x_test_sim)]
     fig, axs = plt.subplots(last_test.shape[1], 1, sharex=True, figsize=(7, 9))
     plt.suptitle("Test Trajectories by Dimension")
     for i in range(last_test.shape[1]):
         axs[i].plot(t_test, last_test[:, i], "k", label="true trajectory")
-        axs[i].plot(t_test, x_test_sim[:, i], "r--", label="model simulation")
+        axs[i].plot(t_sim, x_test_sim[:, i], "r--", label="model simulation")
         axs[i].legend()
         axs[i].set(xlabel="t", ylabel="$x_{}$".format(i))
 
