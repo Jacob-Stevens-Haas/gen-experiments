@@ -65,7 +65,7 @@ def run(
     series_searches = []
     if base_group is not None:
         other_params["group"] = base_group
-    for series_data in series_params.series_list:
+    for s_counter, series_data in enumerate(series_params.series_list):
         curr_other_params = copy(other_params)
         if series_params.param_name is not None:
             curr_other_params[series_params.param_name] = series_data.static_param
@@ -84,7 +84,8 @@ def run(
         full_results.fill(-np.inf)
         gridpoint_selector = _ndindex_skinny(full_results_shape[1:], ind_skinny, where_others)
         rng = np.random.default_rng(seed)
-        for ind in gridpoint_selector:
+        for ind_counter, ind in enumerate(gridpoint_selector):
+            print(f"Calculating series {s_counter}, gridpoint{ind_counter}", end="\r")
             new_seed = rng.integers(1000)
             for axis_ind, key, val_list in zip(ind, new_grid_params, new_grid_vals):
                 curr_other_params[key] = val_list[axis_ind]
