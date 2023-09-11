@@ -120,12 +120,13 @@ def gen_pde_data(
     rhs_func,
     init_cond,
     args,
+    dimension,
     seed=None,
     noise_abs=None,
     noise_rel=None,
     nonnegative=False,
     dt=0.01,
-    t_end=10,
+    t_end=100,
 ):
     """Generate random training and test data
 
@@ -158,31 +159,45 @@ def gen_pde_data(
     t_train = np.arange(0, t_end, dt)
     t_train_span = (t_train[0], t_train[-1])
     x_train = []
-    for i in range(len(init_cond)):
-        x_train.append(
-                scipy.integrate.solve_ivp(
-                rhs_func,
-                t_train_span,
-                init_cond[i],
-                t_eval=t_train,
-                args=args, 
-                **INTEGRATOR_KEYWORDS
-            ).y.T
-        )
+    x_train.append(
+            scipy.integrate.solve_ivp(
+            rhs_func,
+            t_train_span,
+            init_cond,
+            t_eval=t_train,
+            args=args, 
+            **INTEGRATOR_KEYWORDS
+        ).y.T
+    )
+    t, x = x_train[0].shape
     x_train = np.stack(x_train, axis=-1)
+    if dimension==1:
+        pass
+    elif dimension==2:
+        x_train = np.reshape(x_train, (t, int(np.sqrt(x)), int(np.sqrt(x)), 1))
+    elif dimension==3:
+        x_train = np.reshape(x_train, (t, int(np.cbrt(x)), int(np.cbrt(x)), int(np.cbrt(x)), 1))
     x_test = x_train
     x_test = np.moveaxis(x_test, -1, 0)
     x_dot_test = np.array(
         [[rhs_func(0, xij, args[0], args[1]) for xij in xi] for xi in x_test]
     )
+    if dimension==1:
+        x_dot_test = [np.moveaxis(x_dot_test, [0, 1], [-1, -2])]
+        pass
+    elif dimension==2:
+        x_dot_test = np.reshape(x_dot_test, (t, int(np.sqrt(x)), int(np.sqrt(x)), 1))
+        x_dot_test = [np.moveaxis(x_dot_test, 0, -2)]
+    elif dimension==3:
+        x_dot_test = np.reshape(x_dot_test, (t, int(np.cbrt(x)), int(np.cbrt(x)), int(np.cbrt(x)), 1))
+        x_dot_test = [np.moveaxis(x_dot_test, 0, -2)]
     x_train_true = np.copy(x_train)
     if noise_rel is not None:
         noise_abs = _max_amplitude(x_test) * noise_rel
     x_train = x_train + noise_abs * rng.standard_normal(x_train.shape)
-    x_train = np.moveaxis(x_train, 0, -2)
+    x_train = [np.moveaxis(x_train, 0, -2)]
     x_train_true = np.moveaxis(x_train_true, 0, -2)
-    x_test = np.moveaxis(x_test, [0, 1], [-1, -2])
-    x_dot_test = np.moveaxis(x_dot_test, [0, 1], [-1, -2])
+    x_test = [np.moveaxis(x_test, [0, 1], [-1, -2])]
     return dt, t_train, x_train, x_test, x_dot_test, x_train_true
 
 
@@ -211,6 +226,8 @@ def feature_lookup(kind):
         return ps.FourierLibrary
     elif normalized_kind == "weak":
         return ps.WeakPDELibrary
+    # elif normalized_kind == "pde":
+    #     return ps.PDELibrary
     else:
         raise ValueError
 
@@ -499,6 +516,18 @@ def plot_training_data(last_train, last_train_true, smoothed_last_train):
     axs[1].set(ylabel="Magnitude")
     return axs
 
+def plot_pde_training_data(last_train, last_train_true, smoothed_last_train):
+    """Plot training data (and smoothed training data, if different)."""
+    fig, axs = plt.subplots(1, 2, figsize=(12, 6))
+    #1D:
+    
+    axs[0].set(title="Training data")
+    axs[0].legend()
+    axs[1].semilogy(np.abs(scipy.fft.rfft(last_train, axis=0))/len(last_train))
+    axs[1].set(title="Training data Fourier Modes")
+    axs[1].set(xlabel="Wavenumber")
+    axs[1].set(ylabel="Magnitude")
+    return axs
 
 def plot_test_trajectories(last_test, model, dt):
     t_test = np.arange(len(last_test) * dt, step=dt)
@@ -532,6 +561,37 @@ def plot_test_trajectories(last_test, model, dt):
     else:
         raise ValueError("Can only plot 2d or 3d data.")
 
+def plot_pde_test_trajectories(last_test, model, dt):
+    t_test = np.arange(len(last_test) * dt, step=dt)
+    x_test_sim = model.simulate(last_test[0], t_test)
+    fig, axs = plt.subplots(last_test.shape[1], 1, sharex=True, figsize=(7, 9))
+    plt.suptitle("Test Trajectories by Dimension")
+    for i in range(last_test.shape[1]):
+        axs[i].plot(t_test, last_test[:, i], "k", label="true trajectory")
+        axs[i].plot(t_test, x_test_sim[:, i], "r--", label="model simulation")
+        axs[i].legend()
+        axs[i].set(xlabel="t", ylabel="$x_{}$".format(i))
+
+    fig = plt.figure(figsize=(10, 4.5))
+    plt.suptitle("Full Test Trajectories")
+    if last_test.shape[1] == 2:
+        ax1 = fig.add_subplot(121)
+        ax1.plot(last_test[:, 0], last_test[:, 1], "k")
+        ax1.set(xlabel="$x_0$", ylabel="$x_1$", title="true trajectory")
+        ax2 = fig.add_subplot(122)
+        ax2.plot(x_test_sim[:, 0], x_test_sim[:, 1], "r--")
+        ax2.set(xlabel="$x_0$", ylabel="$x_1$", title="model simulation")
+    elif last_test.shape[1] == 3:
+        ax1 = fig.add_subplot(121, projection="3d")
+        ax1.plot(last_test[:, 0], last_test[:, 1], last_test[:, 2], "k")
+        ax1.set(xlabel="$x_0$", ylabel="$x_1$", zlabel="$x_2$", title="true trajectory")
+        ax2 = fig.add_subplot(122, projection="3d")
+        ax2.plot(x_test_sim[:, 0], x_test_sim[:, 1], x_test_sim[:, 2], "r--")
+        ax2.set(
+            xlabel="$x_0$", ylabel="$x_1$", zlabel="$x_2$", title="model simulation"
+        )
+    else:
+        raise ValueError("Can only plot 2d or 3d data.")
 
 @dataclass
 class ParamDetails:
