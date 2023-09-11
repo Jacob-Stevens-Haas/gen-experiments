@@ -40,6 +40,7 @@ dt, t_train, x_train, x_test, x_dot_test, x_train_true = gen_pde_data(
     dimension,
     seed=42,
     nonnegative=nonnegative,
+    noise_abs=0.1,
     dt=time_args[0],
     t_end=time_args[1]
 )
@@ -68,8 +69,8 @@ compare_coefficient_plots(
             feature_names=feature_names,
         )
 smoothed_last_train = model.differentiation_method.smoothed_x_
-plot_pde_training_data(x_train[-1], x_train_true[-1], smoothed_last_train)
-plot_pde_test_trajectories(x_test[-1], model, dt)
+plot_pde_training_data(x_train[-1], x_train_true, smoothed_last_train)
+# plot_pde_test_trajectories(x_test[-1], model, dt)
 metrics = coeff_metrics(coefficients, coeff_true)
 metrics.update(integration_metrics(model, x_test, t_train, x_dot_test))
 print(metrics)
@@ -87,7 +88,7 @@ pass
 # print(x_dot_test)
 ######## 1D Plot ########
 # figure1 = plt.figure()
-# plt.imshow(x_train[0])
+# plt.imshow(x_train_true - x_train[0])
 # # plt.colorbar()
 # plt.show()
 

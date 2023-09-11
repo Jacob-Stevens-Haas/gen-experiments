@@ -3,8 +3,8 @@ from pysindy.differentiation import SpectralDerivative
 from .utils import (
     gen_pde_data,
     compare_coefficient_plots,
-    plot_training_data,
-    plot_test_trajectories,
+    plot_pde_training_data,
+    plot_pde_test_trajectories,
     coeff_metrics,
     integration_metrics,
     unionize_coeff_matrices,
@@ -94,7 +94,7 @@ pde_setup = {
             "dimension": 1
         },
         "input_features": ["u"],
-        "initial_condition": 1500*np.exp(-(np.arange(0, 10, 0.1)-3)/2),
+        "initial_condition": np.exp(-(np.arange(0, 10, 0.1)-3)/2),
         "spatial_args": [0.1, 100],
         "time_args": [0.1, 10],
         "coeff_true": [
@@ -211,8 +211,8 @@ def run_pde(
             feature_names=feature_names,
         )
         smoothed_last_train = model.differentiation_method.smoothed_x_
-        plot_training_data(x_train[-1], x_train_true[-1], smoothed_last_train)
-        plot_test_trajectories(x_test[-1], model, dt)
+        plot_pde_training_data(x_train[-1], x_train_true[-1], smoothed_last_train)
+        plot_pde_test_trajectories(x_test[-1], model, dt)
 
     # calculate metrics
     metrics = coeff_metrics(coefficients, coeff_true)

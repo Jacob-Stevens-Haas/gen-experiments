@@ -518,16 +518,27 @@ def plot_training_data(last_train, last_train_true, smoothed_last_train):
 
 def plot_pde_training_data(last_train, last_train_true, smoothed_last_train):
     """Plot training data (and smoothed training data, if different)."""
-    fig, axs = plt.subplots(1, 2, figsize=(12, 6))
     #1D:
-    
-    axs[0].set(title="Training data")
-    axs[0].legend()
-    axs[1].semilogy(np.abs(scipy.fft.rfft(last_train, axis=0))/len(last_train))
-    axs[1].set(title="Training data Fourier Modes")
-    axs[1].set(xlabel="Wavenumber")
-    axs[1].set(ylabel="Magnitude")
-    return axs
+    fig, axs = plt.subplots(1, 3, figsize=(18,6))
+    axs[0].imshow(last_train_true, vmin=0, vmax=last_train_true.max())
+    axs[0].set(title="True Data")
+    axs[1].imshow(last_train_true - last_train, vmin=0, 
+                  vmax=last_train_true.max())
+    axs[1].set(title="Noise")
+    axs[2].imshow(last_train_true - smoothed_last_train, vmin=0, 
+                  vmax=last_train_true.max())
+    axs[2].set(title="Smoothed Data")
+
+    # plt.subplot(1, 3, 1)
+    # plt.imshow(last_train_true)
+    # plt.title("True Data")
+    # plt.subplot(1, 3, 2)
+    # plt.imshow(last_train)
+    # plt.title("Noisy Data")
+    # plt.subplot(1, 3, 3)
+    # plt.imshow(smoothed_last_train)
+    # plt.title("Smoothed Data")
+    return plt.show()
 
 def plot_test_trajectories(last_test, model, dt):
     t_test = np.arange(len(last_test) * dt, step=dt)
@@ -562,36 +573,7 @@ def plot_test_trajectories(last_test, model, dt):
         raise ValueError("Can only plot 2d or 3d data.")
 
 def plot_pde_test_trajectories(last_test, model, dt):
-    t_test = np.arange(len(last_test) * dt, step=dt)
-    x_test_sim = model.simulate(last_test[0], t_test)
-    fig, axs = plt.subplots(last_test.shape[1], 1, sharex=True, figsize=(7, 9))
-    plt.suptitle("Test Trajectories by Dimension")
-    for i in range(last_test.shape[1]):
-        axs[i].plot(t_test, last_test[:, i], "k", label="true trajectory")
-        axs[i].plot(t_test, x_test_sim[:, i], "r--", label="model simulation")
-        axs[i].legend()
-        axs[i].set(xlabel="t", ylabel="$x_{}$".format(i))
-
-    fig = plt.figure(figsize=(10, 4.5))
-    plt.suptitle("Full Test Trajectories")
-    if last_test.shape[1] == 2:
-        ax1 = fig.add_subplot(121)
-        ax1.plot(last_test[:, 0], last_test[:, 1], "k")
-        ax1.set(xlabel="$x_0$", ylabel="$x_1$", title="true trajectory")
-        ax2 = fig.add_subplot(122)
-        ax2.plot(x_test_sim[:, 0], x_test_sim[:, 1], "r--")
-        ax2.set(xlabel="$x_0$", ylabel="$x_1$", title="model simulation")
-    elif last_test.shape[1] == 3:
-        ax1 = fig.add_subplot(121, projection="3d")
-        ax1.plot(last_test[:, 0], last_test[:, 1], last_test[:, 2], "k")
-        ax1.set(xlabel="$x_0$", ylabel="$x_1$", zlabel="$x_2$", title="true trajectory")
-        ax2 = fig.add_subplot(122, projection="3d")
-        ax2.plot(x_test_sim[:, 0], x_test_sim[:, 1], x_test_sim[:, 2], "r--")
-        ax2.set(
-            xlabel="$x_0$", ylabel="$x_1$", zlabel="$x_2$", title="model simulation"
-        )
-    else:
-        raise ValueError("Can only plot 2d or 3d data.")
+    plt.imshow(last_test)
 
 @dataclass
 class ParamDetails:
