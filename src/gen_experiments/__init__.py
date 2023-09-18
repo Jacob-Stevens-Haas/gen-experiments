@@ -196,6 +196,7 @@ opt_params = {
         ND({"optcls": "ensemble", "opt": ps.MIOSR(target_sparsity=7), "bagging": True, "n_models": 20}),
         [ps],
     ),
+    "mio-lorenz-ross": ND({"optcls": "MIOSR", "target_sparsity":7}),
 }
 
 # Grid search parameters
@@ -286,6 +287,13 @@ other_params = {
             "sim_params": sim_params["10x"],
             "feat_params": feat_params["cubic"],
             "opt_params": opt_params["ensmio-lorenz-ross"].vals,
+        }), [ps]
+    ),
+    "lor-ross-cubic-fast": ParamDetails(ND(
+        {
+            "sim_params": sim_params["10x"],
+            "feat_params": feat_params["cubic"],
+            "opt_params": opt_params["mio-lorenz-ross"],
         }), [ps]
     ),
     "4nonzero-cubic": ParamDetails(ND(
