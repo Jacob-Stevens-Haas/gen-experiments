@@ -11,7 +11,7 @@ from gen_experiments import odes
 from gen_experiments import lorenz_missing
 from gen_experiments import gridsearch
 from gen_experiments.utils import (
-    NestedDict, ParamDetails, SeriesDef, SeriesList, _PlotPrefs, _max_amplitude
+    NestedDict, ParamDetails, SeriesDef, SeriesList, _PlotPrefs, _signal_avg_power
 )
 from gen_experiments import utils
 
@@ -84,12 +84,12 @@ def lookup_params(params: list[str]) -> list[Parameter]:
     return resolved_params
 
 
-def _convert_abs_rel_noise(grid_vals, grid_params, recent_results):
+def _convert_abs_rel_noise(grid_vals: list, grid_params: list, recent_results: dict):
     """Convert abs_noise grid_vals to rel_noise"""
     signal = np.stack(recent_results["x_train_true"], axis=-1)
-    signal_amplitude = _max_amplitude(signal)
+    signal_power = _signal_avg_power(signal)
     ind = grid_params.index("sim_params.noise_abs")
-    grid_vals[ind] = grid_vals[ind]/signal_amplitude
+    grid_vals[ind] = grid_vals[ind]/signal_power
     grid_params[ind] = "sim_params.noise_rel"
     return grid_vals, grid_params
 

@@ -14,7 +14,6 @@ from gen_experiments.utils import (
     plot_training_data,
     plot_test_trajectories,
     compare_coefficient_plots,
-    _max_amplitude
 )
 name = "gridsearch"
 OtherSliceDef = tuple[int | Callable]
@@ -182,7 +181,7 @@ def _params_match(exp_params: dict, plot_params: Collection[dict]) -> bool:
 
 def plot_gridpoint(grid_data: dict, other_params: dict):
     print("Results for params: ", other_params, flush=True)
-    sim_ind = -1
+    sim_ind = -1 # The last trajectory, and thus the one saved in smoothed_x_
     x_train = grid_data["x_train"][sim_ind]
     x_true = grid_data["x_train_true"][sim_ind]
     model = grid_data["model"]

@@ -47,10 +47,9 @@ def gen_data(
             conditions
         noise_abs (float): measurement noise standard deviation.
             Defaults to .1 if noise_rel is None.
-        noise_rel (float): measurement noise relative to amplitude of
-            true data.  Amplitude of data is calculated as the max value
-             of the power spectrum.  Either noise_abs or noise_rel must
-             be None.  Defaults to None.
+        noise_rel (float): measurement noise-to-signal power ratio.
+            Either noise_abs or noise_rel must be None.  Defaults to
+            None.
         nonnegative (bool): Whether x0 must be nonnegative, such as for
             population models.  If so, a gamma distribution is
             used, rather than a normal distribution.
@@ -128,7 +127,7 @@ def gen_data(
     x_dot_test = np.array([[rhs_func(0, xij) for xij in xi] for xi in x_test])
     x_train_true = np.copy(x_train)
     if noise_rel is not None:
-        noise_abs = _max_amplitude(x_test) * noise_rel
+        noise_abs = np.sqrt(_signal_avg_power(x_test) * noise_rel)
     x_train = x_train + noise_abs * rng.standard_normal(x_train.shape)
     x_train = [xi for xi in x_train]
     x_test = [xi for xi in x_test]
@@ -139,6 +138,8 @@ def gen_data(
 def _max_amplitude(signal: np.ndarray):
     return np.abs(scipy.fft.rfft(signal, axis=0)[1:]).max()/np.sqrt(len(signal))
 
+def _signal_avg_power(signal: np.ndarray) -> float:
+    return np.square(signal).mean()
 
 def diff_lookup(kind):
     normalized_kind = kind.lower().replace(" ", "")
