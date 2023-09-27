@@ -24,7 +24,7 @@ def run(
     opt_params: dict,
     display: bool = True,
     return_all: bool = True,
-    **kwargs
+    **kwargs,
 ) -> dict:
     x0_center = np.array([0, 0, 15])
     dt, t_train, x_train, x_test, x_dot_test, x_train_true = gen_data(
@@ -63,7 +63,8 @@ def run(
     metrics.update(integration_metrics(model, x_test, t_train, x_dot_test))
     if return_all:
         return (
-            metrics, {
+            metrics,
+            {
                 "dt": dt,
                 "coeff_true": coeff_true,
                 "coefficients": coefficients,
@@ -75,7 +76,7 @@ def run(
                 "x_dot_test": x_dot_test,
                 "x_train_true": x_train_true,
                 "model": model,
-            }
+            },
         )
     return metrics
 

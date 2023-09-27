@@ -60,7 +60,7 @@ def gen_data(
     if noise_abs is not None and noise_rel is not None:
         raise ValueError("Cannot specify both noise_abs and noise_rel")
     elif noise_abs is None and noise_rel is None:
-        noise_abs = .1
+        noise_abs = 0.1
     rng = np.random.default_rng(seed)
     if x0_center is None:
         x0_center = np.zeros((n_coord))
@@ -98,17 +98,21 @@ def gen_data(
 
     def _drop_and_warn(arrs):
         maxlen = max(arr.shape[0] for arr in arrs)
+
         def _alert_short(arr):
             if arr.shape[0] < maxlen:
                 warn(message="Dropping simulation due to blow-up")
                 return False
             return True
+
         arrs = list(filter(_alert_short, arrs))
         if len(arrs) == 0:
             raise ValueError(
-                "Simulations failed due to blow-up.  System is too stiff for solver's numerical tolerance"
+                "Simulations failed due to blow-up.  System is too stiff for solver's"
+                " numerical tolerance"
             )
         return arrs
+
     x_train = _drop_and_warn(x_train)
     x_train = np.stack(x_train)
     x_test = []
@@ -136,10 +140,12 @@ def gen_data(
 
 
 def _max_amplitude(signal: np.ndarray):
-    return np.abs(scipy.fft.rfft(signal, axis=0)[1:]).max()/np.sqrt(len(signal))
+    return np.abs(scipy.fft.rfft(signal, axis=0)[1:]).max() / np.sqrt(len(signal))
+
 
 def _signal_avg_power(signal: np.ndarray) -> float:
     return np.square(signal).mean()
+
 
 def diff_lookup(kind):
     normalized_kind = kind.lower().replace(" ", "")
@@ -300,7 +306,7 @@ def unionize_coeff_matrices(
 
     In order to calculate accuracy metrics between true and estimated
     coefficients, this function compares the names of true coefficients
-    and a the fitted model's features in order to create comparable 
+    and a the fitted model's features in order to create comparable
     (i.e. non-ragged) true and estimated coefficient matrices.  In
     a word, it stacks the correct coefficient matrix and the estimated
     coefficient matrix in a matrix that represents the union of true
@@ -371,9 +377,7 @@ def _make_model(
 
 
 def plot_training_data(
-    last_train: np.ndarray,
-    last_train_true: np.ndarray,
-    smoothed_last_train: np.ndarray
+    last_train: np.ndarray, last_train_true: np.ndarray, smoothed_last_train: np.ndarray
 ):
     """Plot training data (and smoothed training data, if different)."""
     fig = plt.figure(figsize=(12, 6))
@@ -447,7 +451,7 @@ def plot_training_data(
     ax.set(title="Training data")
     ax.legend()
     ax = fig.add_subplot(1, 2, 2)
-    ax.loglog(np.abs(scipy.fft.rfft(last_train, axis=0))/np.sqrt(len(last_train)))
+    ax.loglog(np.abs(scipy.fft.rfft(last_train, axis=0)) / np.sqrt(len(last_train)))
     ax.set(title="Training Data Absolute Spectral Density")
     ax.set(xlabel="Wavenumber")
     ax.set(ylabel="Magnitude")
@@ -476,7 +480,7 @@ def plot_test_trajectories(
         warn(message="Simulation blew up; returning zeros")
         x_test_sim = np.zeros_like(last_test)
     # truncate if integration returns wrong number of points
-    t_sim = t_test[:len(x_test_sim)]
+    t_sim = t_test[: len(x_test_sim)]
     fig, axs = plt.subplots(last_test.shape[1], 1, sharex=True, figsize=(7, 9))
     plt.suptitle("Test Trajectories by Dimension")
     for i in range(last_test.shape[1]):
@@ -505,10 +509,7 @@ def plot_test_trajectories(
         )
     else:
         raise ValueError("Can only plot 2d or 3d data.")
-    return {
-        "t_sim": t_sim,
-        "x_sim": x_test_sim
-    }
+    return {"t_sim": t_sim, "x_sim": x_test_sim}
 
 
 @dataclass
@@ -614,6 +615,7 @@ class NestedDict(defaultdict):
             return self[prefix].__setitem__(suffix, value)
         else:
             return super().__setitem__(key, value)
+
 
 @dataclass(frozen=True)
 class _PlotPrefs:

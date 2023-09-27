@@ -15,10 +15,12 @@ from gen_experiments.utils import (
     plot_test_trajectories,
     compare_coefficient_plots,
 )
+
 name = "gridsearch"
 OtherSliceDef = tuple[int | Callable]
 SkinnySpecs = Optional[tuple[tuple[str, ...], tuple[OtherSliceDef, ...]]]
 GridsearchResult = Annotated[np.ndarray, "(n_metrics, n_plot_axis)"]
+
 
 def run(
     seed: int,
@@ -77,13 +79,15 @@ def run(
             ind_skinny, where_others = _curr_skinny_specs(skinny_specs, new_grid_params)
         else:
             ind_skinny = [
-                ind for ind, decide in enumerate(new_grid_decisions) if decide=="plot"
+                ind for ind, decide in enumerate(new_grid_decisions) if decide == "plot"
             ]
             where_others = None
         full_results_shape = (len(metrics), *(len(grid) for grid in new_grid_vals))
         full_results = np.empty(full_results_shape)
         full_results.fill(-np.inf)
-        gridpoint_selector = _ndindex_skinny(full_results_shape[1:], ind_skinny, where_others)
+        gridpoint_selector = _ndindex_skinny(
+            full_results_shape[1:], ind_skinny, where_others
+        )
         rng = np.random.default_rng(seed)
         for ind_counter, ind in enumerate(gridpoint_selector):
             print(f"Calculating series {s_counter}, gridpoint{ind_counter}", end="\r")
@@ -93,19 +97,28 @@ def run(
             curr_results, recent_data = base_ex.run(
                 new_seed, **curr_other_params, display=False, return_all=True
             )
-            if _params_match(curr_other_params, plot_prefs.grid_plot_match) and plot_prefs:
-                plot_data.append({
-                    "params": deepcopy(curr_other_params),
-                    "data": plot_gridpoint(recent_data, curr_other_params)
-                })
+            if (
+                _params_match(curr_other_params, plot_prefs.grid_plot_match)
+                and plot_prefs
+            ):
+                plot_data.append(
+                    {
+                        "params": deepcopy(curr_other_params),
+                        "data": plot_gridpoint(recent_data, curr_other_params),
+                    }
+                )
             full_results[(slice(None), *ind)] = [
                 curr_results[metric] for metric in metrics
             ]
-        series_searches.append(_marginalize_grid_views(new_grid_decisions, full_results))
+        series_searches.append(
+            _marginalize_grid_views(new_grid_decisions, full_results)
+        )
 
     if plot_prefs:
         if plot_prefs.rel_noise:
-            grid_vals, grid_params = plot_prefs.rel_noise(grid_vals, grid_params, recent_data)
+            grid_vals, grid_params = plot_prefs.rel_noise(
+                grid_vals, grid_params, recent_data
+            )
         fig, subplots = plt.subplots(
             n_metrics,
             n_plotparams,
@@ -138,7 +151,8 @@ def run(
     return {
         "plot_data": plot_data,
         "series_data": {
-            name: data for data, name in zip(
+            name: data
+            for data, name in zip(
                 series_searches, [ser.name for ser in series_params.series_list]
             )
         },
@@ -149,15 +163,15 @@ def run(
 
 
 def plot(
-        fig: plt.Figure,
-        subplots: Sequence[plt.Axes],
-        metrics: Sequence[str],
-        grid_params: Sequence[str],
-        grid_vals: Sequence[Sequence[float] | np.ndarray],
-        grid_searches: Sequence[GridsearchResult],
-        name: str,
-        legends: bool
-    ):
+    fig: plt.Figure,
+    subplots: Sequence[plt.Axes],
+    metrics: Sequence[str],
+    grid_params: Sequence[str],
+    grid_vals: Sequence[Sequence[float] | np.ndarray],
+    grid_searches: Sequence[GridsearchResult],
+    name: str,
+    legends: bool,
+):
     for m_ind_row, m_name in enumerate(metrics):
         for col, (param_name, x_ticks, param_search) in enumerate(
             zip(grid_params, grid_vals, grid_searches)
@@ -167,18 +181,15 @@ def plot(
             x_ticks = np.array(x_ticks)
             if m_name in ("coeff_mse", "coeff_mae"):
                 ax.set_yscale("log")
-            x_ticks_normalized = (
-                (x_ticks - x_ticks.min())
-                / (x_ticks.max() - x_ticks.min())
+            x_ticks_normalized = (x_ticks - x_ticks.min()) / (
+                x_ticks.max() - x_ticks.min()
             )
-            x_ticks_lognormalized = (
-                (np.log(x_ticks) - np.log(x_ticks).min())
-                / (np.log(x_ticks.max()) - np.log(x_ticks).min())
+            x_ticks_lognormalized = (np.log(x_ticks) - np.log(x_ticks).min()) / (
+                np.log(x_ticks.max()) - np.log(x_ticks).min()
             )
             ax = subplots[m_ind_row, col]
-            if (
-                kstest(x_ticks_normalized, "uniform")
-                < kstest(x_ticks_lognormalized, "uniform")
+            if kstest(x_ticks_normalized, "uniform") < kstest(
+                x_ticks_lognormalized, "uniform"
             ):
                 ax.set_xscale("log")
             if m_ind_row == 0:
@@ -202,7 +213,7 @@ def _params_match(exp_params: dict, plot_params: Collection[dict]) -> bool:
 
 def plot_gridpoint(grid_data: dict, other_params: dict):
     print("Results for params: ", other_params, flush=True)
-    sim_ind = -1 # The last trajectory, and thus the one saved in smoothed_x_
+    sim_ind = -1  # The last trajectory, and thus the one saved in smoothed_x_
     x_train = grid_data["x_train"][sim_ind]
     x_true = grid_data["x_train_true"][sim_ind]
     model = grid_data["model"]
@@ -215,7 +226,9 @@ def plot_gridpoint(grid_data: dict, other_params: dict):
         input_features=grid_data["input_features"],
         feature_names=grid_data["feature_names"],
     )
-    plot_data = plot_test_trajectories(grid_data["x_test"][sim_ind], model, grid_data["dt"])
+    plot_data = plot_test_trajectories(
+        grid_data["x_test"][sim_ind], model, grid_data["dt"]
+    )
     plt.show()
     return {
         "x_train": x_train,
@@ -240,11 +253,12 @@ def _marginalize_grid_views(
         grid_searches.append(selection_results)
     return grid_searches
 
+
 def _ndindex_skinny(
-        shape: tuple[int],
-        thin_axes: Optional[Sequence[int]] = None,
-        thin_slices: Optional[Sequence[OtherSliceDef]] = None
-    ):
+    shape: tuple[int],
+    thin_axes: Optional[Sequence[int]] = None,
+    thin_slices: Optional[Sequence[OtherSliceDef]] = None,
+):
     """
     Return an iterator like ndindex, but only traverse thin_axes once
 
@@ -273,7 +287,7 @@ def _ndindex_skinny(
         raise ValueError("Must pass thin_axes if thin_slices is not None")
     elif thin_slices is None:  # slice other thin axes at 0th index
         n_thin = len(thin_axes)
-        thin_slices = (n_thin * ((n_thin-1) * (0,),))
+        thin_slices = n_thin * ((n_thin - 1) * (0,),)
     full_indexes = np.ndindex(shape)
 
     def ind_checker(multi_index):
@@ -289,7 +303,7 @@ def _ndindex_skinny(
                 if callable(slice_ind):
                     slice_ind = slice_ind(multi_index[ax1])
                 # would check: "== slice_ind", but must allow slice_ind = -1
-                match *= (multi_index[ax2] == range(shape[ax2])[slice_ind])
+                match *= multi_index[ax2] == range(shape[ax2])[slice_ind]
             matches.append(match)
         return any(matches)
 
@@ -307,9 +321,7 @@ def _curr_skinny_specs(
 ) -> tuple[Sequence[int], Sequence[OtherSliceDef]]:
     """Calculate which skinny specs apply to current parameters"""
     skinny_param_inds = [
-        grid_params.index(pname)
-        for pname in skinny_specs[0]
-        if pname in grid_params
+        grid_params.index(pname) for pname in skinny_specs[0] if pname in grid_params
     ]
     missing_sk_inds = [
         skinny_specs[0].index(pname)
@@ -318,14 +330,12 @@ def _curr_skinny_specs(
     ]
     where_others = []
     for orig_sk_ind, match_criteria in zip(
-        range(len(skinny_specs[0])),
-        skinny_specs[1],
-        strict=True
+        range(len(skinny_specs[0])), skinny_specs[1], strict=True
     ):
         if orig_sk_ind in missing_sk_inds:
             continue
         missing_criterion_inds = tuple(
-            sk_ind if sk_ind < orig_sk_ind else sk_ind-1 for sk_ind in missing_sk_inds
+            sk_ind if sk_ind < orig_sk_ind else sk_ind - 1 for sk_ind in missing_sk_inds
         )
         new_criteria = tuple(
             match_criterion

@@ -55,7 +55,7 @@ ode_setup = {
             {"y": 28, "y": -1, "x z": -1},
             {"z": -8 / 3, "x y": 1},
         ],
-        "x0_center": np.array([0, 0, 15])
+        "x0_center": np.array([0, 0, 15]),
     },
     "hopf": {
         "rhsfunc": ps.utils.hopf,
@@ -71,7 +71,7 @@ ode_setup = {
         "coeff_true": [
             {"x": -0.1, "y": 2},
             {"x": -2, "y": -0.1},
-        ]
+        ],
     },
     "cubic_ho": {
         "rhsfunc": ps.utils.cubic_damped_SHO,
@@ -79,7 +79,7 @@ ode_setup = {
         "coeff_true": [
             {"x^3": -0.1, "y^3": 2},
             {"x^3": -2, "y^3": -0.1},
-        ]
+        ],
     },
     "vdp": {
         "rhsfunc": ps.utils.van_der_pol,
@@ -87,7 +87,7 @@ ode_setup = {
         "coeff_true": [
             {"x'": 1},
             {"x": -1, "x'": 0.5, "x^2 x'": -0.5},
-        ]
+        ],
     },
 }
 
@@ -145,7 +145,8 @@ def run(
     metrics.update(integration_metrics(model, x_test, t_train, x_dot_test))
     if return_all:
         return (
-            metrics, {
+            metrics,
+            {
                 "dt": dt,
                 "coeff_true": coeff_true,
                 "coefficients": coefficients,
@@ -157,6 +158,6 @@ def run(
                 "x_dot_test": x_dot_test,
                 "x_train_true": x_train_true,
                 "model": model,
-            }
+            },
         )
     return metrics
