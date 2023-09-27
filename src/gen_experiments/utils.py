@@ -2,7 +2,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from itertools import chain
 from types import ModuleType
-from typing import Sequence, Mapping, Optional, Collection
+from typing import Sequence, Mapping, Optional, Collection, Any
 from math import ceil
 from warnings import warn
 
@@ -454,7 +454,20 @@ def plot_training_data(
     return fig
 
 
-def plot_test_trajectories(last_test, model, dt):
+def plot_test_trajectories(
+    last_test: np.ndarray, model: ps.SINDy, dt: float
+) -> Mapping[str, np.ndarray]:
+    """Plot a test trajectory
+
+    Args:
+        last_test: a single trajectory of the system
+        model: a trained model to simulate and compare to test data
+        dt: the time interval in test data
+
+    Returns:
+        A dict with two keys, "t_sim" (the simulation times) and
+    "x_sim" (the simulated trajectory)
+    """
     t_test = np.arange(len(last_test) * dt, step=dt)
     t_sim = t_test
     try:
@@ -492,6 +505,10 @@ def plot_test_trajectories(last_test, model, dt):
         )
     else:
         raise ValueError("Can only plot 2d or 3d data.")
+    return {
+        "t_sim": t_sim,
+        "x_sim": x_test_sim
+    }
 
 
 @dataclass

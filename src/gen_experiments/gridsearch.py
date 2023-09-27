@@ -1,5 +1,5 @@
-from copy import copy
-from typing import Iterable, Sequence, Optional, Callable, Collection
+from copy import copy, deepcopy
+from typing import Iterable, Sequence, Optional, Callable, Collection, Annotated
 
 from scipy.stats import kstest
 import matplotlib.pyplot as plt
@@ -18,6 +18,7 @@ from gen_experiments.utils import (
 name = "gridsearch"
 OtherSliceDef = tuple[int | Callable]
 SkinnySpecs = Optional[tuple[tuple[str, ...], tuple[OtherSliceDef, ...]]]
+GridsearchResult = Annotated[np.ndarray, "(n_metrics, n_plot_axis)"]
 
 def run(
     seed: int,
@@ -62,6 +63,7 @@ def run(
     n_metrics = len(metrics)
     n_plotparams = len([decide for decide in grid_decisions if decide == "plot"])
     series_searches = []
+    plot_data = []
     if base_group is not None:
         other_params["group"] = base_group
     for s_counter, series_data in enumerate(series_params.series_list):
@@ -92,7 +94,10 @@ def run(
                 new_seed, **curr_other_params, display=False, return_all=True
             )
             if _params_match(curr_other_params, plot_prefs.grid_plot_match) and plot_prefs:
-                plot_gridpoint(recent_data, curr_other_params)
+                plot_data.append({
+                    "params": deepcopy(curr_other_params),
+                    "data": plot_gridpoint(recent_data, curr_other_params)
+                })
             full_results[(slice(None), *ind)] = [
                 curr_results[metric] for metric in metrics
             ]
@@ -131,12 +136,28 @@ def run(
 
     main_metric_ind = metrics.index("main") if "main" in metrics else 0
     return {
-        "results": series_searches,
+        "plot_data": plot_data,
+        "series_data": {
+            name: data for data, name in zip(
+                series_searches, [ser.name for ser in series_params.series_list]
+            )
+        },
+        "metrics": metrics,
+        "grid_axes": {name: data for name, data in zip(grid_params, grid_vals)},
         "main": max(grid[main_metric_ind].max() for grid in series_searches),
     }
 
 
-def plot(fig, subplots, metrics, grid_params, grid_vals, grid_searches, name, legends):
+def plot(
+        fig: plt.Figure,
+        subplots: Sequence[plt.Axes],
+        metrics: Sequence[str],
+        grid_params: Sequence[str],
+        grid_vals: Sequence[Sequence[float] | np.ndarray],
+        grid_searches: Sequence[GridsearchResult],
+        name: str,
+        legends: bool
+    ):
     for m_ind_row, m_name in enumerate(metrics):
         for col, (param_name, x_ticks, param_search) in enumerate(
             zip(grid_params, grid_vals, grid_searches)
@@ -194,13 +215,21 @@ def plot_gridpoint(grid_data: dict, other_params: dict):
         input_features=grid_data["input_features"],
         feature_names=grid_data["feature_names"],
     )
-    plot_test_trajectories(grid_data["x_test"][sim_ind], model, grid_data["dt"])
+    plot_data = plot_test_trajectories(grid_data["x_test"][sim_ind], model, grid_data["dt"])
     plt.show()
+    return {
+        "x_train": x_train,
+        "x_true": x_true,
+        "smooth_train": smooth_train,
+        "x_test": grid_data["x_test"][sim_ind],
+        "t_sim": plot_data["t_sim"],
+        "x_sim": plot_data["x_sim"],
+    }
 
 
 def _marginalize_grid_views(
     grid_decisions: Iterable, results: np.ndarray
-) -> list[np.ndarray]:
+) -> list[GridsearchResult]:
     """Marginalize unnecessary dimensions by taking max across axes."""
     plot_param_inds = [ind for ind, val in enumerate(grid_decisions) if val == "plot"]
     grid_searches = []
