@@ -92,8 +92,10 @@ def run(
         for ind_counter, ind in enumerate(gridpoint_selector):
             print(f"Calculating series {s_counter}, gridpoint{ind_counter}", end="\r")
             new_seed = rng.integers(1000)
+            param_updates = {}
             for axis_ind, key, val_list in zip(ind, new_grid_params, new_grid_vals):
-                curr_other_params[key] = val_list[axis_ind]
+                param_updates[key] = val_list[axis_ind]
+                curr_other_params.update(param_updates)
             curr_results, recent_data = base_ex.run(
                 new_seed, **curr_other_params, display=False, return_all=True
             )
@@ -103,7 +105,7 @@ def run(
             ):
                 plot_data.append(
                     {
-                        "params": deepcopy(curr_other_params),
+                        "params": param_updates | {"name": series_data.name},
                         "data": plot_gridpoint(recent_data, curr_other_params),
                     }
                 )

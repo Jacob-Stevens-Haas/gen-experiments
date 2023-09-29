@@ -600,6 +600,17 @@ class SeriesList:
 
 
 class NestedDict(defaultdict):
+    """A dictionary that splits all keys by ".", creating a sub-dict.
+
+    Args: see superclass
+
+    Example:
+
+        >>> foo = NestedDict("a.b"=1)
+        >>> foo["a.c"] = 2
+        >>> foo["a"]["b"]
+        1
+    """
     def __missing__(self, key):
         try:
             prefix, subkey = key.split(".", 1)
@@ -615,6 +626,13 @@ class NestedDict(defaultdict):
             return self[prefix].__setitem__(suffix, value)
         else:
             return super().__setitem__(key, value)
+
+    def update(self, other: dict):
+        try:
+            for k, v in other.items():
+                self.__setitem__(k, v)
+        except:
+            super().update(other)
 
 
 @dataclass(frozen=True)
