@@ -42,10 +42,7 @@ ode_setup = {
         "rhsfunc": ps.utils.odes.rossler,
         "input_features": ["x", "y", "z"],
         "coeff_true": [
-            {
-                "y": -1,
-                "z": -1,
-            },
+            {"y": -1, "z": -1},
             {"x": 1, "y": p_ross[0]},
             {"1": p_ross[1], "z": -p_ross[2], "x z": 1},
         ],
@@ -127,7 +124,7 @@ def run(
     )
     model = _make_model(input_features, dt, diff_params, feat_params, opt_params)
 
-    model.fit(x_train, quiet=True, multiple_trajectories=True)
+    model.fit(x_train)
     coeff_true, coefficients, feature_names = unionize_coeff_matrices(model, coeff_true)
 
     # make the plots
@@ -149,6 +146,11 @@ def run(
     if return_all:
         return (
             metrics, {
+                "dt": dt,
+                "coeff_true": coeff_true,
+                "coefficients": coefficients,
+                "feature_names": feature_names,
+                "input_features": input_features,
                 "t_train": t_train,
                 "x_train": x_train,
                 "x_test": x_test,

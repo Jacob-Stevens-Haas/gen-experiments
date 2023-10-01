@@ -1,16 +1,19 @@
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from itertools import chain
 from types import ModuleType
-from typing import Sequence, Mapping, Optional, Callable
+from typing import Sequence, Mapping, Optional, Collection, Callable
 from math import ceil
+from warnings import warn
 
 import matplotlib.pyplot as plt
+import kalman
 import numpy as np
 import seaborn as sns
 import scipy
 import pysindy as ps
 import sklearn
+import auto_ks as aks
 
 INTEGRATOR_KEYWORDS = {"rtol": 1e-12, "method": "LSODA", "atol": 1e-12}
 PAL = sns.color_palette("Set1")
@@ -93,6 +96,21 @@ def gen_data(
                 **INTEGRATOR_KEYWORDS,
             ).y.T
         )
+
+    def _drop_and_warn(arrs):
+        maxlen = max(arr.shape[0] for arr in arrs)
+        def _alert_short(arr):
+            if arr.shape[0] < maxlen:
+                warn(message="Dropping simulation due to blow-up")
+                return False
+            return True
+        arrs = list(filter(_alert_short, arrs))
+        if len(arrs) == 0:
+            raise ValueError(
+                "Simulations failed due to blow-up.  System is too stiff for solver's numerical tolerance"
+            )
+        return arrs
+    x_train = _drop_and_warn(x_train)
     x_train = np.stack(x_train)
     x_test = []
     for traj in range(ceil(n_trajectories / 2)):
@@ -105,6 +123,7 @@ def gen_data(
                 **INTEGRATOR_KEYWORDS,
             ).y.T
         )
+    x_test = _drop_and_warn(x_test)
     x_test = np.array(x_test)
     x_dot_test = np.array([[rhs_func(0, xij) for xij in xi] for xi in x_test])
     x_train_true = np.copy(x_train)
@@ -201,7 +220,8 @@ def gen_pde_data(
 
 
 def _max_amplitude(signal: np.ndarray):
-    return np.abs(scipy.fft.rfft(signal, axis=0)).max()/len(signal)
+    return np.abs(scipy.fft.rfft(signal, axis=0)[1:]).max()/np.sqrt(len(signal))
+
 
 def diff_lookup(kind):
     normalized_kind = kind.lower().replace(" ", "")
@@ -346,14 +366,12 @@ def integration_metrics(model, x_test, t_train, x_dot_test):
         x_test,
         t_train,
         x_dot_test,
-        multiple_trajectories=True,
         metric=sklearn.metrics.mean_squared_error,
     )
     metrics["mae-plot"] = model.score(
         x_test,
         t_train,
         x_dot_test,
-        multiple_trajectories=True,
         metric=sklearn.metrics.mean_absolute_error,
     )
     return metrics
@@ -364,13 +382,11 @@ def unionize_coeff_matrices(
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Reformat true coefficients and coefficient matrix compatibly
 
-
     In order to calculate accuracy metrics between true and estimated
     coefficients, this function compares the names of true coefficients
-    and a the fitted model's features in order to create comparable true
-    and estimated coefficient matrices.
-
-    That is, it embeds the correct coefficient matrix and the estimated
+    and a the fitted model's features in order to create comparable 
+    (i.e. non-ragged) true and estimated coefficient matrices.  In
+    a word, it stacks the correct coefficient matrix and the estimated
     coefficient matrix in a matrix that represents the union of true
     features and modeled features.
 
@@ -438,11 +454,16 @@ def _make_model(
     )
 
 
-def plot_training_data(last_train, last_train_true, smoothed_last_train):
+def plot_training_data(
+    last_train: np.ndarray,
+    last_train_true: np.ndarray,
+    smoothed_last_train: np.ndarray
+):
     """Plot training data (and smoothed training data, if different)."""
-    fig, axs = plt.subplots(1, 2, figsize=(12, 6))
+    fig = plt.figure(figsize=(12, 6))
     if last_train.shape[1] == 2:
-        axs[0].plot(
+        ax = fig.add_subplot(1, 2, 1)
+        ax.plot(
             last_train_true[:, 0],
             last_train_true[:, 1],
             ".",
@@ -450,7 +471,7 @@ def plot_training_data(last_train, last_train_true, smoothed_last_train):
             color=PAL[0],
             **PLOT_KWS,
         )
-        axs[0].plot(
+        ax.plot(
             last_train[:, 0],
             last_train[:, 1],
             ".",
@@ -462,7 +483,7 @@ def plot_training_data(last_train, last_train_true, smoothed_last_train):
             np.linalg.norm(smoothed_last_train - last_train) / smoothed_last_train.size
             > 1e-12
         ):
-            axs[0].plot(
+            ax.plot(
                 smoothed_last_train[:, 0],
                 smoothed_last_train[:, 1],
                 ".",
@@ -470,10 +491,10 @@ def plot_training_data(last_train, last_train_true, smoothed_last_train):
                 color=PAL[2],
                 **PLOT_KWS,
             )
-        axs[0].set(xlabel="$x_0$", ylabel="$x_1$")
+        ax.set(xlabel="$x_0$", ylabel="$x_1$")
     elif last_train.shape[1] == 3:
-        axs[0] = plt.axes(projection="3d")
-        axs[0].plot(
+        ax = fig.add_subplot(1, 2, 1, projection="3d")
+        ax.plot(
             last_train_true[:, 0],
             last_train_true[:, 1],
             last_train_true[:, 2],
@@ -482,7 +503,7 @@ def plot_training_data(last_train, last_train_true, smoothed_last_train):
             **PLOT_KWS,
         )
 
-        axs[0].plot(
+        ax.plot(
             last_train[:, 0],
             last_train[:, 1],
             last_train[:, 2],
@@ -495,7 +516,7 @@ def plot_training_data(last_train, last_train_true, smoothed_last_train):
             np.linalg.norm(smoothed_last_train - last_train) / smoothed_last_train.size
             > 1e-12
         ):
-            axs[0].plot(
+            ax.plot(
                 smoothed_last_train[:, 0],
                 smoothed_last_train[:, 1],
                 smoothed_last_train[:, 2],
@@ -504,16 +525,17 @@ def plot_training_data(last_train, last_train_true, smoothed_last_train):
                 label="Smoothed values",
                 alpha=0.3,
             )
-        axs[0].set(xlabel="$x$", ylabel="$y$", zlabel="$z$")
+        ax.set(xlabel="$x$", ylabel="$y$", zlabel="$z$")
     else:
         raise ValueError("Can only plot 2d or 3d data.")
-    axs[0].set(title="Training data")
-    axs[0].legend()
-    axs[1].semilogy(np.abs(scipy.fft.rfft(last_train, axis=0))/len(last_train))
-    axs[1].set(title="Training data Fourier Modes")
-    axs[1].set(xlabel="Wavenumber")
-    axs[1].set(ylabel="Magnitude")
-    return axs
+    ax.set(title="Training data")
+    ax.legend()
+    ax = fig.add_subplot(1, 2, 2)
+    ax.loglog(np.abs(scipy.fft.rfft(last_train, axis=0))/np.sqrt(len(last_train)))
+    ax.set(title="Training Data Absolute Spectral Density")
+    ax.set(xlabel="Wavenumber")
+    ax.set(ylabel="Magnitude")
+    return fig
 
 def plot_pde_training_data(last_train, last_train_true, smoothed_last_train):
     """Plot training data (and smoothed training data, if different)."""
@@ -532,7 +554,11 @@ def plot_pde_training_data(last_train, last_train_true, smoothed_last_train):
 
 def plot_test_trajectories(last_test, model, dt):
     t_test = np.arange(len(last_test) * dt, step=dt)
-    x_test_sim = model.simulate(last_test[0], t_test)
+    try:
+        x_test_sim = model.simulate(last_test[0], t_test)
+    except ValueError:
+        warn(message="Simulation blew up; returning zeros")
+        x_test_sim = np.zeros_like(last_test)
     fig, axs = plt.subplots(last_test.shape[1], 1, sharex=True, figsize=(7, 9))
     plt.suptitle("Test Trajectories by Dimension")
     for i in range(last_test.shape[1]):
@@ -651,7 +677,10 @@ class SeriesList:
 
 class NestedDict(defaultdict):
     def __missing__(self, key):
-        prefix, subkey = key.split(".", 1)
+        try:
+            prefix, subkey = key.split(".", 1)
+        except ValueError:
+            raise KeyError(key)
         return self[prefix][subkey]
 
     def __setitem__(self, key, value):
@@ -662,3 +691,51 @@ class NestedDict(defaultdict):
             return self[prefix].__setitem__(suffix, value)
         else:
             return super().__setitem__(key, value)
+
+@dataclass(frozen=True)
+class _PlotPrefs:
+    plot: bool = True
+    rel_noise: bool = False
+    grid_plot_match: Collection[dict] = field(default_factory=lambda: (dict(),))
+
+    def __bool__(self):
+        return self.plot
+
+
+def kalman_generalized_cv(
+    times: np.ndarray, measurements: np.ndarray, alpha0: float = 1, detail=False
+):
+    """Find kalman parameter alpha using GCV error
+
+    See Boyd & Barratt, Fitting a Kalman Smoother to Data.  No regularization
+    """
+    measurements = measurements.reshape((-1, 1))
+    nt = len(measurements)
+    dt = times[1] - times[0]
+    Ai = np.array([[1, 0], [dt, 1]])
+    Qi = kalman.gen_Qi(dt)
+    Qi_rt_inv = np.linalg.cholesky(np.linalg.inv(Qi))
+    Qi_r_i_vec = np.reshape(Qi_rt_inv, (-1, 1))
+    Qi_proj = (
+        lambda vec: Qi_r_i_vec
+        @ (Qi_r_i_vec.T @ Qi_r_i_vec) ** -1
+        @ (Qi_r_i_vec.T)
+        @ vec
+    )
+    Hi = np.array([[0, 1]])
+    Ri = np.eye(1)
+    Ri_rt_inv = Ri
+    params0 = aks.KalmanSmootherParameters(Ai, Qi_rt_inv, Hi, Ri)
+    mask = np.ones_like(measurements, dtype=bool)
+    mask[::4] = False
+
+    def proj(curr_params, t):
+        W_n_s_v = np.reshape(curr_params.W_neg_sqrt, (-1, 1))
+        W_n_s_v = np.reshape(Qi_proj(W_n_s_v), (2, 2))
+        new_params = aks.KalmanSmootherParameters(Ai, W_n_s_v, Hi, Ri_rt_inv)
+        return new_params, t
+
+    params, info = aks.tune(params0, proj, measurements, K=mask, lam=0.1, verbose=False)
+    est_Q = np.linalg.inv(params.W_neg_sqrt @ params.W_neg_sqrt.T)
+    est_alpha = 1 / (est_Q / Qi).mean()
+    return est_alpha
