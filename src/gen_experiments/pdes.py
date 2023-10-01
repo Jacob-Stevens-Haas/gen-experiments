@@ -4,7 +4,6 @@ from .utils import (
     gen_pde_data,
     compare_coefficient_plots,
     plot_pde_training_data,
-    plot_pde_test_trajectories,
     coeff_metrics,
     integration_metrics,
     unionize_coeff_matrices,
@@ -94,7 +93,7 @@ pde_setup = {
             "dimension": 1
         },
         "input_features": ["u"],
-        "initial_condition": np.exp(-(np.arange(0, 10, 0.1)-3)/2),
+        "initial_condition": 10*np.exp(-(np.arange(0, 10, 0.1)-5)**2/2),
         "spatial_args": [0.1, 100],
         "time_args": [0.1, 10],
         "coeff_true": [
@@ -110,7 +109,11 @@ pde_setup = {
         "input_features": ["uxx", "uyy"],
         "initial_condition": np.reshape(np.zeros((10, 10)), (100,)),
         "spatial_args": [0.01, 100],
-        "time_args": [0.01, 1]
+        "time_args": [0.01, 1],
+        "coeff_true": [
+            {"u_11": 1}
+        ],
+        "spatial_grid": np.arange(0, 10, 0.1)
     },
     "diffuse3D": {
         "rhsfunc": {
@@ -172,8 +175,8 @@ def run_pde(
     diff_params: dict,
     feat_params: dict,
     opt_params: dict,
-    display: bool = False,
-    return_all: bool = False,
+    display: bool = True,
+    return_all: bool = True,
 ) -> dict:
     rhsfunc = pde_setup[group]["rhsfunc"]["func"]
     input_features = pde_setup[group]["input_features"]
@@ -181,6 +184,8 @@ def run_pde(
     spatial_args = pde_setup[group]["spatial_args"]
     time_args = pde_setup[group]["time_args"]
     dimension = pde_setup[group]["rhsfunc"]["dimension"]
+    coeff_true = pde_setup[group]["coeff_true"]
+    spatial_grid = pde_setup[group]["spatial_grid"]
     try:
         time_args = pde_setup[group]["time_args"]
     except KeyError:
@@ -192,7 +197,7 @@ def run_pde(
         spatial_args,
         dimension,
         seed,
-        nonnegative=nonnegative,
+        noise_abs=0,
         dt=time_args[0],
         t_end=time_args[1]
     )
@@ -211,8 +216,7 @@ def run_pde(
             feature_names=feature_names,
         )
         smoothed_last_train = model.differentiation_method.smoothed_x_
-        plot_pde_training_data(x_train[-1], x_train_true[-1], smoothed_last_train)
-        plot_pde_test_trajectories(x_test[-1], model, dt)
+        plot_pde_training_data(x_train[-1], x_train_true, smoothed_last_train)
 
     # calculate metrics
     metrics = coeff_metrics(coefficients, coeff_true)

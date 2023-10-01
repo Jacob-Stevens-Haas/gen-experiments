@@ -56,6 +56,7 @@ sim_params = {
 }
 diff_params = {
     "test": ND({"diffcls": "FiniteDifference"}),
+    "test_axis": ND({"diffcls": "FiniteDifference", "axis": -2}),
     "test2": ND({"diffcls": "SmoothedFiniteDifference"}),
     "tv": ND({"diffcls": "sindy", "kind": "trend_filtered", "order": 0, "alpha": 1}),
     "savgol": ND({"diffcls": "sindy", "kind": "savitzky_golay"}),
@@ -69,6 +70,16 @@ feat_params = {
     "test2": ND({"featcls": "Fourier"}),
     "cubic": ND({"featcls": "Polynomial", "degree": 3}),
     "testweak": ND({"featcls": "WeakPDELibrary"}),  # needs work
+    "pde": ParamDetails(
+        ND({
+            "featcls": "pde",
+            "library_functions": [lambda x: x],
+            "function_names": [lambda x: x],
+            "derivative_order": 2,
+            "spatial_grid": np.arange(0, 10, 0.1),
+            "include_interaction": False
+        }),[ps]
+    )
 }
 opt_params = {
     "test": ND({"optcls": "STLSQ"}),

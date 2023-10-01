@@ -2,7 +2,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from itertools import chain
 from types import ModuleType
-from typing import Sequence, Mapping, Optional
+from typing import Sequence, Mapping, Optional, Callable
 from math import ceil
 
 import matplotlib.pyplot as plt
@@ -117,25 +117,25 @@ def gen_data(
     return dt, t_train, x_train, x_test, x_dot_test, x_train_true
 
 def gen_pde_data(
-    rhs_func,
-    init_cond,
-    args,
-    dimension,
+    rhs_func: Callable,
+    init_cond: np.ndarray,
+    args: tuple,
+    dimension: int,
     seed=None,
     noise_abs=None,
     noise_rel=None,
-    nonnegative=False,
     dt=0.01,
     t_end=100,
 ):
-    """Generate random training and test data
+    """Generate random PDE training and test data
 
-    Note that test data has no noise.
+    For simplicity, Trajectories have been removed,
+    Test data is the same as Train data.
 
     Arguments:
-        rhs_func (Callable): the function to integrate
-        init_cond (List): Initial Conditions for the PDE
-        args (Tuple): Arguments for rhsfunc 
+        rhs_func: the function to integrate
+        init_cond: Initial Conditions for the PDE
+        args: Arguments for rhsfunc 
         seed (int): the random seed for number generation
         n_trajectories (int): number of trajectories of training data
         noise_abs (float): measurement noise standard deviation.
@@ -144,9 +144,8 @@ def gen_pde_data(
             true data.  Amplitude of data is calculated as the max value
              of the power spectrum.  Either noise_abs or noise_rel must
              be None.  Defaults to None.
-        nonnegative (bool): Whether x0 must be nonnegative, such as for
-            population models.  If so, a gamma distribution is
-            used, rather than a normal distribution.
+        dt (float): time step for the PDE simulation
+        t_end (int): total time for the PDE simulation
 
     Returns:
         dt, t_train, x_train, x_test, x_dot_test, x_train_true
@@ -226,8 +225,8 @@ def feature_lookup(kind):
         return ps.FourierLibrary
     elif normalized_kind == "weak":
         return ps.WeakPDELibrary
-    # elif normalized_kind == "pde":
-    #     return ps.PDELibrary
+    elif normalized_kind == "pde":
+        return ps.PDELibrary
     else:
         raise ValueError
 
@@ -519,26 +518,17 @@ def plot_training_data(last_train, last_train_true, smoothed_last_train):
 def plot_pde_training_data(last_train, last_train_true, smoothed_last_train):
     """Plot training data (and smoothed training data, if different)."""
     #1D:
-    fig, axs = plt.subplots(1, 3, figsize=(18,6))
-    axs[0].imshow(last_train_true, vmin=0, vmax=last_train_true.max())
-    axs[0].set(title="True Data")
-    axs[1].imshow(last_train_true - last_train, vmin=0, 
-                  vmax=last_train_true.max())
-    axs[1].set(title="Noise")
-    axs[2].imshow(last_train_true - smoothed_last_train, vmin=0, 
-                  vmax=last_train_true.max())
-    axs[2].set(title="Smoothed Data")
-
-    # plt.subplot(1, 3, 1)
-    # plt.imshow(last_train_true)
-    # plt.title("True Data")
-    # plt.subplot(1, 3, 2)
-    # plt.imshow(last_train)
-    # plt.title("Noisy Data")
-    # plt.subplot(1, 3, 3)
-    # plt.imshow(smoothed_last_train)
-    # plt.title("Smoothed Data")
-    return plt.show()
+    if len(last_train.shape)==3:
+        fig, axs = plt.subplots(1, 3, figsize=(18,6))
+        axs[0].imshow(last_train_true, vmin=0, vmax=last_train_true.max())
+        axs[0].set(title="True Data")
+        axs[1].imshow(last_train_true - last_train, vmin=0, 
+                    vmax=last_train_true.max())
+        axs[1].set(title="Noise")
+        axs[2].imshow(last_train_true - smoothed_last_train, vmin=0, 
+                    vmax=last_train_true.max())
+        axs[2].set(title="Smoothed Data")
+        return plt.show()
 
 def plot_test_trajectories(last_test, model, dt):
     t_test = np.arange(len(last_test) * dt, step=dt)
@@ -571,9 +561,6 @@ def plot_test_trajectories(last_test, model, dt):
         )
     else:
         raise ValueError("Can only plot 2d or 3d data.")
-
-def plot_pde_test_trajectories(last_test, model, dt):
-    plt.imshow(last_test)
 
 @dataclass
 class ParamDetails:
