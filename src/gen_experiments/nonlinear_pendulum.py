@@ -75,7 +75,8 @@ def run(
     metrics.update(integration_metrics(model, x_test, t_train, x_dot_test))
     if return_all:
         return (
-            metrics, {
+            metrics,
+            {
                 "dt": dt,
                 "coeff_true": coeff_true,
                 "coefficients": coefficients,
@@ -87,7 +88,7 @@ def run(
                 "x_dot_test": x_dot_test,
                 "x_train_true": x_train_true,
                 "model": model,
-            }
+            },
         )
     return metrics
 

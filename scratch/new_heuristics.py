@@ -88,13 +88,21 @@ def find_alpha_complex_witheld(
     H_witheld = observation_operator(times, witheld_mask)
     rhs = H.T @ train_measurements
 
-    loss_fun = lambda a: loss_validation_alpha(a, H_witheld, validation_measurements, G, Qinv, H, rhs, h)
-    loss_grad = lambda a: grad_validation_alpha(a, H_witheld, validation_measurements, G, Qinv, H, rhs, h)
+    loss_fun = lambda a: loss_validation_alpha(
+        a, H_witheld, validation_measurements, G, Qinv, H, rhs, h
+    )
+    loss_grad = lambda a: grad_validation_alpha(
+        a, H_witheld, validation_measurements, G, Qinv, H, rhs, h
+    )
     scalar_grad_check(np.array([alpha0]), 1e-6, loss_fun, loss_grad)
 
     res = optimize.minimize(
-        loss_fun, alpha0, jac=loss_grad, method="l-bfgs-b", bounds=[(0, np.inf)],
-        tol = 1e-10
+        loss_fun,
+        alpha0,
+        jac=loss_grad,
+        method="l-bfgs-b",
+        bounds=[(0, np.inf)],
+        tol=1e-10,
     )
     if detail:
         return res
@@ -127,10 +135,12 @@ def grad_validation_alpha(
     Qinv: sp.sparray | sp.spmatrix,
     H: sp.sparray | sp.spmatrix,
     rhs: np.ndarray,
-    h: float
+    h: float,
 ) -> float:
     curr_alpha = curr_alpha + h * 1j
-    return _loss_validation_alpha(curr_alpha[0], H_witheld, validation_z, G, Qinv, H, rhs, h)[1]
+    return _loss_validation_alpha(
+        curr_alpha[0], H_witheld, validation_z, G, Qinv, H, rhs, h
+    )[1]
 
 
 def loss_validation_alpha(
@@ -141,10 +151,12 @@ def loss_validation_alpha(
     Qinv: sp.sparray | sp.spmatrix,
     H: sp.sparray | sp.spmatrix,
     rhs: np.ndarray,
-    h: float
+    h: float,
 ):
     curr_alpha = curr_alpha + h * 1j
-    return _loss_validation_alpha(curr_alpha[0], H_witheld, validation_z, G, Qinv, H, rhs, h)[0]
+    return _loss_validation_alpha(
+        curr_alpha[0], H_witheld, validation_z, G, Qinv, H, rhs, h
+    )[0]
 
 
 def _check_shapes(*args):
@@ -174,7 +186,7 @@ def grad_training_alpha(
     Qinv: sp.sparray | sp.spmatrix,
     H: sp.sparray | sp.spmatrix,
     rhs: np.ndarray,
-    h: float
+    h: float,
 ) -> float:
     curr_alpha = curr_alpha + h * 1j
     return _loss_training_alpha(curr_alpha[0], train_z, G, Qinv, H, rhs, h)[1]
@@ -187,10 +199,11 @@ def loss_training_alpha(
     Qinv: sp.sparray | sp.spmatrix,
     H: sp.sparray | sp.spmatrix,
     rhs: np.ndarray,
-    h: float
+    h: float,
 ):
     curr_alpha = curr_alpha + h * 1j
     return _loss_training_alpha(curr_alpha[0], train_z, G, Qinv, H, rhs, h)[0]
+
 
 def scalar_grad_check(x0: Any, dx: Any, loss_fun: Callable, grad_fun: Callable):
     f0 = loss_fun(x0)
@@ -199,7 +212,6 @@ def scalar_grad_check(x0: Any, dx: Any, loss_fun: Callable, grad_fun: Callable):
     g1 = grad_fun(x0 + dx)
     # Should be O(dx^2)
     assert np.abs(g1 * dx + g0 * dx - 2 * (f1 - f0)) / f0 < dx * 10
-
 
 
 def find_alpha_generalized(
@@ -298,6 +310,8 @@ def find_alpha_barratt(
 
 
 HashableArray = tuple[tuple[float, ...], tuple[int, ...]]
+
+
 def _array_to_hashable(arr: np.ndarray) -> HashableArray:
     shape = arr.shape
     data = tuple(arr.ravel())

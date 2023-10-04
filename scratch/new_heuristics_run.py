@@ -15,7 +15,7 @@ from new_heuristics import (
     loss_validation_alpha,
     loss_training_alpha,
     grad_validation_alpha,
-    scalar_grad_check
+    scalar_grad_check,
 )
 
 # %%
@@ -91,7 +91,7 @@ for seed in seeds:
     ress.append(result)
 
 
-fig = plt.figure(figsize = [8, 4])
+fig = plt.figure(figsize=[8, 4])
 fig.suptitle(f"Performance of LBFGS/Complex Step GCV Search on {n_sims} simulations")
 ax1 = fig.add_subplot(1, 2, 1)
 ax1.hist(alphas1, bins=np.geomspace(min(alphas1), max(alphas1), 2 * len(alphas1) // 3))
@@ -151,8 +151,9 @@ for seed in seeds:
         # loss_grad = lambda a: grad_validation_alpha(a, H_witheld, validation_measurements, G, Qinv, H, rhs, 1e-6)
         # scalar_grad_check(np.array([1]), 1e-6, loss_fun, loss_grad)
 
-
-        v_loss = loss_validation_alpha(np.array([alpha]), H_witheld, validation_measurements,G, Qinv, H, rhs, 1e-6)
+        v_loss = loss_validation_alpha(
+            np.array([alpha]), H_witheld, validation_measurements, G, Qinv, H, rhs, 1e-6
+        )
         # t_loss = loss_training_alpha(np.array([alpha]), train_measurements,G, Qinv, H, rhs, alpha * 1e-4)
         # grad = grad_validation_alpha(np.array([alpha]), H_witheld, validation_measurements,G, Qinv, H, rhs, 1e-6)
         valid_losses.append(v_loss)
@@ -160,17 +161,20 @@ for seed in seeds:
         # grads.append(grad)
 
     alpha_mins.append(alphas[::-1][np.argmin(valid_losses[::-1])])
-    ax.semilogx(alphas, (valid_losses-min(valid_losses))/(max(valid_losses)-min(valid_losses)), color=f"C0")
+    ax.semilogx(
+        alphas,
+        (valid_losses - min(valid_losses)) / (max(valid_losses) - min(valid_losses)),
+        color=f"C0",
+    )
     # ax3.semilogx(alphas, (training_losses-min(training_losses))/(max(training_losses)-min(training_losses)), color=f"C1")
     # ax2.semilogx(alphas, grads, color="C1")
-    
+
 ax.set_title("Validation loss with lotsa timepoints may have local minima?")
 plt.savefig("comlex_loss.png")
 fig = plt.figure()
 plt.hist(alpha_mins, bins=np.geomspace(min(alphas), max(alphas), len(alphas)))
 plt.xscale("log")
 plt.savefig("alphadist2.png")
-
 
 
 # %%
