@@ -42,10 +42,7 @@ ode_setup = {
         "rhsfunc": ps.utils.odes.rossler,
         "input_features": ["x", "y", "z"],
         "coeff_true": [
-            {
-                "y": -1,
-                "z": -1,
-            },
+            {"y": -1, "z": -1},
             {"x": 1, "y": p_ross[0]},
             {"1": p_ross[1], "z": -p_ross[2], "x z": 1},
         ],
@@ -58,7 +55,7 @@ ode_setup = {
             {"y": 28, "y": -1, "x z": -1},
             {"z": -8 / 3, "x y": 1},
         ],
-        "x0_center": np.array([0, 0, 15])
+        "x0_center": np.array([0, 0, 15]),
     },
     "hopf": {
         "rhsfunc": ps.utils.hopf,
@@ -74,7 +71,7 @@ ode_setup = {
         "coeff_true": [
             {"x": -0.1, "y": 2},
             {"x": -2, "y": -0.1},
-        ]
+        ],
     },
     "cubic_ho": {
         "rhsfunc": ps.utils.cubic_damped_SHO,
@@ -82,7 +79,7 @@ ode_setup = {
         "coeff_true": [
             {"x^3": -0.1, "y^3": 2},
             {"x^3": -2, "y^3": -0.1},
-        ]
+        ],
     },
     "vdp": {
         "rhsfunc": ps.utils.van_der_pol,
@@ -90,7 +87,7 @@ ode_setup = {
         "coeff_true": [
             {"x'": 1},
             {"x": -1, "x'": 0.5, "x^2 x'": -0.5},
-        ]
+        ],
     },
 }
 
@@ -127,7 +124,7 @@ def run(
     )
     model = _make_model(input_features, dt, diff_params, feat_params, opt_params)
 
-    model.fit(x_train, quiet=True, multiple_trajectories=True)
+    model.fit(x_train)
     coeff_true, coefficients, feature_names = unionize_coeff_matrices(model, coeff_true)
 
     # make the plots
@@ -148,13 +145,19 @@ def run(
     metrics.update(integration_metrics(model, x_test, t_train, x_dot_test))
     if return_all:
         return (
-            metrics, {
+            metrics,
+            {
+                "dt": dt,
+                "coeff_true": coeff_true,
+                "coefficients": coefficients,
+                "feature_names": feature_names,
+                "input_features": input_features,
                 "t_train": t_train,
                 "x_train": x_train,
                 "x_test": x_test,
                 "x_dot_test": x_dot_test,
                 "x_train_true": x_train_true,
                 "model": model,
-            }
+            },
         )
     return metrics
