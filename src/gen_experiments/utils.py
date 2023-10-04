@@ -2,7 +2,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from itertools import chain
 from types import ModuleType
-from typing import Sequence, Mapping, Optional, Collection, Any
+from typing import Sequence, Mapping, Optional, Collection, Callable
 from math import ceil
 from warnings import warn
 
@@ -138,6 +138,88 @@ def gen_data(
     x_dot_test = [xi for xi in x_dot_test]
     return dt, t_train, x_train, x_test, x_dot_test, x_train_true
 
+def gen_pde_data(
+    rhs_func: Callable,
+    init_cond: np.ndarray,
+    args: tuple,
+    dimension: int,
+    seed: int | None = None,
+    noise_abs: float | None = None,
+    noise_rel: float | None = None,
+    dt: float = 0.01,
+    t_end: int = 100,
+):
+    """Generate PDE measurement data for training
+
+    For simplicity, Trajectories have been removed,
+    Test data is the same as Train data.
+
+    Arguments:
+        rhs_func: the function to integrate
+        init_cond: Initial Conditions for the PDE
+        args: Arguments for rhsfunc 
+        seed (int): the random seed for number generation
+        noise_abs (float): measurement noise standard deviation.
+            Defaults to .1 if noise_rel is None.
+        noise_rel (float): measurement noise relative to amplitude of
+            true data.  Amplitude of data is calculated as the max value
+             of the power spectrum.  Either noise_abs or noise_rel must
+             be None.  Defaults to None.
+        dt (float): time step for the PDE simulation
+        t_end (int): total time for the PDE simulation
+
+    Returns:
+        dt, t_train, x_train, x_test, x_dot_test, x_train_true
+    """
+    if noise_abs is not None and noise_rel is not None:
+        raise ValueError("Cannot specify both noise_abs and noise_rel")
+    elif noise_abs is None and noise_rel is None:
+        noise_abs = .1
+    rng = np.random.default_rng(seed)
+    t_train = np.arange(0, t_end, dt)
+    t_train_span = (t_train[0], t_train[-1])
+    x_train = []
+    x_train.append(
+            scipy.integrate.solve_ivp(
+            rhs_func,
+            t_train_span,
+            init_cond,
+            t_eval=t_train,
+            args=args, 
+            **INTEGRATOR_KEYWORDS
+        ).y.T
+    )
+    t, x = x_train[0].shape
+    x_train = np.stack(x_train, axis=-1)
+    if dimension==1:
+        pass
+    elif dimension==2:
+        x_train = np.reshape(x_train, (t, int(np.sqrt(x)), int(np.sqrt(x)), 1))
+    elif dimension==3:
+        x_train = np.reshape(x_train, (t, int(np.cbrt(x)), int(np.cbrt(x)), int(np.cbrt(x)), 1))
+    x_test = x_train
+    x_test = np.moveaxis(x_test, -1, 0)
+    x_dot_test = np.array(
+        [[rhs_func(0, xij, args[0], args[1]) for xij in xi] for xi in x_test]
+    )
+    if dimension==1:
+        x_dot_test = [np.moveaxis(x_dot_test, [0, 1], [-1, -2])]
+        pass
+    elif dimension==2:
+        x_dot_test = np.reshape(x_dot_test, (t, int(np.sqrt(x)), int(np.sqrt(x)), 1))
+        x_dot_test = [np.moveaxis(x_dot_test, 0, -2)]
+    elif dimension==3:
+        x_dot_test = np.reshape(x_dot_test, (t, int(np.cbrt(x)), int(np.cbrt(x)), int(np.cbrt(x)), 1))
+        x_dot_test = [np.moveaxis(x_dot_test, 0, -2)]
+    x_train_true = np.copy(x_train)
+    if noise_rel is not None:
+        noise_abs = _max_amplitude(x_test) * noise_rel
+    x_train = x_train + noise_abs * rng.standard_normal(x_train.shape)
+    x_train = [np.moveaxis(x_train, 0, -2)]
+    x_train_true = np.moveaxis(x_train_true, 0, -2)
+    x_test = [np.moveaxis(x_test, [0, 1], [-1, -2])]
+    return dt, t_train, x_train, x_test, x_dot_test, x_train_true
+
 
 def _max_amplitude(signal: np.ndarray):
     return np.abs(scipy.fft.rfft(signal, axis=0)[1:]).max() / np.sqrt(len(signal))
@@ -169,6 +251,8 @@ def feature_lookup(kind):
         return ps.FourierLibrary
     elif normalized_kind == "weak":
         return ps.WeakPDELibrary
+    elif normalized_kind == "pde":
+        return ps.PDELibrary
     else:
         raise ValueError
 
@@ -457,6 +541,20 @@ def plot_training_data(
     ax.set(ylabel="Magnitude")
     return fig
 
+def plot_pde_training_data(last_train, last_train_true, smoothed_last_train):
+    """Plot training data (and smoothed training data, if different)."""
+    #1D:
+    if len(last_train.shape)==3:
+        fig, axs = plt.subplots(1, 3, figsize=(18,6))
+        axs[0].imshow(last_train_true, vmin=0, vmax=last_train_true.max())
+        axs[0].set(title="True Data")
+        axs[1].imshow(last_train_true - last_train, vmin=0, 
+                    vmax=last_train_true.max())
+        axs[1].set(title="Noise")
+        axs[2].imshow(last_train_true - smoothed_last_train, vmin=0, 
+                    vmax=last_train_true.max())
+        axs[2].set(title="Smoothed Data")
+        return plt.show()
 
 def plot_test_trajectories(
     last_test: np.ndarray, model: ps.SINDy, dt: float
@@ -510,7 +608,6 @@ def plot_test_trajectories(
     else:
         raise ValueError("Can only plot 2d or 3d data.")
     return {"t_sim": t_sim, "x_sim": x_test_sim}
-
 
 @dataclass
 class ParamDetails:
