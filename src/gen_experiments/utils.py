@@ -140,13 +140,13 @@ def gen_pde_data(
     init_cond: np.ndarray,
     args: tuple,
     dimension: int,
-    seed=None,
-    noise_abs=None,
-    noise_rel=None,
-    dt=0.01,
-    t_end=100,
+    seed: int | None = None,
+    noise_abs: float | None = None,
+    noise_rel: float | None = None,
+    dt: float = 0.01,
+    t_end: int = 100,
 ):
-    """Generate random PDE training and test data
+    """Generate PDE measurement data for training
 
     For simplicity, Trajectories have been removed,
     Test data is the same as Train data.
@@ -156,7 +156,6 @@ def gen_pde_data(
         init_cond: Initial Conditions for the PDE
         args: Arguments for rhsfunc 
         seed (int): the random seed for number generation
-        n_trajectories (int): number of trajectories of training data
         noise_abs (float): measurement noise standard deviation.
             Defaults to .1 if noise_rel is None.
         noise_rel (float): measurement noise relative to amplitude of
