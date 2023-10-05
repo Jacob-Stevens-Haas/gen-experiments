@@ -3,6 +3,8 @@ todo
 gen_experiments/trials/
 scratch/*.ipynb
 scratch/run_exps.sh
+*.png
+debugme*.py
 
 # IDE files
 .vscode

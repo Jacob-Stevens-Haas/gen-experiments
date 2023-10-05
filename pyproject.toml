@@ -25,9 +25,11 @@ classifiers = [
 # Since the point of the package is reproducibility, incl. all dev
 # dependencies
 dependencies = [
-  "mitosis @ git+https://github.com/Jacob-Stevens-Haas/mitosis",
-  "derivative",
-  "pysindy @ git+https://github.com/dynamicslab/pysindy@master",
+  "mitosis @ git+https://github.com/Jacob-Stevens-Haas/mitosis@master",
+  "derivative @ git+https://github.com/Jacob-Stevens-Haas/derivative@hyperparams",
+  "pysindy[cvxpy,miosr] @ git+https://github.com/dynamicslab/pysindy@master",
+  "kalman @ git+https://github.com/Jacob-Stevens-Haas/kalman@0.1.0",
+  "auto_ks @ git+https://github.com/cvxgrp/auto_ks.git@e60bcc6",
   "pytest >= 6.0.0",
   "pytest-cov",
   "flake8",
@@ -69,3 +71,6 @@ filterwarnings = [
   "ignore::UserWarning",]
 addopts = '-m "not slow"'
 markers = ["slow"]
+
+[project.entry-points.'derivative.hyperparam_opt']
+"kalman.gcv" = "gen_experiments.utils:kalman_generalized_cv"
