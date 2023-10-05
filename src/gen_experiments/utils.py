@@ -1,7 +1,7 @@
 from collections import defaultdict
 from dataclasses import dataclass, field
 from itertools import chain
-from types import ModuleTypebranch
+from types import ModuleType
 from typing import Sequence, Mapping, Optional, Collection, Callable
 from math import ceil
 from warnings import warn
@@ -150,7 +150,7 @@ def gen_pde_data(
     t_end: int = 100,
 ):
     """Generate PDE measurement data for training
-    
+
     For simplicity, Trajectories have been removed,
     Test data is the same as Train data.
 

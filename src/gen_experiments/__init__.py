@@ -466,7 +466,6 @@ diff_series = {
         diff_params["kalman"],
         ["diff_params.alpha"],
         [(None,)],
-
     ),
     "tv1": SeriesDef(
         "Total Variation",
