@@ -71,7 +71,7 @@ experiments = {
     "lv": (odes, "lv"),
     "ross": (odes, "ross"),
     "gridsearch": (gridsearch, None),
-    "pde": (pdes, "diffuse1D"),
+    "diffuse1D": (pdes, "diffuse1D"),
     "none": (NoExperiment, None),
 }
 ex_name = type("identidict", (), {"__getitem__": lambda self, key: key})()
