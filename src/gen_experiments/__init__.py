@@ -8,6 +8,7 @@ from mitosis import Parameter
 
 from gen_experiments import nonlinear_pendulum
 from gen_experiments import odes
+from gen_experiments import pdes
 from gen_experiments import lorenz_missing
 from gen_experiments import gridsearch
 from gen_experiments.utils import (
@@ -70,6 +71,7 @@ experiments = {
     "lv": (odes, "lv"),
     "ross": (odes, "ross"),
     "gridsearch": (gridsearch, None),
+    "pde": (pdes, "diffuse1D"),
     "none": (NoExperiment, None),
 }
 ex_name = type("identidict", (), {"__getitem__": lambda self, key: key})()

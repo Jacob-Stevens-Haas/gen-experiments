@@ -10,6 +10,8 @@ from .utils import (
     _make_model,
 )
 
+name = "pdes"
+
 def diffuse1D(t, u, dx, nx):
     u = np.reshape(u, nx)
     u[0] = 0
@@ -70,7 +72,7 @@ def run_pde(
     )
     model = _make_model(input_features, dt, diff_params, feat_params, opt_params)
 
-    model.fit(x_train[0], quiet=True)
+    model.fit(x_train, t=t_train)
     coeff_true, coefficients, feature_names = unionize_coeff_matrices(model, coeff_true)
 
     # make the plots
