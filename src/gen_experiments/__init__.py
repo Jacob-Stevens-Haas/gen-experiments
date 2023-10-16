@@ -381,7 +381,7 @@ other_params = {
     "lor-ross-cubic-fast": ParamDetails(
         ND(
             {
-                "sim_params": sim_params["10x"],
+                "sim_params": sim_params["test"],
                 "feat_params": feat_params["cubic"],
                 "opt_params": opt_params["mio-lorenz-ross"],
             }
