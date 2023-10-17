@@ -37,7 +37,7 @@ args = parser.parse_args()
 ex, group = gen_experiments.experiments[args.experiment]
 seed = args.seed
 params = gen_experiments.lookup_params(args.param)
-trials_folder = Path(__file__).parent.absolute() / "trials"
+trials_folder = gen_experiments.utils.TRIALS_FOLDER
 if not trials_folder.exists():
     trials_folder.mkdir(parents=True)
 mitosis.run(

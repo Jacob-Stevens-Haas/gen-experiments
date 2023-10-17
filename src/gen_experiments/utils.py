@@ -1,8 +1,9 @@
+from pathlib import Path
 from collections import defaultdict
 from dataclasses import dataclass, field
 from itertools import chain
 from types import ModuleType
-from typing import Sequence, Mapping, Optional, Collection, Callable
+from typing import Any, Sequence, Mapping, Optional, Collection, Callable, TypedDict
 from math import ceil
 from warnings import warn
 
@@ -18,6 +19,7 @@ import auto_ks as aks
 INTEGRATOR_KEYWORDS = {"rtol": 1e-12, "method": "LSODA", "atol": 1e-12}
 PAL = sns.color_palette("Set1")
 PLOT_KWS = dict(alpha=0.7, linewidth=3)
+TRIALS_FOLDER = Path(__file__).parent.absolute() / "trials"
 
 
 def gen_data(
@@ -779,3 +781,30 @@ def kalman_generalized_cv(
     est_Q = np.linalg.inv(params.W_neg_sqrt @ params.W_neg_sqrt.T)
     est_alpha = 1 / (est_Q / Qi).mean()
     return est_alpha
+
+
+class GridPointData(TypedDict):
+    x_train: np.ndarray
+    x_true: np.ndarray
+    smooth_train: np.ndarray
+    x_test: np.ndarray
+    t_sim: np.ndarray
+    x_sim: np.ndarray
+
+
+class PlotData(TypedDict):
+    params: dict[str, Any]
+    data: GridPointData
+
+
+class Results(TypedDict):
+    plot_data: list[PlotData]
+    series_data: dict[str, list[np.ndarray]]
+    metrics: list[str]
+    grid_axes: dict[str, Collection[float]]
+    main: float
+
+
+def load_results(hexstr: str) -> Results:
+    with open(TRIALS_FOLDER / f"results_{hexstr}.npy", "rb") as f:
+        return np.load(f, allow_pickle=True)[()]
