@@ -3,7 +3,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from itertools import chain
 from types import ModuleType
-from typing import Any, Sequence, Mapping, Optional, Collection, Callable, TypedDict
+from typing import Annotated, Any, Sequence, Mapping, Optional, Collection, Callable, TypedDict
 from math import ceil
 from warnings import warn
 
@@ -797,14 +797,56 @@ class PlotData(TypedDict):
     data: GridPointData
 
 
+SeriesData = Annotated[
+    list[Annotated[np.ndarray, "(n_metrics, n_grid_vals)"]], "len=n_grid_axes"
+]
+
 class Results(TypedDict):
     plot_data: list[PlotData]
-    series_data: dict[str, list[np.ndarray]]
+    series_data: dict[str, SeriesData]
     metrics: list[str]
     grid_axes: dict[str, Collection[float]]
     main: float
 
 
 def load_results(hexstr: str) -> Results:
+    """Load the results that mitosis saves
+
+    Args:
+        hexstr: randomly-assigned identifier for the results to open
+    """
     with open(TRIALS_FOLDER / f"results_{hexstr}.npy", "rb") as f:
         return np.load(f, allow_pickle=True)[()]
+
+
+def plot_group(metric: str, grid_axis_name: tuple[str, Collection], *args: tuple[str, str]) -> None:
+    """Plot every ODE's F1 vs grid_axis plot for each grid_axis
+
+    Args:
+        metric: which metric is being plotted
+        grid_axis: the name of the parameter varied and the values of
+            the parameter.
+        *args: each additional tuple contains the name of an ODE and
+            the hexstr under which it's saved.
+    """
+    n_subplots = len(args)
+    n_rows = max(n_subplots // 3, (n_subplots + 2) // 3)
+    fig, subplots = plt.subplots(
+        n_rows,
+        min(n_subplots, 3),
+        sharey="row",
+        sharex="col",
+        squeeze=False,
+    )
+    fig.suptitle(
+        f"How well do the methods work on different ODEs as {grid_axis_name} changes?"
+    )
+    for subplot, (ode_name, hexstr) in zip(subplots.reshape(-1), args):
+        results = load_results(hexstr)
+        grid_axis_index = results["grid_params"].index(grid_axis_name)
+        grid_axis = results["grid_vals"][grid_axis_index]
+        metric_index = results["metrics"].index(metric)
+        for s_name, s_data in results["series_data"].items():
+            subplot.plot(grid_axis, s_data[grid_axis_index][metric_index], label=s_name)
+        subplot.set_title(ode_name)
+    subplot.legend()
