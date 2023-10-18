@@ -814,17 +814,7 @@ def load_results(hexstr: str) -> Results:
         return np.load(f, allow_pickle=True)[()]
 
 
-def plot_group(metric: str, grid_axis_name: tuple[str, Collection], *args: tuple[str, str]) -> None:
-    """Plot every ODE's F1 vs grid_axis plot for each grid_axis
-
-    Args:
-        metric: which metric is being plotted
-        grid_axis: the name of the parameter varied and the values of
-            the parameter.
-        *args: each additional tuple contains the name of an ODE and
-            the hexstr under which it's saved.
-    """
-    n_subplots = len(args)
+def _setup_summary_fig(n_subplots) -> tuple[plt.Figure, np.ndarray[plt.Axes]]:
     n_rows = max(n_subplots // 3, (n_subplots + 2) // 3)
     fig, subplots = plt.subplots(
         n_rows,
@@ -833,15 +823,56 @@ def plot_group(metric: str, grid_axis_name: tuple[str, Collection], *args: tuple
         sharex="col",
         squeeze=False,
     )
+    return fig, subplots
+
+
+def plot_summary_smoothing(params: dict, *args: tuple[str, str]) -> None:
+    """Plot a single parameter's smoothing/training across multiple ODEs
+    """
+    fig, axs = _setup_summary_fig(len(args))
+    fig.suptitle("How well does a smoothing method perform across ODEs?")
+
+    for ax, (ode_name, hexstr) in zip(axs.reshape(-1), args):
+        results = load_results(hexstr)
+        for trajectory in results["plot_data"]:
+            if params == trajectory["params"]:
+                ax.set_title(ode_name)
+                plot_training_trajectory(
+                    ax,
+                    trajectory["data"]["x_train"],
+                    trajectory["data"]["x_true"],
+                    trajectory["data"]["smooth_train"]
+                )
+                break
+
+        else:
+            warn(f"Did not find a parameter match for {ode_name} experiment")
+    ax.legend()
+
+
+def plot_summary_metric(
+    metric: str, grid_axis_name: tuple[str, Collection], *args: tuple[str, str]
+) -> None:
+    """After multiple gridsearches, plot a comparison for all ODEs
+
+    Plots the overall results for a single metric, single grid axis
+    Args:
+        metric: which metric is being plotted
+        grid_axis: the name of the parameter varied and the values of
+            the parameter.
+        *args: each additional tuple contains the name of an ODE and
+            the hexstr under which it's data is saved.
+    """
+    fig, axs = _setup_summary_fig(len(args))
     fig.suptitle(
         f"How well do the methods work on different ODEs as {grid_axis_name} changes?"
     )
-    for subplot, (ode_name, hexstr) in zip(subplots.reshape(-1), args):
+    for ax, (ode_name, hexstr) in zip(axs.reshape(-1), args):
         results = load_results(hexstr)
         grid_axis_index = results["grid_params"].index(grid_axis_name)
         grid_axis = results["grid_vals"][grid_axis_index]
         metric_index = results["metrics"].index(metric)
         for s_name, s_data in results["series_data"].items():
-            subplot.plot(grid_axis, s_data[grid_axis_index][metric_index], label=s_name)
-        subplot.set_title(ode_name)
-    subplot.legend()
+            ax.plot(grid_axis, s_data[grid_axis_index][metric_index], label=s_name)
+        ax.set_title(ode_name)
+    ax.legend()
