@@ -462,70 +462,57 @@ def _make_model(
     )
 
 
-def plot_training_data(
-    last_train: np.ndarray, last_train_true: np.ndarray, smoothed_last_train: np.ndarray
-):
-    """Plot training data (and smoothed training data, if different)."""
-    fig = plt.figure(figsize=(12, 6))
-    if last_train.shape[1] == 2:
-        ax = fig.add_subplot(1, 2, 1)
+def plot_training_trajectory(
+    ax: plt.Axes, x_train: np.ndarray, x_true: np.ndarray, x_smooth: np.ndarray
+) -> None:
+    """Plot a single training trajectory"""
+    if x_train.shape[1] == 2:
         ax.plot(
-            last_train_true[:, 0],
-            last_train_true[:, 1],
-            ".",
-            label="True values",
-            color=PAL[0],
-            **PLOT_KWS,
+            x_true[:, 0], x_true[:, 1], ".", label= "True", color=PAL[0], **PLOT_KWS
         )
         ax.plot(
-            last_train[:, 0],
-            last_train[:, 1],
-            ".",
-            label="Measured values",
-            color=PAL[1],
-            **PLOT_KWS,
+            x_train[:, 0], x_train[:, 1], ".", label="Measured", color=PAL[1], **PLOT_KWS,
         )
         if (
-            np.linalg.norm(smoothed_last_train - last_train) / smoothed_last_train.size
+            np.linalg.norm(x_smooth - x_train) / x_smooth.size
             > 1e-12
         ):
             ax.plot(
-                smoothed_last_train[:, 0],
-                smoothed_last_train[:, 1],
+                x_smooth[:, 0],
+                x_smooth[:, 1],
                 ".",
-                label="Smoothed values",
+                label="Smoothed",
                 color=PAL[2],
                 **PLOT_KWS,
             )
         ax.set(xlabel="$x_0$", ylabel="$x_1$")
-    elif last_train.shape[1] == 3:
-        ax = fig.add_subplot(1, 2, 1, projection="3d")
+    elif x_train.shape[1] == 3:
         ax.plot(
-            last_train_true[:, 0],
-            last_train_true[:, 1],
-            last_train_true[:, 2],
+            x_true[:, 0],
+            x_true[:, 1],
+            x_true[:, 2],
             color=PAL[0],
             label="True values",
             **PLOT_KWS,
         )
 
         ax.plot(
-            last_train[:, 0],
-            last_train[:, 1],
-            last_train[:, 2],
+            x_train[:, 0],
+            x_train[:, 1],
+            x_train[:, 2],
             ".",
             color=PAL[1],
             label="Measured values",
             alpha=0.3,
         )
         if (
-            np.linalg.norm(smoothed_last_train - last_train) / smoothed_last_train.size
+            np.linalg.norm(x_smooth - x_train) / x_smooth.size
             > 1e-12
         ):
             ax.plot(
-                smoothed_last_train[:, 0],
-                smoothed_last_train[:, 1],
-                smoothed_last_train[:, 2],
+                x_smooth[:, 0],
+                x_smooth[:, 1],
+                x_smooth[:, 2],
                 ".",
                 color=PAL[2],
                 label="Smoothed values",
@@ -534,14 +521,22 @@ def plot_training_data(
         ax.set(xlabel="$x$", ylabel="$y$", zlabel="$z$")
     else:
         raise ValueError("Can only plot 2d or 3d data.")
-    ax.set(title="Training data")
-    ax.legend()
-    ax = fig.add_subplot(1, 2, 2)
-    ax.loglog(np.abs(scipy.fft.rfft(last_train, axis=0)) / np.sqrt(len(last_train)))
-    ax.set(title="Training Data Absolute Spectral Density")
-    ax.set(xlabel="Wavenumber")
-    ax.set(ylabel="Magnitude")
+
+
+def plot_training_data(
+    x_train: np.ndarray, x_true: np.ndarray, x_smooth: np.ndarray
+):
+    """Plot training data (and smoothed training data, if different)."""
+    fig, axs = plt.subplots(1, 2, figsize=(12, 6))
+    plot_training_trajectory(axs[0], x_train, x_true, x_smooth)
+    axs[0].legend()
+    axs[0].set(title="Training data")
+    axs[1].loglog(np.abs(scipy.fft.rfft(x_train, axis=0)) / np.sqrt(len(x_train)))
+    axs[1].set(title="Training Data Absolute Spectral Density")
+    axs[1].set(xlabel="Wavenumber")
+    axs[1].set(ylabel="Magnitude")
     return fig
+
 
 def plot_pde_training_data(last_train, last_train_true, smoothed_last_train):
     """Plot training data (and smoothed training data, if different)."""
