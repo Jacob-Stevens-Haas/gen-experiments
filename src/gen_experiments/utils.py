@@ -835,21 +835,27 @@ def load_results(hexstr: str) -> Results:
 
 
 def _setup_summary_fig(
-        n_sub: int, type: str="axes"
+        n_sub: int, style: str="axes"
 ) -> tuple[plt.Figure, np.ndarray[plt.Axes | plt.Figure]]:
     """Create neatly laid-out arrangements of subplots or subfigures"""
     n_rows = max(n_sub // 3, (n_sub + 2) // 3)
     size = (n_rows, min(n_sub, 3))
-    if type.lower() == "figure":
+    if style.lower() == "figure":
         fig = plt.figure()
         subs = fig.subfigures(*size, squeeze=False)
-    elif type.lower() == "axes":
+    elif style.lower() == "axes":
         fig, subs = plt.subplots(*size, sharey="row", sharex="col", squeeze=False)
     return fig, subs
 
 
-def plot_summary_smoothing(params: dict, *args: tuple[str, str]) -> None:
-    """Plot a single parameter's smoothing/training across multiple ODEs
+def plot_point_across_experiments(params: dict, *args: tuple[str, str], style) -> None:
+    """Plot a single parameter's training or test across multiple experiments
+
+    Arguments:
+        params: paramters defining the gridpoint to match
+        args (experiment_name, hexstr): From which experiments to load
+            data, described as a local name and the hexadecimal suffix
+            of the result file.
     """
     fig, axs = _setup_summary_fig(len(args))
     fig.suptitle("How well does a smoothing method perform across ODEs?")
@@ -859,39 +865,25 @@ def plot_summary_smoothing(params: dict, *args: tuple[str, str]) -> None:
         for trajectory in results["plot_data"]:
             if params == trajectory["params"]:
                 ax.set_title(ode_name)
-                plot_training_trajectory(
-                    ax,
-                    trajectory["data"]["x_train"],
-                    trajectory["data"]["x_true"],
-                    trajectory["data"]["smooth_train"]
-                )
+                if style.lower() == "training":
+                    plot_training_trajectory(
+                        ax,
+                        trajectory["data"]["x_train"],
+                        trajectory["data"]["x_true"],
+                        trajectory["data"]["smooth_train"]
+                    )
+                elif style.lower() == "test":
+                    if trajectory["data"]["x_test"].shape[1]== 2:
+                        plot_func = _plot_test_sim_data_2d
+                    else:
+                        plot_func = _plot_test_sim_data_3d
+                    plot_func(
+                        [ax, ax],
+                        trajectory["data"]["x_test"],
+                        trajectory["data"]["x_sim"],
+                    )
                 break
 
-        else:
-            warn(f"Did not find a parameter match for {ode_name} experiment")
-    ax.legend()
-
-
-def plot_summary_simulation(params: dict, *args: tuple[str, str]) -> None:
-    """Plot a single parameter's smoothing/training across multiple ODEs
-    """
-    fig, axs = _setup_summary_fig(len(args))
-    fig.suptitle("How well does a smoothing method perform across ODEs?")
-    for ax, (ode_name, hexstr) in zip(axs.reshape(-1), args):
-        results = load_results(hexstr)
-        for trajectory in results["plot_data"]:
-            if params == trajectory["params"]:
-                ax.set_title(ode_name)
-                if trajectory["data"]["x_test"].shape[1]== 2:
-                    plot_func = _plot_test_sim_data_2d
-                else:
-                    plot_func = _plot_test_sim_data_3d
-                plot_func(
-                    [ax, ax],
-                    trajectory["data"]["x_test"],
-                    trajectory["data"]["x_sim"],
-                )
-                break
         else:
             warn(f"Did not find a parameter match for {ode_name} experiment")
     ax.legend()
