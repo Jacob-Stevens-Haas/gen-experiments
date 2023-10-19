@@ -553,8 +553,41 @@ def plot_pde_training_data(last_train, last_train_true, smoothed_last_train):
         axs[2].set(title="Smoothed Data")
         return plt.show()
 
+
+def plot_test_sim_data_1d_panel(
+    axs: Sequence[plt.Axes],
+    x_test: np.ndarray,
+    x_sim: np.ndarray,
+    t_test: np.ndarray,
+    t_sim: np.ndarray
+) -> None:
+    for ordinate, ax in enumerate(axs):
+        ax.plot(t_test, x_test[:, ordinate], "k", label="true trajectory")
+        axs[ordinate].plot(t_sim, x_sim[:, ordinate], "r--", label="model simulation")
+        axs[ordinate].legend()
+        axs[ordinate].set(xlabel="t", ylabel="$x_{}$".format(ordinate))
+
+
+def _plot_test_sim_data_2d(
+    axs: Annotated[Sequence[plt.Axes], "len=2"], x_test: np.ndarray, x_sim: np.ndarray
+) -> None:
+    axs[0].plot(x_test[:, 0], x_test[:, 1], "k")
+    axs[0].set(xlabel="$x_0$", ylabel="$x_1$")
+    axs[1].plot(x_sim[:, 0], x_sim[:, 1], "r--")
+    axs[1].set(xlabel="$x_0$", ylabel="$x_1$")
+
+
+def _plot_test_sim_data_3d(
+    axs: Annotated[Sequence[plt.Axes], "len=3"], x_test: np.ndarray, x_sim: np.ndarray
+) -> None:
+    axs[0].plot(x_test[:, 0], x_test[:, 1], x_test[:, 2], "k")
+    axs[0].set(xlabel="$x_0$", ylabel="$x_1$", zlabel="$x_2$")
+    axs[1].plot(x_sim[:, 0], x_sim[:, 1], x_sim[:, 2], "r--")
+    axs[1].set(xlabel="$x_0$", ylabel="$x_1$", zlabel="$x_2$")
+
+
 def plot_test_trajectories(
-    last_test: np.ndarray, model: ps.SINDy, dt: float
+    x_test: np.ndarray, model: ps.SINDy, dt: float
 ) -> Mapping[str, np.ndarray]:
     """Plot a test trajectory
 
@@ -567,44 +600,33 @@ def plot_test_trajectories(
         A dict with two keys, "t_sim" (the simulation times) and
     "x_sim" (the simulated trajectory)
     """
-    t_test = np.arange(len(last_test) * dt, step=dt)
+    t_test = np.arange(len(x_test) * dt, step=dt)
     t_sim = t_test
     try:
-        x_test_sim = model.simulate(last_test[0], t_test)
+        x_sim = model.simulate(x_test[0], t_test)
     except ValueError:
         warn(message="Simulation blew up; returning zeros")
-        x_test_sim = np.zeros_like(last_test)
+        x_sim = np.zeros_like(x_test)
     # truncate if integration returns wrong number of points
-    t_sim = t_test[: len(x_test_sim)]
-    fig, axs = plt.subplots(last_test.shape[1], 1, sharex=True, figsize=(7, 9))
+    t_sim = t_test[: len(x_sim)]
+    fig, axs = plt.subplots(x_test.shape[1], 1, sharex=True, figsize=(7, 9))
     plt.suptitle("Test Trajectories by Dimension")
-    for i in range(last_test.shape[1]):
-        axs[i].plot(t_test, last_test[:, i], "k", label="true trajectory")
-        axs[i].plot(t_sim, x_test_sim[:, i], "r--", label="model simulation")
-        axs[i].legend()
-        axs[i].set(xlabel="t", ylabel="$x_{}$".format(i))
+    plot_test_sim_data_1d_panel(axs, x_test, x_sim, t_test, t_sim)
+    axs[-1].legend()
 
-    fig = plt.figure(figsize=(10, 4.5))
     plt.suptitle("Full Test Trajectories")
-    if last_test.shape[1] == 2:
-        ax1 = fig.add_subplot(121)
-        ax1.plot(last_test[:, 0], last_test[:, 1], "k")
-        ax1.set(xlabel="$x_0$", ylabel="$x_1$", title="true trajectory")
-        ax2 = fig.add_subplot(122)
-        ax2.plot(x_test_sim[:, 0], x_test_sim[:, 1], "r--")
-        ax2.set(xlabel="$x_0$", ylabel="$x_1$", title="model simulation")
-    elif last_test.shape[1] == 3:
-        ax1 = fig.add_subplot(121, projection="3d")
-        ax1.plot(last_test[:, 0], last_test[:, 1], last_test[:, 2], "k")
-        ax1.set(xlabel="$x_0$", ylabel="$x_1$", zlabel="$x_2$", title="true trajectory")
-        ax2 = fig.add_subplot(122, projection="3d")
-        ax2.plot(x_test_sim[:, 0], x_test_sim[:, 1], x_test_sim[:, 2], "r--")
-        ax2.set(
-            xlabel="$x_0$", ylabel="$x_1$", zlabel="$x_2$", title="model simulation"
-        )
+    if x_test.shape[1] == 2:
+        fig, axs = plt.subplots(1, 2, figsize=(10, 4.5))
+        _plot_test_sim_data_2d(axs, x_test, x_sim)
+    elif x_test.shape[1] == 3:
+        fig, axs = plt.subplots(1, 2, figsize=(10, 4.5), subplot_kw={"projection": "3d"})
+        _plot_test_sim_data_3d(axs, x_test, x_sim)
     else:
         raise ValueError("Can only plot 2d or 3d data.")
-    return {"t_sim": t_sim, "x_sim": x_test_sim}
+    axs[0].set(title="true trajectory")
+    axs[1].set(title="model simulation")
+    return {"t_sim": t_sim, "x_sim": x_sim}
+
 
 @dataclass
 class ParamDetails:
@@ -641,7 +663,6 @@ class SeriesDef:
         )
 
     """
-
     name: str
     static_param: dict
     grid_params: Optional[Sequence[str]]
@@ -687,7 +708,6 @@ class SeriesList:
         )
 
     """
-
     param_name: Optional[str]
     print_name: Optional[str]
     series_list: list[SeriesDef]
@@ -827,6 +847,30 @@ def _setup_summary_fig(n_subplots) -> tuple[plt.Figure, np.ndarray[plt.Axes]]:
 
 
 def plot_summary_smoothing(params: dict, *args: tuple[str, str]) -> None:
+    """Plot a single parameter's smoothing/training across multiple ODEs
+    """
+    fig, axs = _setup_summary_fig(len(args))
+    fig.suptitle("How well does a smoothing method perform across ODEs?")
+
+    for ax, (ode_name, hexstr) in zip(axs.reshape(-1), args):
+        results = load_results(hexstr)
+        for trajectory in results["plot_data"]:
+            if params == trajectory["params"]:
+                ax.set_title(ode_name)
+                plot_training_trajectory(
+                    ax,
+                    trajectory["data"]["x_train"],
+                    trajectory["data"]["x_true"],
+                    trajectory["data"]["smooth_train"]
+                )
+                break
+
+        else:
+            warn(f"Did not find a parameter match for {ode_name} experiment")
+    ax.legend()
+
+
+def plot_summary_simulation(params: dict, *args: tuple[str, str]) -> None:
     """Plot a single parameter's smoothing/training across multiple ODEs
     """
     fig, axs = _setup_summary_fig(len(args))
