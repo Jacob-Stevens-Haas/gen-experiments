@@ -571,18 +571,18 @@ def plot_test_sim_data_1d_panel(
 def _plot_test_sim_data_2d(
     axs: Annotated[Sequence[plt.Axes], "len=2"], x_test: np.ndarray, x_sim: np.ndarray
 ) -> None:
-    axs[0].plot(x_test[:, 0], x_test[:, 1], "k")
+    axs[0].plot(x_test[:, 0], x_test[:, 1], "k", label="True Trajectory")
     axs[0].set(xlabel="$x_0$", ylabel="$x_1$")
-    axs[1].plot(x_sim[:, 0], x_sim[:, 1], "r--")
+    axs[1].plot(x_sim[:, 0], x_sim[:, 1], "r--", label="Simulation")
     axs[1].set(xlabel="$x_0$", ylabel="$x_1$")
 
 
 def _plot_test_sim_data_3d(
     axs: Annotated[Sequence[plt.Axes], "len=3"], x_test: np.ndarray, x_sim: np.ndarray
 ) -> None:
-    axs[0].plot(x_test[:, 0], x_test[:, 1], x_test[:, 2], "k")
+    axs[0].plot(x_test[:, 0], x_test[:, 1], x_test[:, 2], "k", label="True Trajectory")
     axs[0].set(xlabel="$x_0$", ylabel="$x_1$", zlabel="$x_2$")
-    axs[1].plot(x_sim[:, 0], x_sim[:, 1], x_sim[:, 2], "r--")
+    axs[1].plot(x_sim[:, 0], x_sim[:, 1], x_sim[:, 2], "r--", label="Simulation")
     axs[1].set(xlabel="$x_0$", ylabel="$x_1$", zlabel="$x_2$")
 
 
@@ -877,20 +877,21 @@ def plot_summary_simulation(params: dict, *args: tuple[str, str]) -> None:
     """
     fig, axs = _setup_summary_fig(len(args))
     fig.suptitle("How well does a smoothing method perform across ODEs?")
-
     for ax, (ode_name, hexstr) in zip(axs.reshape(-1), args):
         results = load_results(hexstr)
         for trajectory in results["plot_data"]:
             if params == trajectory["params"]:
                 ax.set_title(ode_name)
-                plot_training_trajectory(
-                    ax,
-                    trajectory["data"]["x_train"],
-                    trajectory["data"]["x_true"],
-                    trajectory["data"]["smooth_train"]
+                if trajectory["data"]["x_test"].shape[1]== 2:
+                    plot_func = _plot_test_sim_data_2d
+                else:
+                    plot_func = _plot_test_sim_data_3d
+                plot_func(
+                    [ax, ax],
+                    trajectory["data"]["x_test"],
+                    trajectory["data"]["x_sim"],
                 )
                 break
-
         else:
             warn(f"Did not find a parameter match for {ode_name} experiment")
     ax.legend()
