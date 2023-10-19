@@ -834,16 +834,18 @@ def load_results(hexstr: str) -> Results:
         return np.load(f, allow_pickle=True)[()]
 
 
-def _setup_summary_fig(n_subplots) -> tuple[plt.Figure, np.ndarray[plt.Axes]]:
-    n_rows = max(n_subplots // 3, (n_subplots + 2) // 3)
-    fig, subplots = plt.subplots(
-        n_rows,
-        min(n_subplots, 3),
-        sharey="row",
-        sharex="col",
-        squeeze=False,
-    )
-    return fig, subplots
+def _setup_summary_fig(
+        n_sub: int, type: str="axes"
+) -> tuple[plt.Figure, np.ndarray[plt.Axes | plt.Figure]]:
+    """Create neatly laid-out arrangements of subplots or subfigures"""
+    n_rows = max(n_sub // 3, (n_sub + 2) // 3)
+    size = (n_rows, min(n_sub, 3))
+    if type.lower() == "figure":
+        fig = plt.figure()
+        subs = fig.subfigures(*size, squeeze=False)
+    elif type.lower() == "axes":
+        fig, subs = plt.subplots(*size, sharey="row", sharex="col", squeeze=False)
+    return fig, subs
 
 
 def plot_summary_smoothing(params: dict, *args: tuple[str, str]) -> None:
