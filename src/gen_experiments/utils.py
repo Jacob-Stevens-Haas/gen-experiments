@@ -848,6 +848,37 @@ def _setup_summary_fig(
     return fig, subs
 
 
+def plot_experiment_across_gridpoint(hexstr: str, *args: tuple[str, dict]) -> None:
+    """Plot a single experiment's test across multiple gridpoints
+
+    Arguments:
+        hexstr: hexadecimal suffix for the experiment's result file.
+        args (param name, params): From which gridpoints to load
+            data, described as a local name and the paramters defining
+            the gridpoint to match.
+    """
+    fig, axs = _setup_summary_fig(len(args))
+    fig.suptitle("How well does a smoothing method perform across ODEs?")
+    for ax, (p_name, params) in zip(axs.reshape(-1), args):
+        results = load_results(hexstr)
+        for trajectory in results["plot_data"]:
+            if params == trajectory["params"]:
+                ax.set_title(p_name)
+                if trajectory["data"]["x_test"].shape[1]== 2:
+                    plot_func = _plot_test_sim_data_2d
+                else:
+                    plot_func = _plot_test_sim_data_3d
+                plot_func(
+                    [ax, ax],
+                    trajectory["data"]["x_test"],
+                    trajectory["data"]["x_sim"],
+                )
+                break
+        else:
+            warn(f"Did not find a parameter match for {p_name} experiment")
+    ax.legend()
+
+
 def plot_point_across_experiments(params: dict, *args: tuple[str, str], style) -> None:
     """Plot a single parameter's training or test across multiple experiments
 
