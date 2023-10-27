@@ -36,11 +36,10 @@ pde_setup = {
     },
 }
 
-def run_pde(
+def run(
     seed: float,
     /,
     group: str,
-    # sim_params: dict,
     diff_params: dict,
     feat_params: dict,
     opt_params: dict,

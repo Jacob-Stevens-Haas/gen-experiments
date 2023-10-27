@@ -23,6 +23,10 @@ from gen_experiments import utils
 
 this_module = importlib.import_module(__name__)
 
+# To allow pickling
+def identity(x):
+    return x
+
 
 class NoExperiment:
     @staticmethod
@@ -224,8 +228,8 @@ feat_params = {
     "pde": ParamDetails(
         ND({
             "featcls": "pde",
-            "library_functions": [lambda x: x],
-            "function_names": [lambda x: x],
+            "library_functions": [identity],
+            "function_names": [identity],
             "derivative_order": 2,
             "spatial_grid": np.arange(0, 10, 0.1),
             "include_interaction": False
@@ -556,11 +560,6 @@ series_params = {
         [np],
     ),
 }
-
-
-# To allow pickling
-def identity(x):
-    return x
 
 
 skinny_specs = {
