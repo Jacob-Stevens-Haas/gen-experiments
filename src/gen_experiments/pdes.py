@@ -44,7 +44,7 @@ def run(
     feat_params: dict,
     opt_params: dict,
     display: bool = True,
-    return_all: bool = True,
+    return_all: bool = False,
 ) -> dict:
     rhsfunc = pde_setup[group]["rhsfunc"]["func"]
     input_features = pde_setup[group]["input_features"]
