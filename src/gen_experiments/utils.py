@@ -574,21 +574,21 @@ def plot_test_sim_data_1d_panel(
 
 
 def _plot_test_sim_data_2d(
-    axs: Annotated[Sequence[plt.Axes], "len=2"], x_test: np.ndarray, x_sim: np.ndarray
+    axs: Annotated[Sequence[plt.Axes], "len=2"], x_test: np.ndarray, x_sim: np.ndarray, labels: bool=True
 ) -> None:
     axs[0].plot(x_test[:, 0], x_test[:, 1], "k", label="True Trajectory")
-    axs[0].set(xlabel="$x_0$", ylabel="$x_1$")
+    if labels: axs[0].set(xlabel="$x_0$", ylabel="$x_1$")
     axs[1].plot(x_sim[:, 0], x_sim[:, 1], "r--", label="Simulation")
-    axs[1].set(xlabel="$x_0$", ylabel="$x_1$")
+    if labels: axs[1].set(xlabel="$x_0$", ylabel="$x_1$")
 
 
 def _plot_test_sim_data_3d(
-    axs: Annotated[Sequence[plt.Axes], "len=3"], x_test: np.ndarray, x_sim: np.ndarray
+    axs: Annotated[Sequence[plt.Axes], "len=3"], x_test: np.ndarray, x_sim: np.ndarray, labels: bool=True
 ) -> None:
     axs[0].plot(x_test[:, 0], x_test[:, 1], x_test[:, 2], "k", label="True Trajectory")
-    axs[0].set(xlabel="$x_0$", ylabel="$x_1$", zlabel="$x_2$")
+    if labels: axs[0].set(xlabel="$x_0$", ylabel="$x_1$", zlabel="$x_2$")
     axs[1].plot(x_sim[:, 0], x_sim[:, 1], x_sim[:, 2], "r--", label="Simulation")
-    axs[1].set(xlabel="$x_0$", ylabel="$x_1$", zlabel="$x_2$")
+    if labels: axs[1].set(xlabel="$x_0$", ylabel="$x_1$", zlabel="$x_2$")
 
 
 def plot_test_trajectories(
@@ -840,20 +840,24 @@ def load_results(hexstr: str) -> Results:
 
 
 def _setup_summary_fig(
-        n_sub: int, style: str="axes"
+        n_sub: int, *, style: str="axes", share=False,
 ) -> tuple[plt.Figure, np.ndarray[plt.Axes | plt.Figure]]:
     """Create neatly laid-out arrangements of subplots or subfigures"""
     n_rows = max(n_sub // 3, (n_sub + 2) // 3)
-    size = (n_rows, min(n_sub, 3))
-    if style.lower() == "figure":
-        fig = plt.figure()
+    n_cols = min(n_sub, 3)
+    size = (n_rows, n_cols)
+    figsize = [3*n_cols, 3*n_rows]
+    if style.lower() == "figures":
+        fig = plt.figure(figsize=figsize)
         subs = fig.subfigures(*size, squeeze=False)
     elif style.lower() == "axes":
-        fig, subs = plt.subplots(*size, sharey="row", sharex="col", squeeze=False)
+        kwargs = {"sharex":"col", "sharey":"row"} if share else {}
+        fig, subs = plt.subplots(*size, squeeze=False, figsize=figsize, **kwargs)
+    fig.subplots_adjust(top=1-.2/n_rows, hspace=.23, wspace=.15)
     return fig, subs
 
 
-def plot_experiment_across_gridpoint(hexstr: str, *args: tuple[str, dict]) -> None:
+def plot_experiment_across_gridpoints(hexstr: str, *args: tuple[str, dict]) -> None:
     """Plot a single experiment's test across multiple gridpoints
 
     Arguments:
@@ -863,7 +867,7 @@ def plot_experiment_across_gridpoint(hexstr: str, *args: tuple[str, dict]) -> No
             the gridpoint to match.
     """
     fig, axs = _setup_summary_fig(len(args))
-    fig.suptitle("How well does a smoothing method perform across ODEs?")
+    fig.suptitle("How do different smoothing compare on an ODE?")
     for ax, (p_name, params) in zip(axs.reshape(-1), args):
         results = load_results(hexstr)
         for trajectory in results["plot_data"]:
@@ -877,6 +881,7 @@ def plot_experiment_across_gridpoint(hexstr: str, *args: tuple[str, dict]) -> No
                     [ax, ax],
                     trajectory["data"]["x_test"],
                     trajectory["data"]["x_sim"],
+                    labels=False
                 )
                 break
         else:
@@ -917,6 +922,7 @@ def plot_point_across_experiments(params: dict, *args: tuple[str, str], style) -
                         [ax, ax],
                         trajectory["data"]["x_test"],
                         trajectory["data"]["x_sim"],
+                        labels=False
                     )
                 break
 
@@ -951,3 +957,9 @@ def plot_summary_metric(
             ax.plot(grid_axis, s_data[grid_axis_index][metric_index], label=s_name)
         ax.set_title(ode_name)
     ax.legend()
+
+
+def plot_summary_simulations(
+    exps: Sequence[tuple[str, str]], params: Sequence[tuple[str, dict]]
+):
+    fig, axs = _setup_summary_fig(len(exps) * len(params), style="figures")
