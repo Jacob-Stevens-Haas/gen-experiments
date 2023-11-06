@@ -19,6 +19,32 @@ def diffuse1D(t, u, dx, nx):
     uxx = SpectralDerivative(d=2, axis=0)._differentiate(u, dx)
     return np.reshape(uxx, nx)
 
+def burgers1D(t, u, dx, nx):
+    u = np.reshape(u, nx)
+    u[0] = 0
+    u[-1] = 0
+    uxx = SpectralDerivative(d=2, axis=0)._differentiate(u, dx)
+    ux = SpectralDerivative(d=1, axis=0)._differentiate(u, dx)
+    return np.reshape((uxx - u*ux), nx)
+
+def ks(t, u ,dx, nx):
+    u = np.reshape(u, nx)
+    u[0] = 0
+    u[-1] = 0
+    ux = SpectralDerivative(d=1, axis=0)._differentiate(u, dx)
+    uxx = SpectralDerivative(d=2, axis=0)._differentiate(u, dx)
+    uxxxx = SpectralDerivative(d=4, axis=0)._differentiate(u, dx)
+    return np.reshape(-uxx-uxxxx-u*ux, nx)
+    # return np.reshape(-uxx-uxxxx-0.5*ux*ux)
+
+def kdv(t, u, dx, nx):
+    u = np.reshape(u, nx)
+    u[0] = 0
+    u[-1] = 0
+    ux = SpectralDerivative(d=1, axis=0)._differentiate(u, dx)
+    uxxx = SpectralDerivative(d=3, axis=0)._differentiate(u, dx)
+    return np.reshape(6*u*ux-uxxx, nx)
+
 pde_setup = {
     "diffuse1D": {
         "rhsfunc": {
@@ -31,6 +57,48 @@ pde_setup = {
         "time_args": [0.1, 10],
         "coeff_true": [
             {"u_11": 1}
+        ],
+        "spatial_grid": np.arange(0, 10, 0.1)
+    },
+    "burgers1D": {
+        "rhsfunc": {
+            "func": burgers1D,
+            "dimension": 1
+        },
+        "input_features": ["u"],
+        "initial_condition": 10*np.exp(-(np.arange(0, 10, 0.1)-5)**2/2),
+        "spatial_args": [0.1, 100],
+        "time_args": [0.1, 10],
+        "coeff_true": [
+            {"u_11": 1, "u*u_1": 1}
+        ],
+        "spatial_grid": np.arange(0, 10, 0.1)
+    },
+    "ks": {
+        "rhsfunc": {
+            "func": ks,
+            "dimension": 1
+        },
+        "input_features": ["u"],
+        "initial_condition": 10*np.exp(-(np.arange(0, 10, 0.1)-5)**2/2),
+        "spatial_args": [0.1, 100],
+        "time_args": [0.1, 10],
+        "coeff_true": [
+            {"u_11": -1, "u_1111": -1, "u*u_1": -1}, # "u_1*u_1": -0.5
+        ],
+        "spatial_grid": np.arange(0, 10, 0.1)
+    },
+    "kdv": {
+        "rhsfunc": {
+            "func": kdv,
+            "dimension": 1
+        },
+        "input_features": ["u"],
+        "initial_condition": 10*np.exp(-(np.arange(0, 10, 0.1)-5)**2/2),
+        "spatial_args": [0.1, 100],
+        "time_args": [0.1, 10],
+        "coeff_true": [
+            {"u*u_1": 6, "u_111": -1},
         ],
         "spatial_grid": np.arange(0, 10, 0.1)
     },
