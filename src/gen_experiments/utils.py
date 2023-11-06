@@ -527,14 +527,19 @@ def plot_training_data(
     x_train: np.ndarray, x_true: np.ndarray, x_smooth: np.ndarray
 ):
     """Plot training data (and smoothed training data, if different)."""
-    fig, axs = plt.subplots(1, 2, figsize=(12, 6))
-    plot_training_trajectory(axs[0], x_train, x_true, x_smooth)
-    axs[0].legend()
-    axs[0].set(title="Training data")
-    axs[1].loglog(np.abs(scipy.fft.rfft(x_train, axis=0)) / np.sqrt(len(x_train)))
-    axs[1].set(title="Training Data Absolute Spectral Density")
-    axs[1].set(xlabel="Wavenumber")
-    axs[1].set(ylabel="Magnitude")
+    fig = plt.figure(figsize=(12, 6))
+    if x_train.shape[-1] == 2:
+        ax0 = fig.add_subplot(1, 2, 1)
+    elif x_train.shape[-1] == 3:
+        ax0 = fig.add_subplot(1, 2, 1, projection="3d")
+    plot_training_trajectory(ax0, x_train, x_true, x_smooth)
+    ax0.legend()
+    ax0.set(title="Training data")
+    ax1 = fig.add_subplot(1, 2, 2)
+    ax1.loglog(np.abs(scipy.fft.rfft(x_train, axis=0)) / np.sqrt(len(x_train)))
+    ax1.set(title="Training Data Absolute Spectral Density")
+    ax1.set(xlabel="Wavenumber")
+    ax1.set(ylabel="Magnitude")
     return fig
 
 
