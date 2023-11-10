@@ -868,8 +868,8 @@ def load_results(hexstr: str) -> Results:
 
 
 def _setup_summary_fig(
-    n_sub: int, *, nest_parent: SubplotSpec = None
-) -> tuple[Figure, GridSpec] | GridSpecFromSubplotSpec:
+    n_sub: int, *, fig_cell: tuple[Figure, SubplotSpec] = None
+) -> tuple[Figure, GridSpec | GridSpecFromSubplotSpec]:
     """Create neatly laid-out arrangements for subplots
 
     Creates an evenly-spaced gridpsec to fit follow-on plots and a
@@ -881,20 +881,21 @@ def _setup_summary_fig(
             gridspec
     Returns:
         a figure and gridspec if nest_parent is not provided, otherwise,
-        just a sub-gridspec
+        None and a sub-gridspec
     """
     n_rows = max(n_sub // 3, (n_sub + 2) // 3)
     n_cols = min(n_sub, 3)
     figsize = [3 * n_cols, 3 * n_rows]
-    if nest_parent is None:
+    if fig_cell is None:
         fig = plt.figure(figsize=figsize)
         gs = fig.add_gridspec(n_rows, n_cols)
         return fig, gs
-    return nest_parent.subgridspec(n_rows, n_cols)
+    fig, cell = fig_cell
+    return fig, cell.subgridspec(n_rows, n_cols)
 
 
 def plot_experiment_across_gridpoints(
-    hexstr: str, *args: tuple[str, dict], style: str
+    hexstr: str, *args: tuple[str, dict], style: str, fig_cell: tuple[Figure, SubplotSpec]=None
 ) -> Figure:
     """Plot a single experiment's test across multiple gridpoints
 
@@ -907,28 +908,31 @@ def plot_experiment_across_gridpoints(
     Returns:
         the plotted figure
     """
-    fig, gs = _setup_summary_fig(len(args))
-    fig.suptitle("How do different smoothing compare on an ODE?")
+    
+    fig, gs = _setup_summary_fig(len(args), fig_cell=fig_cell)
+    if fig_cell is not None:
+        fig.suptitle("How do different smoothing compare on an ODE?")
     for cell, (p_name, params) in zip(gs, args):
         results = load_results(hexstr)
         for trajectory in results["plot_data"]:
             if params == trajectory["params"]:
-                ax = _plot_train_test_cell(fig, cell, trajectory, style)
+                ax = _plot_train_test_cell((fig, cell), trajectory, style)
                 ax.set_title(p_name)
                 break
         else:
             warn(f"Did not find a parameter match for {p_name} experiment")
-    ax.legend()
+    if fig is not None:
+        ax.legend()
     return Figure
 
 
 def _plot_train_test_cell(
-    fig: Figure,
-    cell: SubplotSpec | int | tuple[int, int, int],
+    fig_cell: tuple[Figure, SubplotSpec | int | tuple[int, int, int]],
     trajectory: PlotData,
     style: str,
 ) -> Axes:
     """Plot either the training or test data in a single cell"""
+    fig, cell = fig_cell
     if trajectory["data"]["x_test"].shape[1] == 2:
         ax = fig.add_subplot(cell)
         plot_func = _plot_test_sim_data_2d
@@ -976,7 +980,7 @@ def plot_point_across_experiments(
         results = load_results(hexstr)
         for trajectory in results["plot_data"]:
             if params == trajectory["params"]:
-                ax = _plot_train_test_cell(fig, cell, trajectory, style)
+                ax = _plot_train_test_cell([fig, cell], trajectory, style)
                 ax.set_title(ode_name)
                 break
         else:
@@ -1014,7 +1018,14 @@ def plot_summary_metric(
     ax.legend()
 
 
-def plot_summary_simulations(
-    exps: Sequence[tuple[str, str]], params: Sequence[tuple[str, dict]]
+def plot_summary_test_train(
+    exps: Sequence[tuple[str, str]], params: Sequence[tuple[str, dict]], style: str
 ):
-    fig, axs = _setup_summary_fig(len(exps) * len(params), style="figures")
+    n_exp = len(exps)
+    n_params = len(params)
+    figsize = (3*n_params, 3*n_exp)
+    fig = plt.figure(figsize=figsize)
+    grid = fig.add_gridspec(n_exp, 1)
+    for row, (ode_name, hexstr) in zip(grid, exps) :
+        plot_experiment_across_gridpoints(hexstr, *params, style=style, fig_cell=(fig, row))
+    return fig
