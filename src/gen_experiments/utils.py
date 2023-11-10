@@ -480,7 +480,7 @@ def _make_model(
 
 
 def plot_training_trajectory(
-    ax: plt.Axes, x_train: np.ndarray, x_true: np.ndarray, x_smooth: np.ndarray
+    ax: plt.Axes, x_train: np.ndarray, x_true: np.ndarray, x_smooth: np.ndarray, labels: bool=True,
 ) -> None:
     """Plot a single training trajectory"""
     if x_train.shape[1] == 2:
@@ -502,7 +502,7 @@ def plot_training_trajectory(
                 color=PAL[2],
                 **PLOT_KWS,
             )
-        ax.set(xlabel="$x_0$", ylabel="$x_1$")
+        if labels: ax.set(xlabel="$x_0$", ylabel="$x_1$")
     elif x_train.shape[1] == 3:
         ax.plot(
             x_true[:, 0],
@@ -532,7 +532,7 @@ def plot_training_trajectory(
                 label="Smoothed values",
                 alpha=0.3,
             )
-        ax.set(xlabel="$x$", ylabel="$y$", zlabel="$z$")
+        if labels: ax.set(xlabel="$x$", ylabel="$y$", zlabel="$z$")
     else:
         raise ValueError("Can only plot 2d or 3d data.")
 
@@ -895,8 +895,8 @@ def _setup_summary_fig(
 
 
 def plot_experiment_across_gridpoints(
-    hexstr: str, *args: tuple[str, dict], style: str, fig_cell: tuple[Figure, SubplotSpec]=None
-) -> Figure:
+    hexstr: str, *args: tuple[str, dict], style: str, fig_cell: tuple[Figure, SubplotSpec]=None, annotations:bool = True
+) -> tuple[Figure, Sequence[str]]:
     """Plot a single experiment's test across multiple gridpoints
 
     Arguments:
@@ -912,24 +912,26 @@ def plot_experiment_across_gridpoints(
     fig, gs = _setup_summary_fig(len(args), fig_cell=fig_cell)
     if fig_cell is not None:
         fig.suptitle("How do different smoothing compare on an ODE?")
+    p_names = []
     for cell, (p_name, params) in zip(gs, args):
         results = load_results(hexstr)
         for trajectory in results["plot_data"]:
             if params == trajectory["params"]:
-                ax = _plot_train_test_cell((fig, cell), trajectory, style)
-                ax.set_title(p_name)
+                p_names.append(p_name)
+                ax = _plot_train_test_cell((fig, cell), trajectory, style, annotations=False)
+                if annotations: ax.set_title(p_name)
                 break
         else:
             warn(f"Did not find a parameter match for {p_name} experiment")
-    if fig is not None:
-        ax.legend()
-    return Figure
+    if annotations: ax.legend()
+    return Figure, p_names
 
 
 def _plot_train_test_cell(
     fig_cell: tuple[Figure, SubplotSpec | int | tuple[int, int, int]],
     trajectory: PlotData,
     style: str,
+    annotations: bool=False,
 ) -> Axes:
     """Plot either the training or test data in a single cell"""
     fig, cell = fig_cell
@@ -947,15 +949,13 @@ def _plot_train_test_cell(
             trajectory["data"]["x_true"],
             trajectory["data"]["smooth_train"],
         )
-        kwargs = {}
     elif style.lower() == "test":
         plot_location = [ax, ax]
         data = (
             trajectory["data"]["x_test"],
             trajectory["data"]["x_sim"],
         )
-        kwargs = {"labels": False}
-    plot_func(plot_location, *data, **kwargs)
+    plot_func(plot_location, *data, labels=annotations)
     return ax
 
 
@@ -980,7 +980,7 @@ def plot_point_across_experiments(
         results = load_results(hexstr)
         for trajectory in results["plot_data"]:
             if params == trajectory["params"]:
-                ax = _plot_train_test_cell([fig, cell], trajectory, style)
+                ax = _plot_train_test_cell([fig, cell], trajectory, style, annotations=False)
                 ax.set_title(ode_name)
                 break
         else:
@@ -1025,7 +1025,15 @@ def plot_summary_test_train(
     n_params = len(params)
     figsize = (3*n_params, 3*n_exp)
     fig = plt.figure(figsize=figsize)
-    grid = fig.add_gridspec(n_exp, 1)
-    for row, (ode_name, hexstr) in zip(grid, exps) :
-        plot_experiment_across_gridpoints(hexstr, *params, style=style, fig_cell=(fig, row))
+    grid = fig.add_gridspec(n_exp, 2, width_ratios=(1,20))
+    for n_row, (ode_name, hexstr) in enumerate(exps):
+        cell = grid[n_row, 1]
+        _, p_names = plot_experiment_across_gridpoints(hexstr, *params, style=style, fig_cell=(fig, cell), annotations=False)
+        empty_ax = fig.add_subplot(grid[n_row, 0])
+        empty_ax.axis("off")
+        empty_ax.text(-.1, .5, ode_name, va="center", transform=empty_ax.transAxes, rotation=90)
+    first_row = fig.get_axes()[:n_params]
+    for ax, p_name in zip(first_row, p_names):
+        ax.set_title(p_name)
+    fig.subplots_adjust(top=.95)
     return fig
