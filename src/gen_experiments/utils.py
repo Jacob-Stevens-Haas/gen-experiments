@@ -143,6 +143,7 @@ def gen_data(
     x_dot_test = [xi for xi in x_dot_test]
     return dt, t_train, x_train, x_test, x_dot_test, x_train_true
 
+
 def gen_pde_data(
     rhs_func: Callable,
     init_cond: np.ndarray,
@@ -671,6 +672,7 @@ class SeriesDef:
         )
 
     """
+
     name: str
     static_param: dict
     grid_params: Optional[Sequence[str]]
@@ -716,6 +718,7 @@ class SeriesList:
         )
 
     """
+
     param_name: Optional[str]
     print_name: Optional[str]
     series_list: list[SeriesDef]
@@ -733,6 +736,7 @@ class NestedDict(defaultdict):
         >>> foo["a"]["b"]
         1
     """
+
     def __missing__(self, key):
         try:
             prefix, subkey = key.split(".", 1)
@@ -824,6 +828,7 @@ SeriesData = Annotated[
     list[Annotated[np.ndarray, "(n_metrics, n_grid_vals)"]], "len=n_grid_axes"
 ]
 
+
 class Results(TypedDict):
     plot_data: list[PlotData]
     series_data: dict[str, SeriesData]
@@ -843,7 +848,7 @@ def load_results(hexstr: str) -> Results:
 
 
 def _setup_summary_fig(
-        n_sub: int, *, nest_parent: SubplotSpec=None,
+    n_sub: int, *, nest_parent: SubplotSpec = None
 ) -> tuple[Figure, GridSpec] | GridSpecFromSubplotSpec:
     """Create neatly laid-out arrangements for subplots
 
@@ -860,7 +865,7 @@ def _setup_summary_fig(
     """
     n_rows = max(n_sub // 3, (n_sub + 2) // 3)
     n_cols = min(n_sub, 3)
-    figsize = [3*n_cols, 3*n_rows]
+    figsize = [3 * n_cols, 3 * n_rows]
     if nest_parent is None:
         fig = plt.figure(figsize=figsize)
         gs = fig.add_gridspec(n_rows, n_cols)
@@ -868,7 +873,9 @@ def _setup_summary_fig(
     return nest_parent.subgridspec(n_rows, n_cols)
 
 
-def plot_experiment_across_gridpoints(hexstr: str, *args: tuple[str, dict]) -> Figure:
+def plot_experiment_across_gridpoints(
+    hexstr: str, *args: tuple[str, dict], style: str
+) -> Figure:
     """Plot a single experiment's test across multiple gridpoints
 
     Arguments:
@@ -876,6 +883,7 @@ def plot_experiment_across_gridpoints(hexstr: str, *args: tuple[str, dict]) -> F
         args (param name, params): From which gridpoints to load
             data, described as a local name and the paramters defining
             the gridpoint to match.
+        style: either "test" or "train"
     Returns:
         the plotted figure
     """
@@ -885,18 +893,7 @@ def plot_experiment_across_gridpoints(hexstr: str, *args: tuple[str, dict]) -> F
         results = load_results(hexstr)
         for trajectory in results["plot_data"]:
             if params == trajectory["params"]:
-                if trajectory["data"]["x_test"].shape[1]== 2:
-                    ax = fig.add_subplot(cell)
-                    plot_func = _plot_test_sim_data_2d
-                else:
-                    ax = fig.add_subplot(cell, projection="3d")
-                    plot_func = _plot_test_sim_data_3d
-                plot_func(
-                    [ax, ax],
-                    trajectory["data"]["x_test"],
-                    trajectory["data"]["x_sim"],
-                    labels=False
-                )
+                ax = _plot_train_test_cell(fig, cell, trajectory, style)
                 ax.set_title(p_name)
                 break
         else:
@@ -904,7 +901,43 @@ def plot_experiment_across_gridpoints(hexstr: str, *args: tuple[str, dict]) -> F
     ax.legend()
     return Figure
 
-def plot_point_across_experiments(params: dict, *args: tuple[str, str], style) -> Figure:
+
+def _plot_train_test_cell(
+    fig: Figure,
+    cell: SubplotSpec | int | tuple[int, int, int],
+    trajectory: PlotData,
+    style: str,
+) -> Axes:
+    """Plot either the training or test data in a single cell"""
+    if trajectory["data"]["x_test"].shape[1] == 2:
+        ax = fig.add_subplot(cell)
+        plot_func = _plot_test_sim_data_2d
+    else:
+        ax = fig.add_subplot(cell, projection="3d")
+        plot_func = _plot_test_sim_data_3d
+    if style.lower() == "training":
+        plot_func = plot_training_trajectory
+        plot_location = ax
+        data = (
+            trajectory["data"]["x_train"],
+            trajectory["data"]["x_true"],
+            trajectory["data"]["smooth_train"],
+        )
+        kwargs = {}
+    elif style.lower() == "test":
+        plot_location = [ax, ax]
+        data = (
+            trajectory["data"]["x_test"],
+            trajectory["data"]["x_sim"],
+        )
+        kwargs = {"labels": False}
+    plot_func(plot_location, *data, **kwargs)
+    return ax
+
+
+def plot_point_across_experiments(
+    params: dict, *args: tuple[str, str], style: str
+) -> Figure:
     """Plot a single parameter's training or test across multiple experiments
 
     Arguments:
@@ -912,6 +945,7 @@ def plot_point_across_experiments(params: dict, *args: tuple[str, str], style) -
         args (experiment_name, hexstr): From which experiments to load
             data, described as a local name and the hexadecimal suffix
             of the result file.
+        style: either "test" or "train"
     Returns:
         the plotted figure
     """
@@ -922,35 +956,9 @@ def plot_point_across_experiments(params: dict, *args: tuple[str, str], style) -
         results = load_results(hexstr)
         for trajectory in results["plot_data"]:
             if params == trajectory["params"]:
-                if trajectory["data"]["x_test"].shape[1]== 2:
-                    ax = fig.add_subplot(cell)
-                    plot_func = _plot_test_sim_data_2d
-                else:
-                    ax = fig.add_subplot(cell, projection="3d")
-                    plot_func = _plot_test_sim_data_3d
-                if style.lower() == "training":
-                    plot_func = plot_training_trajectory
-                    plot_location = ax
-                    data = (
-                        trajectory["data"]["x_train"],
-                        trajectory["data"]["x_true"],
-                        trajectory["data"]["smooth_train"]
-                    )
-                    kwargs = {}
-                elif style.lower() == "test":
-                    plot_location = [ax, ax]
-                    data = (
-                        trajectory["data"]["x_test"], trajectory["data"]["x_sim"],
-                    )
-                    kwargs = {"labels": False}
-                plot_func(
-                    plot_location,
-                    *data,
-                    **kwargs
-                )
+                ax = _plot_train_test_cell(fig, cell, trajectory, style)
                 ax.set_title(ode_name)
                 break
-
         else:
             warn(f"Did not find a parameter match for {ode_name} experiment")
     ax.legend()
