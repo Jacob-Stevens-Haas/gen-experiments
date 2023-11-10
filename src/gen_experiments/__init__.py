@@ -220,15 +220,18 @@ feat_params = {
     "cubic": ND({"featcls": "Polynomial", "degree": 3}),
     "testweak": ND({"featcls": "WeakPDELibrary"}),  # needs work
     "pde": ParamDetails(
-        ND({
-            "featcls": "pde",
-            "library_functions": [lambda x: x],
-            "function_names": [lambda x: x],
-            "derivative_order": 2,
-            "spatial_grid": np.arange(0, 10, 0.1),
-            "include_interaction": False
-        }),[ps]
-    )
+        ND(
+            {
+                "featcls": "pde",
+                "library_functions": [lambda x: x],
+                "function_names": [lambda x: x],
+                "derivative_order": 2,
+                "spatial_grid": np.arange(0, 10, 0.1),
+                "include_interaction": False,
+            }
+        ),
+        [ps],
+    ),
 }
 opt_params = {
     "test": ND({"optcls": "STLSQ"}),

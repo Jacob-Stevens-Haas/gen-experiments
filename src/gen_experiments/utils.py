@@ -3,7 +3,16 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from itertools import chain
 from types import ModuleType
-from typing import Annotated, Any, Sequence, Mapping, Optional, Collection, Callable, TypedDict
+from typing import (
+    Annotated,
+    Any,
+    Sequence,
+    Mapping,
+    Optional,
+    Collection,
+    Callable,
+    TypedDict,
+)
 from math import ceil
 from warnings import warn
 
@@ -163,7 +172,7 @@ def gen_pde_data(
     Arguments:
         rhs_func: the function to integrate
         init_cond: Initial Conditions for the PDE
-        args: Arguments for rhsfunc 
+        args: Arguments for rhsfunc
         seed (int): the random seed for number generation
         noise_abs (float): measurement noise standard deviation.
             Defaults to .1 if noise_rel is None.
@@ -180,42 +189,46 @@ def gen_pde_data(
     if noise_abs is not None and noise_rel is not None:
         raise ValueError("Cannot specify both noise_abs and noise_rel")
     elif noise_abs is None and noise_rel is None:
-        noise_abs = .1
+        noise_abs = 0.1
     rng = np.random.default_rng(seed)
     t_train = np.arange(0, t_end, dt)
     t_train_span = (t_train[0], t_train[-1])
     x_train = []
     x_train.append(
-            scipy.integrate.solve_ivp(
+        scipy.integrate.solve_ivp(
             rhs_func,
             t_train_span,
             init_cond,
             t_eval=t_train,
-            args=args, 
-            **INTEGRATOR_KEYWORDS
+            args=args,
+            **INTEGRATOR_KEYWORDS,
         ).y.T
     )
     t, x = x_train[0].shape
     x_train = np.stack(x_train, axis=-1)
-    if dimension==1:
+    if dimension == 1:
         pass
-    elif dimension==2:
+    elif dimension == 2:
         x_train = np.reshape(x_train, (t, int(np.sqrt(x)), int(np.sqrt(x)), 1))
-    elif dimension==3:
-        x_train = np.reshape(x_train, (t, int(np.cbrt(x)), int(np.cbrt(x)), int(np.cbrt(x)), 1))
+    elif dimension == 3:
+        x_train = np.reshape(
+            x_train, (t, int(np.cbrt(x)), int(np.cbrt(x)), int(np.cbrt(x)), 1)
+        )
     x_test = x_train
     x_test = np.moveaxis(x_test, -1, 0)
     x_dot_test = np.array(
         [[rhs_func(0, xij, args[0], args[1]) for xij in xi] for xi in x_test]
     )
-    if dimension==1:
+    if dimension == 1:
         x_dot_test = [np.moveaxis(x_dot_test, [0, 1], [-1, -2])]
         pass
-    elif dimension==2:
+    elif dimension == 2:
         x_dot_test = np.reshape(x_dot_test, (t, int(np.sqrt(x)), int(np.sqrt(x)), 1))
         x_dot_test = [np.moveaxis(x_dot_test, 0, -2)]
-    elif dimension==3:
-        x_dot_test = np.reshape(x_dot_test, (t, int(np.cbrt(x)), int(np.cbrt(x)), int(np.cbrt(x)), 1))
+    elif dimension == 3:
+        x_dot_test = np.reshape(
+            x_dot_test, (t, int(np.cbrt(x)), int(np.cbrt(x)), int(np.cbrt(x)), 1)
+        )
         x_dot_test = [np.moveaxis(x_dot_test, 0, -2)]
     x_train_true = np.copy(x_train)
     if noise_rel is not None:
@@ -471,16 +484,16 @@ def plot_training_trajectory(
 ) -> None:
     """Plot a single training trajectory"""
     if x_train.shape[1] == 2:
+        ax.plot(x_true[:, 0], x_true[:, 1], ".", label="True", color=PAL[0], **PLOT_KWS)
         ax.plot(
-            x_true[:, 0], x_true[:, 1], ".", label= "True", color=PAL[0], **PLOT_KWS
+            x_train[:, 0],
+            x_train[:, 1],
+            ".",
+            label="Measured",
+            color=PAL[1],
+            **PLOT_KWS,
         )
-        ax.plot(
-            x_train[:, 0], x_train[:, 1], ".", label="Measured", color=PAL[1], **PLOT_KWS,
-        )
-        if (
-            np.linalg.norm(x_smooth - x_train) / x_smooth.size
-            > 1e-12
-        ):
+        if np.linalg.norm(x_smooth - x_train) / x_smooth.size > 1e-12:
             ax.plot(
                 x_smooth[:, 0],
                 x_smooth[:, 1],
@@ -509,10 +522,7 @@ def plot_training_trajectory(
             label="Measured values",
             alpha=0.3,
         )
-        if (
-            np.linalg.norm(x_smooth - x_train) / x_smooth.size
-            > 1e-12
-        ):
+        if np.linalg.norm(x_smooth - x_train) / x_smooth.size > 1e-12:
             ax.plot(
                 x_smooth[:, 0],
                 x_smooth[:, 1],
@@ -527,9 +537,7 @@ def plot_training_trajectory(
         raise ValueError("Can only plot 2d or 3d data.")
 
 
-def plot_training_data(
-    x_train: np.ndarray, x_true: np.ndarray, x_smooth: np.ndarray
-):
+def plot_training_data(x_train: np.ndarray, x_true: np.ndarray, x_smooth: np.ndarray):
     """Plot training data (and smoothed training data, if different)."""
     fig = plt.figure(figsize=(12, 6))
     if x_train.shape[-1] == 2:
@@ -549,16 +557,16 @@ def plot_training_data(
 
 def plot_pde_training_data(last_train, last_train_true, smoothed_last_train):
     """Plot training data (and smoothed training data, if different)."""
-    #1D:
-    if len(last_train.shape)==3:
-        fig, axs = plt.subplots(1, 3, figsize=(18,6))
+    # 1D:
+    if len(last_train.shape) == 3:
+        fig, axs = plt.subplots(1, 3, figsize=(18, 6))
         axs[0].imshow(last_train_true, vmin=0, vmax=last_train_true.max())
         axs[0].set(title="True Data")
-        axs[1].imshow(last_train_true - last_train, vmin=0, 
-                    vmax=last_train_true.max())
+        axs[1].imshow(last_train_true - last_train, vmin=0, vmax=last_train_true.max())
         axs[1].set(title="Noise")
-        axs[2].imshow(last_train_true - smoothed_last_train, vmin=0, 
-                    vmax=last_train_true.max())
+        axs[2].imshow(
+            last_train_true - smoothed_last_train, vmin=0, vmax=last_train_true.max()
+        )
         axs[2].set(title="Smoothed Data")
         return plt.show()
 
@@ -568,7 +576,7 @@ def plot_test_sim_data_1d_panel(
     x_test: np.ndarray,
     x_sim: np.ndarray,
     t_test: np.ndarray,
-    t_sim: np.ndarray
+    t_sim: np.ndarray,
 ) -> None:
     for ordinate, ax in enumerate(axs):
         ax.plot(t_test, x_test[:, ordinate], "k", label="true trajectory")
@@ -578,21 +586,31 @@ def plot_test_sim_data_1d_panel(
 
 
 def _plot_test_sim_data_2d(
-    axs: Annotated[Sequence[plt.Axes], "len=2"], x_test: np.ndarray, x_sim: np.ndarray, labels: bool=True
+    axs: Annotated[Sequence[plt.Axes], "len=2"],
+    x_test: np.ndarray,
+    x_sim: np.ndarray,
+    labels: bool = True,
 ) -> None:
     axs[0].plot(x_test[:, 0], x_test[:, 1], "k", label="True Trajectory")
-    if labels: axs[0].set(xlabel="$x_0$", ylabel="$x_1$")
+    if labels:
+        axs[0].set(xlabel="$x_0$", ylabel="$x_1$")
     axs[1].plot(x_sim[:, 0], x_sim[:, 1], "r--", label="Simulation")
-    if labels: axs[1].set(xlabel="$x_0$", ylabel="$x_1$")
+    if labels:
+        axs[1].set(xlabel="$x_0$", ylabel="$x_1$")
 
 
 def _plot_test_sim_data_3d(
-    axs: Annotated[Sequence[plt.Axes], "len=3"], x_test: np.ndarray, x_sim: np.ndarray, labels: bool=True
+    axs: Annotated[Sequence[plt.Axes], "len=3"],
+    x_test: np.ndarray,
+    x_sim: np.ndarray,
+    labels: bool = True,
 ) -> None:
     axs[0].plot(x_test[:, 0], x_test[:, 1], x_test[:, 2], "k", label="True Trajectory")
-    if labels: axs[0].set(xlabel="$x_0$", ylabel="$x_1$", zlabel="$x_2$")
+    if labels:
+        axs[0].set(xlabel="$x_0$", ylabel="$x_1$", zlabel="$x_2$")
     axs[1].plot(x_sim[:, 0], x_sim[:, 1], x_sim[:, 2], "r--", label="Simulation")
-    if labels: axs[1].set(xlabel="$x_0$", ylabel="$x_1$", zlabel="$x_2$")
+    if labels:
+        axs[1].set(xlabel="$x_0$", ylabel="$x_1$", zlabel="$x_2$")
 
 
 def plot_test_trajectories(
@@ -628,7 +646,9 @@ def plot_test_trajectories(
         fig, axs = plt.subplots(1, 2, figsize=(10, 4.5))
         _plot_test_sim_data_2d(axs, x_test, x_sim)
     elif x_test.shape[1] == 3:
-        fig, axs = plt.subplots(1, 2, figsize=(10, 4.5), subplot_kw={"projection": "3d"})
+        fig, axs = plt.subplots(
+            1, 2, figsize=(10, 4.5), subplot_kw={"projection": "3d"}
+        )
         _plot_test_sim_data_3d(axs, x_test, x_sim)
     else:
         raise ValueError("Can only plot 2d or 3d data.")
