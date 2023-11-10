@@ -15,6 +15,9 @@ import scipy
 import pysindy as ps
 import sklearn
 import auto_ks as aks
+from matplotlib.gridspec import GridSpec, SubplotSpec, GridSpecFromSubplotSpec
+from matplotlib.pyplot import Axes
+from matplotlib.figure import Figure
 
 INTEGRATOR_KEYWORDS = {"rtol": 1e-12, "method": "LSODA", "atol": 1e-12}
 PAL = sns.color_palette("Set1")
@@ -840,24 +843,32 @@ def load_results(hexstr: str) -> Results:
 
 
 def _setup_summary_fig(
-        n_sub: int, *, style: str="axes", share=False,
-) -> tuple[plt.Figure, np.ndarray[plt.Axes | plt.Figure]]:
-    """Create neatly laid-out arrangements of subplots or subfigures"""
+        n_sub: int, *, nest_parent: SubplotSpec=None,
+) -> tuple[Figure, GridSpec] | GridSpecFromSubplotSpec:
+    """Create neatly laid-out arrangements for subplots
+
+    Creates an evenly-spaced gridpsec to fit follow-on plots and a
+    figure, if required.
+
+    Args:
+        n_sub: number of grid elements to create
+        nest_parent: parent grid cell within which to to build a nested
+            gridspec
+    Returns:
+        a figure and gridspec if nest_parent is not provided, otherwise,
+        just a sub-gridspec
+    """
     n_rows = max(n_sub // 3, (n_sub + 2) // 3)
     n_cols = min(n_sub, 3)
-    size = (n_rows, n_cols)
     figsize = [3*n_cols, 3*n_rows]
-    if style.lower() == "figures":
+    if nest_parent is None:
         fig = plt.figure(figsize=figsize)
-        subs = fig.subfigures(*size, squeeze=False)
-    elif style.lower() == "axes":
-        kwargs = {"sharex":"col", "sharey":"row"} if share else {}
-        fig, subs = plt.subplots(*size, squeeze=False, figsize=figsize, **kwargs)
-    fig.subplots_adjust(top=1-.2/n_rows, hspace=.23, wspace=.15)
-    return fig, subs
+        gs = fig.add_gridspec(n_rows, n_cols)
+        return fig, gs
+    return nest_parent.subgridspec(n_rows, n_cols)
 
 
-def plot_experiment_across_gridpoints(hexstr: str, *args: tuple[str, dict]) -> None:
+def plot_experiment_across_gridpoints(hexstr: str, *args: tuple[str, dict]) -> Figure:
     """Plot a single experiment's test across multiple gridpoints
 
     Arguments:
@@ -865,17 +876,20 @@ def plot_experiment_across_gridpoints(hexstr: str, *args: tuple[str, dict]) -> N
         args (param name, params): From which gridpoints to load
             data, described as a local name and the paramters defining
             the gridpoint to match.
+    Returns:
+        the plotted figure
     """
-    fig, axs = _setup_summary_fig(len(args))
+    fig, gs = _setup_summary_fig(len(args))
     fig.suptitle("How do different smoothing compare on an ODE?")
-    for ax, (p_name, params) in zip(axs.reshape(-1), args):
+    for cell, (p_name, params) in zip(gs, args):
         results = load_results(hexstr)
         for trajectory in results["plot_data"]:
             if params == trajectory["params"]:
-                ax.set_title(p_name)
                 if trajectory["data"]["x_test"].shape[1]== 2:
+                    ax = fig.add_subplot(cell)
                     plot_func = _plot_test_sim_data_2d
                 else:
+                    ax = fig.add_subplot(cell, projection="3d")
                     plot_func = _plot_test_sim_data_3d
                 plot_func(
                     [ax, ax],
@@ -883,13 +897,14 @@ def plot_experiment_across_gridpoints(hexstr: str, *args: tuple[str, dict]) -> N
                     trajectory["data"]["x_sim"],
                     labels=False
                 )
+                ax.set_title(p_name)
                 break
         else:
             warn(f"Did not find a parameter match for {p_name} experiment")
     ax.legend()
+    return Figure
 
-
-def plot_point_across_experiments(params: dict, *args: tuple[str, str], style) -> None:
+def plot_point_across_experiments(params: dict, *args: tuple[str, str], style) -> Figure:
     """Plot a single parameter's training or test across multiple experiments
 
     Arguments:
@@ -897,38 +912,49 @@ def plot_point_across_experiments(params: dict, *args: tuple[str, str], style) -
         args (experiment_name, hexstr): From which experiments to load
             data, described as a local name and the hexadecimal suffix
             of the result file.
+    Returns:
+        the plotted figure
     """
-    fig, axs = _setup_summary_fig(len(args))
+    fig, gs = _setup_summary_fig(len(args))
     fig.suptitle("How well does a smoothing method perform across ODEs?")
 
-    for ax, (ode_name, hexstr) in zip(axs.reshape(-1), args):
+    for cell, (ode_name, hexstr) in zip(gs, args):
         results = load_results(hexstr)
         for trajectory in results["plot_data"]:
             if params == trajectory["params"]:
-                ax.set_title(ode_name)
+                if trajectory["data"]["x_test"].shape[1]== 2:
+                    ax = fig.add_subplot(cell)
+                    plot_func = _plot_test_sim_data_2d
+                else:
+                    ax = fig.add_subplot(cell, projection="3d")
+                    plot_func = _plot_test_sim_data_3d
                 if style.lower() == "training":
-                    plot_training_trajectory(
-                        ax,
+                    plot_func = plot_training_trajectory
+                    plot_location = ax
+                    data = (
                         trajectory["data"]["x_train"],
                         trajectory["data"]["x_true"],
                         trajectory["data"]["smooth_train"]
                     )
+                    kwargs = {}
                 elif style.lower() == "test":
-                    if trajectory["data"]["x_test"].shape[1]== 2:
-                        plot_func = _plot_test_sim_data_2d
-                    else:
-                        plot_func = _plot_test_sim_data_3d
-                    plot_func(
-                        [ax, ax],
-                        trajectory["data"]["x_test"],
-                        trajectory["data"]["x_sim"],
-                        labels=False
+                    plot_location = [ax, ax]
+                    data = (
+                        trajectory["data"]["x_test"], trajectory["data"]["x_sim"],
                     )
+                    kwargs = {"labels": False}
+                plot_func(
+                    plot_location,
+                    *data,
+                    **kwargs
+                )
+                ax.set_title(ode_name)
                 break
 
         else:
             warn(f"Did not find a parameter match for {ode_name} experiment")
     ax.legend()
+    return fig
 
 
 def plot_summary_metric(
@@ -944,15 +970,16 @@ def plot_summary_metric(
         *args: each additional tuple contains the name of an ODE and
             the hexstr under which it's data is saved.
     """
-    fig, axs = _setup_summary_fig(len(args))
+    fig, gs = _setup_summary_fig(len(args))
     fig.suptitle(
         f"How well do the methods work on different ODEs as {grid_axis_name} changes?"
     )
-    for ax, (ode_name, hexstr) in zip(axs.reshape(-1), args):
+    for cell, (ode_name, hexstr) in zip(gs, args):
         results = load_results(hexstr)
         grid_axis_index = results["grid_params"].index(grid_axis_name)
         grid_axis = results["grid_vals"][grid_axis_index]
         metric_index = results["metrics"].index(metric)
+        ax = fig.add_subplot(cell)
         for s_name, s_data in results["series_data"].items():
             ax.plot(grid_axis, s_data[grid_axis_index][metric_index], label=s_name)
         ax.set_title(ode_name)
