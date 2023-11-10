@@ -64,3 +64,15 @@ def test_curr_skinny_specs():
     ind_skinny, where_others = gridsearch._curr_skinny_specs(skinny_specs, grid_params)
     assert ind_skinny == [0, 1, 2]
     assert where_others == ((2, 4), (0, 4), (0, 2))
+
+
+def test_marginalize_grid_views():
+    results = np.arange(120).reshape(2, 3, 4, 5) # (metrics, param1, param2, param3)
+    grid_decisions = ["plot", "max", "plot"]
+    result = gridsearch._marginalize_grid_views(grid_decisions, results)
+    assert len(result) == len([dec for dec in grid_decisions if dec =="plot"])
+    expected = [
+        np.array([[19, 39, 59], [79, 99, 119]]),
+        np.array([[55, 56, 57, 58, 59], [115, 116, 117, 118, 119]]),
+    ]
+    assert all((res == ex).all() for res, ex in zip(result, expected))

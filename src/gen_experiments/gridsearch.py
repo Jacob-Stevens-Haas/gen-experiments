@@ -245,7 +245,7 @@ def plot_gridpoint(grid_data: dict, other_params: dict):
 
 
 def _marginalize_grid_views(
-    grid_decisions: Iterable, results: np.ndarray
+    grid_decisions: Iterable[str], results: np.ndarray
 ) -> list[GridsearchResult]:
     """Marginalize unnecessary dimensions by taking max across axes."""
     plot_param_inds = [ind for ind, val in enumerate(grid_decisions) if val == "plot"]
