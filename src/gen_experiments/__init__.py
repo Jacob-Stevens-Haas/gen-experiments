@@ -108,7 +108,7 @@ def _convert_abs_rel_noise(grid_vals: list, grid_params: list, recent_results: d
 
 ND = lambda d: NestedDict(**d)
 plot_prefs = {
-    "test": _PlotPrefs(True, False, ({"sim_params.t_end": 20},)),
+    "test": ParamDetails(_PlotPrefs(True, False, ({"sim_params.t_end": 10},)), [utils, this_module]),
     "test-absrel": ParamDetails(
         _PlotPrefs(True, _convert_abs_rel_noise, ({"sim_params.noise_abs": 1},)),
         [utils, this_module],
