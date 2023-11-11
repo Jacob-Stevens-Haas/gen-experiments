@@ -8,6 +8,7 @@ from mitosis import Parameter
 
 from gen_experiments import nonlinear_pendulum
 from gen_experiments import odes
+from gen_experiments import pdes
 from gen_experiments import lorenz_missing
 from gen_experiments import gridsearch
 from gen_experiments.utils import (
@@ -21,6 +22,10 @@ from gen_experiments.utils import (
 from gen_experiments import utils
 
 this_module = importlib.import_module(__name__)
+
+# To allow pickling
+def identity(x):
+    return x
 
 
 class NoExperiment:
@@ -70,6 +75,7 @@ experiments = {
     "lv": (odes, "lv"),
     "ross": (odes, "ross"),
     "gridsearch": (gridsearch, None),
+    "diffuse1D": (pdes, "diffuse1D"),
     "none": (NoExperiment, None),
 }
 ex_name = type("identidict", (), {"__getitem__": lambda self, key: key})()
@@ -102,7 +108,7 @@ def _convert_abs_rel_noise(grid_vals: list, grid_params: list, recent_results: d
 
 ND = lambda d: NestedDict(**d)
 plot_prefs = {
-    "test": _PlotPrefs(True, False, ({"sim_params.t_end": 20},)),
+    "test": ParamDetails(_PlotPrefs(True, False, ({"sim_params.t_end": 10},)), [utils, this_module]),
     "test-absrel": ParamDetails(
         _PlotPrefs(True, _convert_abs_rel_noise, ({"sim_params.noise_abs": 1},)),
         [utils, this_module],
@@ -220,18 +226,15 @@ feat_params = {
     "cubic": ND({"featcls": "Polynomial", "degree": 3}),
     "testweak": ND({"featcls": "WeakPDELibrary"}),  # needs work
     "pde": ParamDetails(
-        ND(
-            {
-                "featcls": "pde",
-                "library_functions": [lambda x: x],
-                "function_names": [lambda x: x],
-                "derivative_order": 2,
-                "spatial_grid": np.arange(0, 10, 0.1),
-                "include_interaction": False,
-            }
-        ),
-        [ps],
-    ),
+        ND({
+            "featcls": "pde",
+            "library_functions": [identity],
+            "function_names": [identity],
+            "derivative_order": 2,
+            "spatial_grid": np.arange(0, 10, 0.1),
+            "include_interaction": False
+        }),[ps]
+    )
 }
 opt_params = {
     "test": ND({"optcls": "STLSQ"}),
@@ -559,11 +562,6 @@ series_params = {
 }
 
 
-# To allow pickling
-def identity(x):
-    return x
-
-
 skinny_specs = {
     "exp3": ParamDetails(
         (("sim_params.noise_abs", "diff_params.meas_var"), ((identity,), (identity,))),
@@ -600,4 +598,10 @@ skinny_specs = {
         ),
         [this_module],
     ),
+}
+skinny_specs = {
+    "exp3": (
+        ("sim_params.noise_abs", "diff_params.meas_var"),
+        (lambda x: x, lambda x: x)
+    )
 }
