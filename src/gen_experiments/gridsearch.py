@@ -251,9 +251,8 @@ def _marginalize_grid_views(
     plot_param_inds = [ind for ind, val in enumerate(grid_decisions) if val == "plot"]
     grid_searches = []
     for param_ind in plot_param_inds:
-        selection_results = np.moveaxis(results, param_ind + 1, 1)
-        new_shape = selection_results.shape
-        selection_results = selection_results.reshape(*new_shape[:2], -1).max(-1)
+        reduce_axes = tuple(set(range(results.ndim)) - {0, param_ind + 1})
+        selection_results = np.max(results, axis=reduce_axes)
         grid_searches.append(selection_results)
     return grid_searches
 
