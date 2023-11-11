@@ -1037,3 +1037,22 @@ def plot_summary_test_train(
         ax.set_title(p_name)
     fig.subplots_adjust(top=.95)
     return fig
+
+
+def _argmax(arr: np.ndarray, axis: int | tuple[int, ...]=None, *args, **kwargs) -> np.ndarray:
+    """Calculate the argmax, but accept tuple axis.
+    
+    Each argmax is the index of the max in the subarray given by axis,
+    flattened.  To recover the index of the subarray, use
+    np.unravel_index.
+    """
+    keep_axes = tuple(sorted(set(range(arr.ndim)) - set(axis)))
+    keep_shape = tuple(arr.shape[ax] for ax in keep_axes)
+    result = np.empty(keep_shape, dtype=int)
+    for slise in np.ndindex(keep_shape):
+        sub_arr = arr
+        for ind, ax in zip(slise, keep_axes):
+            sub_arr = np.take(sub_arr, [ind], ax)
+        result[slise] = np.argmax(sub_arr)
+    return result
+
