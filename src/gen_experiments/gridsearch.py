@@ -14,6 +14,7 @@ from gen_experiments.utils import (
     plot_training_data,
     plot_test_trajectories,
     compare_coefficient_plots,
+    _argmax
 )
 
 name = "gridsearch"
@@ -112,9 +113,8 @@ def run(
             full_results[(slice(None), *ind)] = [
                 curr_results[metric] for metric in metrics
             ]
-        series_searches.append(
-            _marginalize_grid_views(new_grid_decisions, full_results)
-        )
+        _, plot_results = _marginalize_grid_views(new_grid_decisions, full_results)
+        series_searches.append(plot_results)
 
     if plot_prefs:
         if plot_prefs.rel_noise:
@@ -246,15 +246,29 @@ def plot_gridpoint(grid_data: dict, other_params: dict):
 
 def _marginalize_grid_views(
     grid_decisions: Iterable[str], results: np.ndarray
-) -> list[GridsearchResult]:
-    """Marginalize unnecessary dimensions by taking max across axes."""
+) -> tuple[list[GridsearchResult], list[GridsearchResult]]:
+    """Marginalize unnecessary dimensions by taking max across axes.
+
+    Args:
+        grid_decisions: list of how to treat each non-metric gridsearch
+            axis.  An array of metrics for each "plot" grid decision
+            will be returned, along with an array of the the index
+            of collapsed dimensions that returns that metric
+        results: An array of shape (n_metrics, *n_gridsearch_values)
+    Returns:
+        a list of the metric maxes for each plottable grid decision, and
+        a list of the flattened argmaxes.
+    """
     plot_param_inds = [ind for ind, val in enumerate(grid_decisions) if val == "plot"]
     grid_searches = []
+    args_maxes = []
     for param_ind in plot_param_inds:
         reduce_axes = tuple(set(range(results.ndim)) - {0, param_ind + 1})
         selection_results = np.max(results, axis=reduce_axes)
+        args_max = _argmax(results, axis=reduce_axes)
         grid_searches.append(selection_results)
-    return grid_searches
+        args_maxes.append(args_max)
+    return grid_searches, args_maxes
 
 
 def _ndindex_skinny(
