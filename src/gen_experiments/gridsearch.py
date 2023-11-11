@@ -66,6 +66,7 @@ def run(
     n_metrics = len(metrics)
     n_plotparams = len([decide for decide in grid_decisions if decide == "plot"])
     series_searches = []
+    intermediate_data = []
     plot_data = []
     if base_group is not None:
         other_params["group"] = base_group
@@ -100,14 +101,21 @@ def run(
             curr_results, recent_data = base_ex.run(
                 new_seed, **curr_other_params, display=False, return_all=True
             )
+            intermediate_data.append(
+                {
+                    "params": param_updates | {"name": series_data.name},
+                    "data": _extract_gridpoint_data(recent_data)
+                }
+            )
             if (
                 _params_match(curr_other_params, plot_prefs.grid_plot_match)
                 and plot_prefs
             ):
+                print("Results for params: ", curr_other_params, flush=True)
                 plot_data.append(
                     {
                         "params": param_updates | {"name": series_data.name},
-                        "data": plot_gridpoint(recent_data, curr_other_params),
+                        "data": plot_gridpoint(recent_data),
                     }
                 )
             full_results[(slice(None), *ind)] = [
@@ -215,14 +223,19 @@ def _params_match(exp_params: dict, plot_params: Collection[dict]) -> bool:
     return False
 
 
-def plot_gridpoint(grid_data: dict, other_params: dict):
-    print("Results for params: ", other_params, flush=True)
+def _extract_gridpoint_data(grid_data: dict):
     sim_ind = -1  # The last trajectory, and thus the one saved in smoothed_x_
     x_train = grid_data["x_train"][sim_ind]
     x_true = grid_data["x_train_true"][sim_ind]
     model = grid_data["model"]
-    model.print()
-    smooth_train = model.differentiation_method.smoothed_x_
+    x_test = grid_data["x_test"]
+    x_smooth = model.differentiation_method.smoothed_x_
+    return {"x_train": x_train, "x_true": x_true, "x_smooth": x_smooth, "x_test": x_test, "model": model}
+
+
+def plot_gridpoint(grid_data: dict):
+    unp_dict = _extract_gridpoint_data(grid_data)
+    x_train, x_true, model, smooth_train, x_test = unp_dict["x_train"], unp_dict["x_true"], unp_dict["model"], unp_dict["x_test"]
     plot_training_data(x_train, x_true, smooth_train)
     compare_coefficient_plots(
         grid_data["coefficients"],
@@ -230,8 +243,9 @@ def plot_gridpoint(grid_data: dict, other_params: dict):
         input_features=grid_data["input_features"],
         feature_names=grid_data["feature_names"],
     )
+    sim_ind = -1
     plot_data = plot_test_trajectories(
-        grid_data["x_test"][sim_ind], model, grid_data["dt"]
+        x_test, model, grid_data["dt"]
     )
     plt.show()
     return {
