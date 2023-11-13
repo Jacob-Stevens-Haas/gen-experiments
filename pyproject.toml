@@ -7,7 +7,7 @@ name = "pysindy-experiments"
 dynamic = ["version"]
 description = "My general exam experiments"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 license = {file = "LICENSE"}
 keywords = ["Machine Learning", "Science", "Mathematics", "Experiments"]
 authors = [

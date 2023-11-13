@@ -34,6 +34,34 @@ PLOT_KWS = dict(alpha=0.7, linewidth=3)
 TRIALS_FOLDER = Path(__file__).parent.absolute() / "trials"
 
 
+class GridPointData(TypedDict):
+    x_train: np.ndarray
+    x_true: np.ndarray
+    smooth_train: np.ndarray
+    x_test: np.ndarray
+    dt: float
+    t_sim: np.ndarray
+    x_sim: np.ndarray
+
+
+class PlotData(TypedDict):
+    params: dict[str, Any]
+    data: GridPointData
+
+
+SeriesData = Annotated[
+    list[Annotated[np.ndarray, "(n_metrics, n_grid_vals)"]], "len=n_grid_axes"
+]
+
+
+class Results(TypedDict):
+    plot_data: list[PlotData]
+    series_data: dict[str, SeriesData]
+    metrics: list[str]
+    grid_axes: dict[str, Collection[float]]
+    main: float
+
+
 def gen_data(
     rhs_func,
     n_coord,
@@ -613,8 +641,27 @@ def _plot_test_sim_data_3d(
         axs[1].set(xlabel="$x_0$", ylabel="$x_1$", zlabel="$x_2$")
 
 
+def simulate_test_data(model: ps.SINDy, dt: float, x_test: np.ndarray) -> GridPointData:
+    """Add simulation data to grid_data
+
+    This includes the t_sim and x_sim keys.  Does not mutate argument.
+    Returns:
+        Complete GridPointData
+    """
+    t_test = np.arange(len(x_test) * dt, step=dt)
+    t_sim = t_test
+    try:
+        x_sim = model.simulate(x_test[0], t_test)
+    except ValueError:
+        warn(message="Simulation blew up; returning zeros")
+        x_sim = np.zeros_like(x_test)
+    # truncate if integration returns wrong number of points
+    t_sim = t_test[: len(x_sim)]
+    return {"t_sim": t_sim, "x_sim": x_sim, "t_test": t_test}
+
+
 def plot_test_trajectories(
-    x_test: np.ndarray, model: ps.SINDy, dt: float
+    x_test: np.ndarray, x_sim: np.ndarray, t_test: np.ndarray, t_sim: np.ndarray
 ) -> Mapping[str, np.ndarray]:
     """Plot a test trajectory
 
@@ -627,15 +674,6 @@ def plot_test_trajectories(
         A dict with two keys, "t_sim" (the simulation times) and
     "x_sim" (the simulated trajectory)
     """
-    t_test = np.arange(len(x_test) * dt, step=dt)
-    t_sim = t_test
-    try:
-        x_sim = model.simulate(x_test[0], t_test)
-    except ValueError:
-        warn(message="Simulation blew up; returning zeros")
-        x_sim = np.zeros_like(x_test)
-    # truncate if integration returns wrong number of points
-    t_sim = t_test[: len(x_sim)]
     fig, axs = plt.subplots(x_test.shape[1], 1, sharex=True, figsize=(7, 9))
     plt.suptitle("Test Trajectories by Dimension")
     plot_test_sim_data_1d_panel(axs, x_test, x_sim, t_test, t_sim)
@@ -654,7 +692,6 @@ def plot_test_trajectories(
         raise ValueError("Can only plot 2d or 3d data.")
     axs[0].set(title="true trajectory")
     axs[1].set(title="model simulation")
-    return {"t_sim": t_sim, "x_sim": x_sim}
 
 
 @dataclass
@@ -828,33 +865,6 @@ def kalman_generalized_cv(
     est_Q = np.linalg.inv(params.W_neg_sqrt @ params.W_neg_sqrt.T)
     est_alpha = 1 / (est_Q / Qi).mean()
     return est_alpha
-
-
-class GridPointData(TypedDict):
-    x_train: np.ndarray
-    x_true: np.ndarray
-    smooth_train: np.ndarray
-    x_test: np.ndarray
-    t_sim: np.ndarray
-    x_sim: np.ndarray
-
-
-class PlotData(TypedDict):
-    params: dict[str, Any]
-    data: GridPointData
-
-
-SeriesData = Annotated[
-    list[Annotated[np.ndarray, "(n_metrics, n_grid_vals)"]], "len=n_grid_axes"
-]
-
-
-class Results(TypedDict):
-    plot_data: list[PlotData]
-    series_data: dict[str, SeriesData]
-    metrics: list[str]
-    grid_axes: dict[str, Collection[float]]
-    main: float
 
 
 def load_results(hexstr: str) -> Results:

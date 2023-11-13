@@ -1,20 +1,21 @@
 from copy import copy, deepcopy
 from typing import Iterable, Sequence, Optional, Callable, Collection, Annotated
+from warnings import warn
 
 from scipy.stats import kstest
 import matplotlib.pyplot as plt
 import numpy as np
 
 import gen_experiments
+from gen_experiments.odes import plot_ode_panel
 from gen_experiments.utils import (
     _PlotPrefs,
     NestedDict,
+    GridPointData,
     SeriesList,
     SeriesDef,
-    plot_training_data,
-    plot_test_trajectories,
-    compare_coefficient_plots,
-    _argmax
+    _argmax,
+    simulate_test_data
 )
 
 name = "gridsearch"
@@ -98,26 +99,19 @@ def run(
             for axis_ind, key, val_list in zip(ind, new_grid_params, new_grid_vals):
                 param_updates[key] = val_list[axis_ind]
                 curr_other_params.update(param_updates)
-            curr_results, recent_data = base_ex.run(
+            curr_results, grid_data = base_ex.run(
                 new_seed, **curr_other_params, display=False, return_all=True
             )
-            intermediate_data.append(
-                {
-                    "params": param_updates | {"name": series_data.name},
-                    "data": _extract_gridpoint_data(recent_data)
-                }
-            )
+            param_updates |= {"name": series_data.name}
+            intermediate_data.append({"params": param_updates, "data": grid_data})
             if (
                 _params_match(curr_other_params, plot_prefs.grid_plot_match)
                 and plot_prefs
             ):
                 print("Results for params: ", curr_other_params, flush=True)
-                plot_data.append(
-                    {
-                        "params": param_updates | {"name": series_data.name},
-                        "data": plot_gridpoint(recent_data),
-                    }
-                )
+                grid_data |= simulate_test_data(grid_data["model"], grid_data["dt"], grid_data["x_test"])
+                plot_data.append({"params": param_updates,"data": grid_data})
+                plot_ode_panel(grid_data)
             full_results[(slice(None), *ind)] = [
                 curr_results[metric] for metric in metrics
             ]
@@ -127,7 +121,7 @@ def run(
     if plot_prefs:
         if plot_prefs.rel_noise:
             grid_vals, grid_params = plot_prefs.rel_noise(
-                grid_vals, grid_params, recent_data
+                grid_vals, grid_params, grid_data
             )
         fig, subplots = plt.subplots(
             n_metrics,
@@ -221,41 +215,6 @@ def _params_match(exp_params: dict, plot_params: Collection[dict]) -> bool:
         except KeyError:
             pass
     return False
-
-
-def _extract_gridpoint_data(grid_data: dict):
-    sim_ind = -1  # The last trajectory, and thus the one saved in smoothed_x_
-    x_train = grid_data["x_train"][sim_ind]
-    x_true = grid_data["x_train_true"][sim_ind]
-    model = grid_data["model"]
-    x_test = grid_data["x_test"]
-    x_smooth = model.differentiation_method.smoothed_x_
-    return {"x_train": x_train, "x_true": x_true, "x_smooth": x_smooth, "x_test": x_test, "model": model}
-
-
-def plot_gridpoint(grid_data: dict):
-    unp_dict = _extract_gridpoint_data(grid_data)
-    x_train, x_true, model, smooth_train, x_test = unp_dict["x_train"], unp_dict["x_true"], unp_dict["model"], unp_dict["x_test"]
-    plot_training_data(x_train, x_true, smooth_train)
-    compare_coefficient_plots(
-        grid_data["coefficients"],
-        grid_data["coeff_true"],
-        input_features=grid_data["input_features"],
-        feature_names=grid_data["feature_names"],
-    )
-    sim_ind = -1
-    plot_data = plot_test_trajectories(
-        x_test, model, grid_data["dt"]
-    )
-    plt.show()
-    return {
-        "x_train": x_train,
-        "x_true": x_true,
-        "smooth_train": smooth_train,
-        "x_test": grid_data["x_test"][sim_ind],
-        "t_sim": plot_data["t_sim"],
-        "x_sim": plot_data["x_sim"],
-    }
 
 
 def _marginalize_grid_views(

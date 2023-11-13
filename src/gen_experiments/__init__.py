@@ -6,10 +6,8 @@ import pysindy as ps
 
 from mitosis import Parameter
 
-from gen_experiments import nonlinear_pendulum
 from gen_experiments import odes
 from gen_experiments import pdes
-from gen_experiments import lorenz_missing
 from gen_experiments import gridsearch
 from gen_experiments.utils import (
     NestedDict,
@@ -66,8 +64,8 @@ class NoExperiment:
 experiments = {
     "sho": (odes, "sho"),
     "lorenz": (odes, "lorenz"),
-    "lorenz_2d": (lorenz_missing, None),
-    "pendulum": (nonlinear_pendulum, None),
+    "lorenz_2d": (odes, "lorenz_2d"),
+    "pendulum": (odes, "pendulum"),
     "cubic_ho": (odes, "cubic_ho"),
     "vdp": (odes, "vdp"),
     "hopf": (odes, "hopf"),
