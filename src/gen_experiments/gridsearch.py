@@ -11,7 +11,7 @@ from gen_experiments.odes import plot_ode_panel
 from gen_experiments.utils import (
     _PlotPrefs,
     NestedDict,
-    GridPointData,
+    TrialData,
     SeriesList,
     SeriesDef,
     _argmax,
@@ -102,6 +102,7 @@ def run(
             curr_results, grid_data = base_ex.run(
                 new_seed, **curr_other_params, display=False, return_all=True
             )
+            grid_data: TrialData
             param_updates |= {"name": series_data.name}
             intermediate_data.append({"params": param_updates, "data": grid_data})
             if (
@@ -115,7 +116,7 @@ def run(
             full_results[(slice(None), *ind)] = [
                 curr_results[metric] for metric in metrics
             ]
-        _, plot_results = _marginalize_grid_views(new_grid_decisions, full_results)
+        plot_results, _ = _marginalize_grid_views(new_grid_decisions, full_results)
         series_searches.append(plot_results)
 
     if plot_prefs:

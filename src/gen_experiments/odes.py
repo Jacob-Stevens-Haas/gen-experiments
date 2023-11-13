@@ -5,6 +5,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from .utils import (
+    TrialData,
+    FullTrialData,
     gen_data,
     compare_coefficient_plots,
     plot_training_data,
@@ -140,7 +142,7 @@ def run(
     opt_params: dict,
     display: bool = True,
     return_all: bool = False,
-) -> dict:
+) -> dict | tuple[dict, TrialData | FullTrialData]:
     rhsfunc = ode_setup[group]["rhsfunc"]
     input_features = ode_setup[group]["input_features"]
     coeff_true = ode_setup[group]["coeff_true"]
@@ -166,10 +168,10 @@ def run(
     coeff_true, coefficients, feature_names = unionize_coeff_matrices(model, coeff_true)
 
     sim_ind = -1
-    trial_data = {
+    trial_data: TrialData = {
                 "dt": dt,
                 "coeff_true": coeff_true,
-                "coefficients": coefficients,
+                "coeff_fit": coefficients,
                 "feature_names": feature_names,
                 "input_features": input_features,
                 "t_train": t_train,
@@ -181,7 +183,9 @@ def run(
                 "model": model,
             }
     if display:
-        trial_data |= simulate_test_data(trial_data["model"], trial_data["dt"], trial_data["x_test"])
+        trial_data: FullTrialData = trial_data | simulate_test_data(
+            trial_data["model"], trial_data["dt"], trial_data["x_test"]
+        )
         plot_ode_panel(trial_data)
 
     metrics = coeff_metrics(coefficients, coeff_true)
@@ -193,16 +197,16 @@ def run(
     return metrics
 
 
-def plot_ode_panel(grid_data: dict):
-    grid_data["model"].print()
-    plot_training_data(grid_data["x_train"], grid_data["x_true"], grid_data["smooth_train"])
+def plot_ode_panel(trial_data: FullTrialData):
+    trial_data["model"].print()
+    plot_training_data(trial_data["x_train"], trial_data["x_true"], trial_data["smooth_train"])
     compare_coefficient_plots(
-        grid_data["coefficients"],
-        grid_data["coeff_true"],
-        input_features=grid_data["input_features"],
-        feature_names=grid_data["feature_names"],
+        trial_data["coeff_fit"],
+        trial_data["coeff_true"],
+        input_features=trial_data["input_features"],
+        feature_names=trial_data["feature_names"],
     )
     plot_test_trajectories(
-        grid_data["x_test"], grid_data["x_sim"], grid_data["t_test"], grid_data["t_sim"]
+        trial_data["x_test"], trial_data["x_sim"], trial_data["t_test"], trial_data["t_sim"]
     )
     plt.show()

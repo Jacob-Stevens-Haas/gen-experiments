@@ -34,19 +34,29 @@ PLOT_KWS = dict(alpha=0.7, linewidth=3)
 TRIALS_FOLDER = Path(__file__).parent.absolute() / "trials"
 
 
-class GridPointData(TypedDict):
+class TrialData(TypedDict):
+    dt: float
+    coeff_true: Annotated[np.ndarray, "(n_coord, n_features)"]
+    coeff_fit: Annotated[np.ndarray, "(n_coord, n_features)"]
+    feature_names: Annotated[list[str], "length=n_features"]
+    input_features: Annotated[list[str], "length=n_coord"]
+    t_train: np.ndarray
     x_train: np.ndarray
     x_true: np.ndarray
     smooth_train: np.ndarray
     x_test: np.ndarray
-    dt: float
+    x_dot_test: np.ndarray
+    model: ps.SINDy
+
+
+class FullTrialData(TrialData):
     t_sim: np.ndarray
     x_sim: np.ndarray
 
 
 class PlotData(TypedDict):
     params: dict[str, Any]
-    data: GridPointData
+    data: TrialData
 
 
 SeriesData = Annotated[
@@ -649,7 +659,7 @@ def _plot_test_sim_data_3d(
         axs[1].set(xlabel="$x_0$", ylabel="$x_1$", zlabel="$x_2$")
 
 
-def simulate_test_data(model: ps.SINDy, dt: float, x_test: np.ndarray) -> GridPointData:
+def simulate_test_data(model: ps.SINDy, dt: float, x_test: np.ndarray) -> TrialData:
     """Add simulation data to grid_data
 
     This includes the t_sim and x_sim keys.  Does not mutate argument.
