@@ -319,7 +319,11 @@ def opt_lookup(kind):
 
 
 def plot_coefficients(
-    coefficients, input_features=None, feature_names=None, ax=None, **heatmap_kws
+    coefficients: Annotated[np.ndarray, "(n_coord, n_features)"],
+    input_features: Sequence[str]=None,
+    feature_names: Sequence[str]=None,
+    ax: bool=None,
+    **heatmap_kws
 ):
     if input_features is None:
         input_features = [r"$\dot x_" + f"{k}$" for k in range(coefficients.shape[0])]
@@ -352,10 +356,14 @@ def plot_coefficients(
 
 
 def compare_coefficient_plots(
-    coefficients_est, coefficients_true, input_features=None, feature_names=None
+    coefficients_est: Annotated[np.ndarray, "(n_coord, n_feat)"],
+    coefficients_true: Annotated[np.ndarray, "(n_coord, n_feat)"],
+    input_features: Sequence[str]=None,
+    feature_names: Sequence[str]=None
 ):
+    """Create plots of true and estimated coefficients."""
     n_cols = len(coefficients_est)
-
+    # helps boost the color of small coefficients.  Maybe log is better?
     def signed_sqrt(x):
         return np.sign(x) * np.sqrt(np.abs(x))
 
