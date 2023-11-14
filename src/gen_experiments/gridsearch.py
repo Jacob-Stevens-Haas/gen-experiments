@@ -67,7 +67,7 @@ def run(
         legends = True
     n_metrics = len(metrics)
     n_plotparams = len([decide for decide in grid_decisions if decide == "plot"])
-    series_searches = []
+    series_searches: list[tuple[list[GridsearchResult], list[GridsearchResult]]] = []
     intermediate_data = []
     plot_data = []
     if base_group is not None:
@@ -111,8 +111,8 @@ def run(
             full_results[(slice(None), *ind)] = [
                 curr_results[metric] for metric in metrics
             ]
-        plot_results, _ = _marginalize_grid_views(new_grid_decisions, full_results)
-        series_searches.append(plot_results)
+        grid_optima, grid_ind = _marginalize_grid_views(new_grid_decisions, full_results)
+        series_searches.append((grid_optima, grid_ind))
 
     if plot_prefs:
         for int_data in intermediate_data:
@@ -143,7 +143,7 @@ def run(
                 metrics,
                 grid_params,
                 grid_vals,
-                series_data,
+                series_data[0],
                 series_name,
                 legends,
             )
@@ -161,13 +161,18 @@ def run(
         "series_data": {
             name: data
             for data, name in zip(
-                series_searches, [ser.name for ser in series_params.series_list]
+                [metrics for metrics, _ in series_searches],
+                [ser.name for ser in series_params.series_list]
             )
         },
         "metrics": metrics,
         "grid_params": grid_params,
         "grid_vals": grid_vals,
-        "main": max(grid[main_metric_ind].max() for grid in series_searches),
+        "main": max(
+            grid[main_metric_ind].max()
+            for metrics, _ in series_searches
+            for grid in metrics
+        ),
     }
 
 
