@@ -105,15 +105,9 @@ def run(
             )
             grid_data: TrialData
             param_updates |= {"name": series_data.name}
-            intermediate_data.append({"params": param_updates, "data": grid_data})
-            if (
-                _params_match(curr_other_params, plot_prefs.grid_plot_match)
-                and plot_prefs
-            ):
-                print("Results for params: ", curr_other_params, flush=True)
-                grid_data |= simulate_test_data(grid_data["model"], grid_data["dt"], grid_data["x_test"])
-                plot_data.append({"params": param_updates,"data": grid_data})
-                plot_ode_panel(grid_data)
+            intermediate_data.append(
+                {"params": curr_other_params.flatten(), "data": grid_data}
+            )
             full_results[(slice(None), *ind)] = [
                 curr_results[metric] for metric in metrics
             ]
@@ -121,6 +115,13 @@ def run(
         series_searches.append(plot_results)
 
     if plot_prefs:
+        for int_data in intermediate_data:
+            if _params_match(int_data["params"], plot_prefs.grid_plot_match):
+                grid_data = int_data["data"]
+                plot_data.append(int_data)
+                print("Results for params: ", int_data["params"], flush=True)
+                grid_data["data"] |= simulate_test_data(grid_data["model"], grid_data["dt"], grid_data["x_test"])
+                plot_ode_panel(grid_data)
         if plot_prefs.rel_noise:
             grid_vals, grid_params = plot_prefs.rel_noise(
                 grid_vals, grid_params, grid_data
