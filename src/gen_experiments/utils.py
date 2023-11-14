@@ -64,10 +64,13 @@ SeriesData = Annotated[
 ]
 
 
-class Results(TypedDict):
+class GridsearchResultDetails(TypedDict):
+    system: str
     plot_data: list[PlotData]
     series_data: dict[str, SeriesData]
     metrics: list[str]
+    grid_params: list[str]
+    grid_vals: list[Sequence]
     grid_axes: dict[str, Collection[float]]
     main: float
 
@@ -899,7 +902,7 @@ def kalman_generalized_cv(
     return est_alpha
 
 
-def load_results(hexstr: str) -> Results:
+def load_results(hexstr: str) -> GridsearchResultDetails:
     """Load the results that mitosis saves
 
     Args:

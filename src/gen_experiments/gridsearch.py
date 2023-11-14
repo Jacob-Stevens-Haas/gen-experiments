@@ -10,6 +10,7 @@ import gen_experiments
 from gen_experiments.odes import plot_ode_panel
 from gen_experiments.utils import (
     _PlotPrefs,
+    GridsearchResultDetails,
     NestedDict,
     TrialData,
     SeriesList,
@@ -35,7 +36,7 @@ def run(
     metrics: Optional[Sequence] = None,
     plot_prefs: _PlotPrefs = _PlotPrefs(True, False, ()),
     skinny_specs: SkinnySpecs = None,
-):
+) -> GridsearchResultDetails:
     """Run a grid-search wrapper of an experiment.
 
     Arguments:
