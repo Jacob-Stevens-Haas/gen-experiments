@@ -835,6 +835,20 @@ class NestedDict(defaultdict):
         except:
             super().update(other)
 
+    def flatten(self):
+        """Flattens a nested dictionary without mutating.  Returns new dict"""
+        def _flatten(nested_d: dict) -> dict:
+            new = {}
+            for key, value in nested_d.items():
+                if not isinstance(key, str):
+                    raise TypeError("Only string keys allowed in flattening")
+                if not isinstance(value, dict):
+                    new[key] = value
+                    continue
+                for sub_key, sub_value in _flatten(value).items():
+                    new[key + "." + sub_key] = sub_value
+            return new
+        return _flatten(self)
 
 @dataclass(frozen=True)
 class _PlotPrefs:

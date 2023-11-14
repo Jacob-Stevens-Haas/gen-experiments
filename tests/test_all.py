@@ -88,3 +88,17 @@ def test_tuple_argmax():
     expected[:] = 11
     expected[0, 0] = 0
     assert np.array_equal(result, expected)
+
+def test_flatten_nested_dict():
+    deep = utils.NestedDict(a=utils.NestedDict(b=1))
+    result = deep.flatten()
+    assert deep != result
+    expected = {"a.b": 1}
+    assert result == expected
+
+def test_flatten_nested_bad_dict():
+    with pytest.raises(TypeError, match="keywords must be strings"):
+        utils.NestedDict(**{1: utils.NestedDict(b=1)})
+    with pytest.raises(TypeError, match="Only string keys allowed"):
+        deep = utils.NestedDict(a={1: 1})
+        deep.flatten()
