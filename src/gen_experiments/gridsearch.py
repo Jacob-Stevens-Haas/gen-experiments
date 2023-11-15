@@ -116,7 +116,7 @@ def run(
 
     if plot_prefs:
         for int_data in intermediate_data:
-            if _params_match(int_data["params"], plot_prefs.grid_plot_match):
+            if _grid_locator_match(int_data["params"], plot_prefs.grid_plot_match):
                 grid_data = int_data["data"]
                 plot_data.append(int_data)
                 print("Results for params: ", int_data["params"], flush=True)
@@ -214,7 +214,7 @@ def plot(
         ax.legend()
 
 
-def _params_match(
+def _grid_locator_match(
     exp_params: dict,
     exp_ind: tuple[int],
     param_spec: Collection[dict],
@@ -222,6 +222,13 @@ def _params_match(
 ) -> bool:
     """Determine whether experimental parameters match a specification
 
+    Logical clause applied is:
+
+        OR((exp_params MATCHES params for params in param_spec))
+        AND
+        OR((exp_ind MATCHES ind for ind in ind_spec))
+
+    Treats OR of an empty collection as falsy
     Args:
         exp_params: the experiment parameters to evaluate
         exp_ind: the experiemnt's full-size grid index to evaluate

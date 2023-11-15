@@ -120,6 +120,32 @@ def test_flatten_nested_dict():
     assert result == expected
 
 
+def test_grid_locator_match():
+    m_params = {"sim_params.t_end": 10, "foo": 1}
+    m_ind = (0, 1)
+    # Effectively testing the clause: (x OR y OR ...) AND (a OR b OR ...)
+    # Note: OR() with no args is falsy
+    good_specs = [
+        (({"sim_params.t_end": 10},), ((0, 1),)),
+        (({"sim_params.t_end": 10},), ((0, 1),(0, ...))),
+        (({"sim_params.t_end": 10}, {"foo": 1}), ((0, 1),)),
+        (({"sim_params.t_end": 10}, {"bar: 1"}), ((0, 1),)),
+        (({"sim_params.t_end": 10},), ((0, 1),(1,))),
+    ]
+    for param_spec, ind_spec in good_specs:
+        assert gridsearch._grid_locator_match(m_params, m_ind, param_spec, ind_spec)
+
+    bad_specs = [
+        ((), ((0, 1),)),
+        (({"sim_params.t_end": 10},), ()),
+        (({"sim_params.t_end": 9},), ((0, 1),)),
+        (({"sim_params.t_end": 10},), ((0, 0),)),
+        ((), ())
+    ]
+    for param_spec, ind_spec in bad_specs:
+        assert not gridsearch._grid_locator_match(m_params, m_ind, param_spec, ind_spec)
+
+
 def test_flatten_nested_bad_dict():
     with pytest.raises(TypeError, match="keywords must be strings"):
         utils.NestedDict(**{1: utils.NestedDict(b=1)})
