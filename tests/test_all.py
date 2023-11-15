@@ -1,7 +1,6 @@
 import numpy as np
 import pytest
 
-import gen_experiments
 from gen_experiments import gridsearch
 from gen_experiments import utils
 
@@ -98,12 +97,28 @@ def test_argmax_int_axis():
     np.testing.assert_array_equal(result, expected)
 
 
+def test_index_in():
+    match_me = (1, ..., slice(None), 3)
+    good = [(1, 2, 1, 3), (1, 1, 3)]
+    for g in good:
+        assert utils._index_in(g, match_me)
+    bad = [(1, 3), (1, 1, 2), (1, 1, 1, 2)]
+    for b in bad:
+        assert not utils._index_in(b, match_me)
+
+
+def test_index_in_errors():
+    with pytest.raises(ValueError):
+        utils._index_in((1,), (slice(-1),))
+
+
 def test_flatten_nested_dict():
     deep = utils.NestedDict(a=utils.NestedDict(b=1))
     result = deep.flatten()
     assert deep != result
     expected = {"a.b": 1}
     assert result == expected
+
 
 def test_flatten_nested_bad_dict():
     with pytest.raises(TypeError, match="keywords must be strings"):

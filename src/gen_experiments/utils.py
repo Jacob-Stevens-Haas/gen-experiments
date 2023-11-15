@@ -856,9 +856,21 @@ class NestedDict(defaultdict):
 
 @dataclass(frozen=True)
 class _PlotPrefs:
+    """Control which gridsearch data gets plotted, and a bit of how
+
+    Args:
+        plot: whether to plot
+        rel_noise: Whether and how to convert true noise into relative noise
+        grid_params_match: dictionaries of parameters to match when plotted. OR
+            is applied across the collection
+        grid_ind_match: indexing tuple to match indices in a single series
+            gridsearch.  Slice is only supported if it is ``slice(None)``
+            Negative integers are also not allowed
+    """
     plot: bool = True
-    rel_noise: bool = False
-    grid_plot_match: Collection[dict] = field(default_factory=lambda: (dict(),))
+    rel_noise: bool | Callable = False
+    grid_params_match: Collection[dict] = field(default_factory=lambda: ())
+    grid_ind_match: Collection[tuple[int, ...]] = field(default_factory=lambda: ((...),))
 
     def __bool__(self):
         return self.plot
@@ -1109,3 +1121,26 @@ def _argmax(
         fullind_max[np.array(axis, int)] = subind_max
         result[slise] = tuple(fullind_max)
     return result
+
+
+def _index_in(base: tuple[int, ...], tgt: tuple[int | type(...) | slice, ...]) -> bool:
+    """Determine whether base indexing tuple will match given numpy index"""
+    if len(base) > len(tgt): return False
+    curr_ax = 0
+    for ax, ind in enumerate(tgt):
+        if isinstance(ind, int):
+            try:
+                if ind != base[curr_ax]: return False
+            except IndexError:
+                return False
+        elif isinstance(ind, slice):
+            if not (ind.start is None and ind.stop is None and ind.step is None):
+                raise ValueError("Only slices allowed are `slice(None)`")
+        elif ind is ...:
+            base_ind_remaining = len(base) - curr_ax
+            tgt_ind_remaining = len(tgt) - ax
+            # ellipsis can take 0 or more spots
+            curr_ax += max(base_ind_remaining - tgt_ind_remaining, -1)
+        curr_ax += 1
+    if curr_ax == len(base): return True
+    return  False

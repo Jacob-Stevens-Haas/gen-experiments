@@ -16,6 +16,7 @@ from gen_experiments.utils import (
     SeriesList,
     SeriesDef,
     _argmax,
+    _index_in,
     simulate_test_data
 )
 
@@ -104,9 +105,8 @@ def run(
                 new_seed, **curr_other_params, display=False, return_all=True
             )
             grid_data: TrialData
-            param_updates |= {"name": series_data.name}
             intermediate_data.append(
-                {"params": curr_other_params.flatten(), "data": grid_data}
+                {"params": curr_other_params.flatten(), "pind": ind, "data": grid_data}
             )
             full_results[(slice(None), *ind)] = [
                 curr_results[metric] for metric in metrics
@@ -214,15 +214,33 @@ def plot(
         ax.legend()
 
 
-def _params_match(exp_params: dict, plot_params: Collection[dict]) -> bool:
-    """Determine whether experimental parameters match a specification"""
-    for pref_or in plot_params:
+def _params_match(
+    exp_params: dict,
+    exp_ind: tuple[int],
+    param_spec: Collection[dict],
+    ind_spec: Collection[tuple[int]]
+) -> bool:
+    """Determine whether experimental parameters match a specification
+
+    Args:
+        exp_params: the experiment parameters to evaluate
+        exp_ind: the experiemnt's full-size grid index to evaluate
+        param_spec: the criteria for matching exp_params
+        ind_spec: the criteria for matching exp_ind
+    """
+    found_match = False
+    for params_or in param_spec:
         try:
-            if all(exp_params[param] == value for param, value in pref_or.items()):
-                return True
+            if all(exp_params[param] == value for param, value in params_or.items()):
+                found_match = True
+                break
         except KeyError:
             pass
-    return False
+    for ind_or in ind_spec:
+        if _index_in(exp_ind, ind_or):
+            break
+    else: return False
+    return found_match
 
 
 def _marginalize_grid_views(
