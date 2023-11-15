@@ -57,34 +57,46 @@ def test_curr_skinny_specs():
 
 
 def test_marginalize_grid_views():
-    arr = np.arange(120).reshape(2, 3, 4, 5) # (metrics, param1, param2, param3)
+    arr = np.arange(16).reshape(2, 2, 2, 2) # (metrics, param1, param2, param3)
     arr[0,0,0,0] = 1000
     grid_decisions = ["plot", "max", "plot"]
     result_val, result_ind = gridsearch._marginalize_grid_views(grid_decisions, arr)
     assert len(result_val) == len([dec for dec in grid_decisions if dec =="plot"])
     expected_val = [
-        np.array([[1000, 39, 59], [79, 99, 119]]),
-        np.array([[1000, 56, 57, 58, 59], [115, 116, 117, 118, 119]]),
+        np.array([[1000, 7], [11, 15]]),
+        np.array([[1000, 7], [14, 15]]),
     ]
     for result, expected in zip(result_val, expected_val):
         np.testing.assert_array_equal(result, expected)
 
+    ts = "i,i,i,i"
     expected_ind = [
-        np.array([[0, 19, 19], [19, 19, 19]]),
-        np.array([[0, 11, 11, 11, 11], [11, 11, 11, 11, 11]])
+        np.array([[(0, 0, 0, 0), (0, 1, 1, 1)], [(1, 0, 1, 1), (1, 1, 1, 1)]], ts),
+        np.array([[(0, 0, 0, 0), (0, 1, 1, 1)], [(1, 1, 1, 0), (1, 1, 1, 1)]], ts)
     ]
     for result, expected in zip(result_ind, expected_ind):
         np.testing.assert_array_equal(result, expected)
 
-
-def test_tuple_argmax():
-    arr = np.arange(120).reshape(2, 3, 4, 5)
+def test_argmax_tuple_axis():
+    arr = np.arange(16).reshape(2, 2, 2, 2)
     arr[0,0,0,0] = 1000
-    result = utils._argmax(arr, axis=(1,2))
-    expected = np.empty((2, 5))
-    expected[:] = 11
-    expected[0, 0] = 0
-    assert np.array_equal(result, expected)
+    result = utils._argmax(arr, (1, 3))
+    expected = np.array(
+        [[(0, 0, 0, 0), (0, 1, 1, 1)], [(1, 1, 0, 1), (1, 1, 1, 1)]],
+        dtype="i,i,i,i"
+    )
+    np.testing.assert_array_equal(result, expected)
+
+
+def test_argmax_int_axis():
+    arr = np.arange(8).reshape(2, 2, 2)
+    arr[0,0,0] = 1000
+    result = utils._argmax(arr, 1)
+    expected = np.array(
+        [[(0, 0, 0), (0, 1, 1)], [(1, 1, 0), (1, 1, 1)]], dtype="i,i,i"
+    )
+    np.testing.assert_array_equal(result, expected)
+
 
 def test_flatten_nested_dict():
     deep = utils.NestedDict(a=utils.NestedDict(b=1))

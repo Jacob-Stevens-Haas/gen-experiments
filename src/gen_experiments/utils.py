@@ -27,6 +27,7 @@ import auto_ks as aks
 from matplotlib.gridspec import GridSpec, SubplotSpec, GridSpecFromSubplotSpec
 from matplotlib.pyplot import Axes
 from matplotlib.figure import Figure
+from numpy.typing import DTypeLike
 
 INTEGRATOR_KEYWORDS = {"rtol": 1e-12, "method": "LSODA", "atol": 1e-12}
 PAL = sns.color_palette("Set1")
@@ -1084,20 +1085,27 @@ def plot_summary_test_train(
     return fig
 
 
-def _argmax(arr: np.ndarray, axis: int | tuple[int, ...]=None, *args, **kwargs) -> np.ndarray:
+def _argmax(
+    arr: np.ndarray, axis: int | tuple[int, ...]=None, *args, **kwargs
+) -> np.ndarray[tuple[int]]:
     """Calculate the argmax, but accept tuple axis.
     
-    Each argmax is the index of the max in the subarray given by axis,
-    flattened.  To recover the index of the subarray, use
-    np.unravel_index.
+    Each argmax is the index of the max across axis.  The indices refer to the
+    positions in the full array.
     """
+    dtype: DTypeLike = ",".join(arr.ndim * "i")
+    axis = (axis,) if isinstance(axis, int) else axis
     keep_axes = tuple(sorted(set(range(arr.ndim)) - set(axis)))
     keep_shape = tuple(arr.shape[ax] for ax in keep_axes)
-    result = np.empty(keep_shape, dtype=int)
+    result = np.empty(keep_shape, dtype=dtype)
     for slise in np.ndindex(keep_shape):
         sub_arr = arr
-        for ind, ax in zip(slise, keep_axes):
-            sub_arr = np.take(sub_arr, [ind], ax)
-        result[slise] = np.argmax(sub_arr)
+        # since we shrink shape, we need to chop of axes from the end
+        for ind, ax in zip(reversed(slise), reversed(keep_axes)):
+            sub_arr = np.take(sub_arr, ind, ax)
+        subind_max = np.unravel_index(np.argmax(sub_arr), sub_arr.shape)
+        fullind_max = np.empty((arr.ndim), int)
+        fullind_max[np.array(keep_axes, int)] = slise
+        fullind_max[np.array(axis, int)] = subind_max
+        result[slise] = tuple(fullind_max)
     return result
-
