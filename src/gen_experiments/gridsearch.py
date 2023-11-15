@@ -1,10 +1,19 @@
 from copy import copy, deepcopy
-from typing import Iterable, Sequence, Optional, Callable, Collection, Annotated
+from typing import (
+    Iterable,
+    Sequence,
+    Optional,
+    Callable,
+    Collection,
+    Annotated,
+    TypeVar
+)
 from warnings import warn
 
 from scipy.stats import kstest
 import matplotlib.pyplot as plt
 import numpy as np
+from numpy.typing import NDArray, DTypeLike
 
 import gen_experiments
 from gen_experiments.odes import plot_ode_panel
@@ -15,6 +24,7 @@ from gen_experiments.utils import (
     TrialData,
     SeriesList,
     SeriesDef,
+    ellipsis,
     _argmax,
     _index_in,
     simulate_test_data
@@ -23,7 +33,8 @@ from gen_experiments.utils import (
 name = "gridsearch"
 OtherSliceDef = tuple[int | Callable]
 SkinnySpecs = Optional[tuple[tuple[str, ...], tuple[OtherSliceDef, ...]]]
-GridsearchResult = Annotated[np.ndarray, "(n_metrics, n_plot_axis)"]
+T = TypeVar("T")
+GridsearchResult = Annotated[NDArray[T], "(n_metrics, n_plot_axis)"]  # type: ignore
 
 
 def run(
@@ -115,8 +126,16 @@ def run(
         series_searches.append((grid_optima, grid_ind))
 
     if plot_prefs:
+        full_m_inds = _amax_to_full_inds(
+            plot_prefs.grid_ind_match, [s[1] for s in series_searches]
+        )
         for int_data in intermediate_data:
-            if _grid_locator_match(int_data["params"], plot_prefs.grid_plot_match):
+            if _grid_locator_match(
+                int_data["params"],
+                int_data["pind"],
+                plot_prefs.grid_params_match,
+                full_m_inds
+            ):
                 grid_data = int_data["data"]
                 plot_data.append(int_data)
                 print("Results for params: ", int_data["params"], flush=True)
@@ -216,9 +235,9 @@ def plot(
 
 def _grid_locator_match(
     exp_params: dict,
-    exp_ind: tuple[int],
+    exp_ind: tuple[int, ...],
     param_spec: Collection[dict],
-    ind_spec: Collection[tuple[int]]
+    ind_spec: Collection[tuple[int, ...]]
 ) -> bool:
     """Determine whether experimental parameters match a specification
 
@@ -367,3 +386,25 @@ def _curr_skinny_specs(
         )
         where_others.append(new_criteria)
     return skinny_param_inds, tuple(where_others)
+
+
+def _amax_to_full_inds(
+    amax_inds: Collection[tuple[int | slice, int] | ellipsis],
+    amax_arrays: list[list[GridsearchResult]]
+) -> set[tuple[int, ...]]:
+    def np_to_primitive(tuple_like: np.void) -> tuple[int, ...]:
+        return tuple(int(el) for el in tuple_like)
+    if amax_inds is ...:  # grab each element from arrays in list of lists of arrays
+        return {
+            np_to_primitive(el)
+            for ar_list in amax_arrays
+            for arr in ar_list
+            for el in arr.flatten()}
+    all_inds = set()
+    for plot_axis_results in [el for series in amax_arrays for el in series]:
+        for ind in amax_inds:
+            if isinstance(ind[0], int):
+                all_inds |= {np_to_primitive(plot_axis_results[ind])}
+            else:  # ind[0] is slice(None)
+                all_inds |= {np_to_primitive(el) for el in plot_axis_results[ind]}
+    return all_inds

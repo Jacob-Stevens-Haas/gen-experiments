@@ -145,6 +145,17 @@ def test_grid_locator_match():
     for param_spec, ind_spec in bad_specs:
         assert not gridsearch._grid_locator_match(m_params, m_ind, param_spec, ind_spec)
 
+def test_amax_to_full_inds():
+    amax_inds = ((1,1), (slice(None), 0))
+    arr = np.array([[(0, 0), (0, 1)], [(1, 0), (1, 1)]], dtype="i,i")
+    amax_arrays = [[arr, arr], [arr]]
+    result = gridsearch._amax_to_full_inds(amax_inds, amax_arrays)
+    expected = {(0, 0), (1, 1), (1, 0)}
+    assert result == expected
+    result = gridsearch._amax_to_full_inds(..., amax_arrays)
+    expected |= {(0, 1)}
+    return result == expected
+
 
 def test_flatten_nested_bad_dict():
     with pytest.raises(TypeError, match="keywords must be strings"):

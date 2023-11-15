@@ -3,6 +3,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from itertools import chain
 from types import ModuleType
+from types import EllipsisType as ellipsis
 from typing import (
     Annotated,
     Any,
@@ -33,7 +34,6 @@ INTEGRATOR_KEYWORDS = {"rtol": 1e-12, "method": "LSODA", "atol": 1e-12}
 PAL = sns.color_palette("Set1")
 PLOT_KWS = dict(alpha=0.7, linewidth=3)
 TRIALS_FOLDER = Path(__file__).parent.absolute() / "trials"
-
 
 class TrialData(TypedDict):
     dt: float
@@ -864,13 +864,14 @@ class _PlotPrefs:
         grid_params_match: dictionaries of parameters to match when plotted. OR
             is applied across the collection
         grid_ind_match: indexing tuple to match indices in a single series
-            gridsearch.  Slice is only supported if it is ``slice(None)``
-            Negative integers are also not allowed
+            gridsearch.  Only positive integers are allowed, except the first
+            element may be slice(None).  Alternatively, ellipsis to match all
+            indices
     """
     plot: bool = True
     rel_noise: bool | Callable = False
     grid_params_match: Collection[dict] = field(default_factory=lambda: ())
-    grid_ind_match: Collection[tuple[int, ...]] = field(default_factory=lambda: ((...),))
+    grid_ind_match: Collection[tuple[int | slice, int]] | ellipsis = field(default_factory=lambda: ...)
 
     def __bool__(self):
         return self.plot
@@ -1123,7 +1124,7 @@ def _argmax(
     return result
 
 
-def _index_in(base: tuple[int, ...], tgt: tuple[int | type(...) | slice, ...]) -> bool:
+def _index_in(base: tuple[int, ...], tgt: tuple[int | ellipsis | slice, ...]) -> bool:
     """Determine whether base indexing tuple will match given numpy index"""
     if len(base) > len(tgt): return False
     curr_ax = 0
