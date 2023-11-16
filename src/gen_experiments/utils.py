@@ -28,7 +28,7 @@ import auto_ks as aks
 from matplotlib.gridspec import GridSpec, SubplotSpec, GridSpecFromSubplotSpec
 from matplotlib.pyplot import Axes
 from matplotlib.figure import Figure
-from numpy.typing import DTypeLike
+from numpy.typing import DTypeLike, NDArray
 
 INTEGRATOR_KEYWORDS = {"rtol": 1e-12, "method": "LSODA", "atol": 1e-12}
 PAL = sns.color_palette("Set1")
@@ -61,7 +61,10 @@ class PlotData(TypedDict):
 
 
 SeriesData = Annotated[
-    list[Annotated[np.ndarray, "(n_metrics, n_grid_vals)"]], "len=n_grid_axes"
+    list[tuple[
+        Annotated[NDArray, "metrics: (n_metrics, n_grid_vals)"],
+        Annotated[NDArray, "arg_opts: (n_metrics, n_grid_vals)"]
+    ]],"len=n_grid_axes"
 ]
 
 
@@ -1073,7 +1076,7 @@ def plot_summary_metric(
         metric_index = results["metrics"].index(metric)
         ax = fig.add_subplot(cell)
         for s_name, s_data in results["series_data"].items():
-            ax.plot(grid_axis, s_data[grid_axis_index][metric_index], label=s_name)
+            ax.plot(grid_axis, s_data[grid_axis_index][metric_index][0], label=s_name)
         ax.set_title(ode_name)
     ax.legend()
 

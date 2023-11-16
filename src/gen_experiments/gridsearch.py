@@ -190,7 +190,10 @@ def run(
         "series_data": {
             name: data
             for data, name in zip(
-                [metrics for metrics, _ in series_searches],
+                [
+                    list(zip(metrics, argopts))
+                    for metrics, argopts in series_searches
+                ],
                 [ser.name for ser in series_params.series_list]
             )
         },
