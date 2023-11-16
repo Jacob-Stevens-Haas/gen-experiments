@@ -169,23 +169,24 @@ plot_prefs = {
             (
                 {
                     "sim_params.noise_abs": 1,
-                    "diff_params.smoother_kws.window_length": 15,
+                    "diff_params.diffcls": "SmoothedFiniteDifference",
                 },
                 {"sim_params.noise_abs": 1, "diff_params.kind": "kalman"},
-                {"sim_params.noise_abs": 1, "diff_params.alpha": 1e0},
+                {"sim_params.noise_abs": 1, "diff_params.kind": "total_variation"},
                 {
                     "sim_params.noise_abs": 2,
-                    "diff_params.smoother_kws.window_length": 15,
+                    "diff_params.diffcls": "SmoothedFiniteDifference",
                 },
                 {"sim_params.noise_abs": 2, "diff_params.kind": "kalman"},
-                {"sim_params.noise_abs": 2, "diff_params.alpha": 1e0},
+                {"sim_params.noise_abs": 2, "diff_params.kind": "total_variation"},
                 {
                     "sim_params.noise_abs": 4,
-                    "diff_params.smoother_kws.window_length": 15,
+                    "diff_params.diffcls": "SmoothedFiniteDifference",
                 },
                 {"sim_params.noise_abs": 4, "diff_params.kind": "kalman"},
-                {"sim_params.noise_abs": 4, "diff_params.alpha": 1e0},
+                {"sim_params.noise_abs": 4, "diff_params.kind": "total_variation"},
             ),
+            {(0, 2), (3, 2), (0, 3), (3, 3), (0, 4), (3, 4)}
         ),
         [utils, this_module],
     ),
@@ -596,10 +597,4 @@ skinny_specs = {
         ),
         [this_module],
     ),
-}
-skinny_specs = {
-    "exp3": (
-        ("sim_params.noise_abs", "diff_params.meas_var"),
-        (lambda x: x, lambda x: x)
-    )
 }

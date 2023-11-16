@@ -76,6 +76,29 @@ class GridsearchResultDetails(TypedDict):
     main: float
 
 
+@dataclass(frozen=True)
+class _PlotPrefs:
+    """Control which gridsearch data gets plotted, and a bit of how
+
+    Args:
+        plot: whether to plot
+        rel_noise: Whether and how to convert true noise into relative noise
+        grid_params_match: dictionaries of parameters to match when plotted. OR
+            is applied across the collection
+        grid_ind_match: indexing tuple to match indices in a single series
+            gridsearch.  Only positive integers are allowed, except the first
+            element may be slice(None).  Alternatively, ellipsis to match all
+            indices
+    """
+    plot: bool = True
+    rel_noise: bool | Callable = False
+    grid_params_match: Collection[dict] = field(default_factory=lambda: ())
+    grid_ind_match: Collection[tuple[int | slice, int]] | ellipsis = field(default_factory=lambda: ...)
+
+    def __bool__(self):
+        return self.plot
+
+
 def gen_data(
     rhs_func,
     n_coord,
@@ -853,28 +876,6 @@ class NestedDict(defaultdict):
                     new[key + "." + sub_key] = sub_value
             return new
         return _flatten(self)
-
-@dataclass(frozen=True)
-class _PlotPrefs:
-    """Control which gridsearch data gets plotted, and a bit of how
-
-    Args:
-        plot: whether to plot
-        rel_noise: Whether and how to convert true noise into relative noise
-        grid_params_match: dictionaries of parameters to match when plotted. OR
-            is applied across the collection
-        grid_ind_match: indexing tuple to match indices in a single series
-            gridsearch.  Only positive integers are allowed, except the first
-            element may be slice(None).  Alternatively, ellipsis to match all
-            indices
-    """
-    plot: bool = True
-    rel_noise: bool | Callable = False
-    grid_params_match: Collection[dict] = field(default_factory=lambda: ())
-    grid_ind_match: Collection[tuple[int | slice, int]] | ellipsis = field(default_factory=lambda: ...)
-
-    def __bool__(self):
-        return self.plot
 
 
 def kalman_generalized_cv(

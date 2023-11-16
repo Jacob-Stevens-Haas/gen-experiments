@@ -1,12 +1,13 @@
-from copy import copy, deepcopy
+from copy import copy
 from typing import (
-    Iterable,
-    Sequence,
-    Optional,
+    Annotated,
     Callable,
     Collection,
-    Annotated,
-    TypeVar
+    Iterable,
+    Optional,
+    Sequence,
+    TypedDict,
+    TypeVar,
 )
 from warnings import warn
 
@@ -19,6 +20,7 @@ import gen_experiments
 from gen_experiments.odes import plot_ode_panel
 from gen_experiments.utils import (
     _PlotPrefs,
+    FullTrialData,
     GridsearchResultDetails,
     NestedDict,
     TrialData,
@@ -35,6 +37,12 @@ OtherSliceDef = tuple[int | Callable]
 SkinnySpecs = Optional[tuple[tuple[str, ...], tuple[OtherSliceDef, ...]]]
 T = TypeVar("T")
 GridsearchResult = Annotated[NDArray[T], "(n_metrics, n_plot_axis)"]  # type: ignore
+
+
+class SavedData(TypedDict):
+    params: dict
+    pind: tuple[int]
+    data: TrialData | FullTrialData
 
 
 def run(
@@ -80,8 +88,8 @@ def run(
     n_metrics = len(metrics)
     n_plotparams = len([decide for decide in grid_decisions if decide == "plot"])
     series_searches: list[tuple[list[GridsearchResult], list[GridsearchResult]]] = []
-    intermediate_data = []
-    plot_data = []
+    intermediate_data: list[SavedData] = []
+    plot_data: list[SavedData] = []
     if base_group is not None:
         other_params["group"] = base_group
     for s_counter, series_data in enumerate(series_params.series_list):
@@ -135,12 +143,14 @@ def run(
                 int_data["pind"],
                 plot_prefs.grid_params_match,
                 full_m_inds
-            ):
+            ) and int_data["params"] not in [saved["params"] for saved in plot_data]:
                 grid_data = int_data["data"]
-                plot_data.append(int_data)
                 print("Results for params: ", int_data["params"], flush=True)
-                grid_data["data"] |= simulate_test_data(grid_data["model"], grid_data["dt"], grid_data["x_test"])
+                grid_data["data"] |= simulate_test_data(
+                    grid_data["model"], grid_data["dt"], grid_data["x_test"]
+                )
                 plot_ode_panel(grid_data)
+                plot_data.append(int_data)
         if plot_prefs.rel_noise:
             grid_vals, grid_params = plot_prefs.rel_noise(
                 grid_vals, grid_params, grid_data
