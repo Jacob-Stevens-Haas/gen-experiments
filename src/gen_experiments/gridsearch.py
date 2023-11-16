@@ -2,7 +2,6 @@ from copy import copy
 from typing import (
     Annotated,
     Callable,
-    Collection,
     Iterable,
     Optional,
     Sequence,
@@ -21,14 +20,16 @@ from gen_experiments.odes import plot_ode_panel
 from gen_experiments.utils import (
     _PlotPrefs,
     FullTrialData,
+    GridsearchResult,
     GridsearchResultDetails,
     NestedDict,
     TrialData,
+    SavedData,
     SeriesList,
     SeriesDef,
-    ellipsis,
+    _grid_locator_match,
+    _amax_to_full_inds,
     _argmax,
-    _index_in,
     simulate_test_data
 )
 
@@ -36,13 +37,6 @@ name = "gridsearch"
 OtherSliceDef = tuple[int | Callable]
 SkinnySpecs = Optional[tuple[tuple[str, ...], tuple[OtherSliceDef, ...]]]
 T = TypeVar("T")
-GridsearchResult = Annotated[NDArray[T], "(n_metrics, n_plot_axis)"]  # type: ignore
-
-
-class SavedData(TypedDict):
-    params: dict
-    pind: tuple[int]
-    data: TrialData | FullTrialData
 
 
 def run(
@@ -246,42 +240,6 @@ def plot(
         ax.legend()
 
 
-def _grid_locator_match(
-    exp_params: dict,
-    exp_ind: tuple[int, ...],
-    param_spec: Collection[dict],
-    ind_spec: Collection[tuple[int, ...]]
-) -> bool:
-    """Determine whether experimental parameters match a specification
-
-    Logical clause applied is:
-
-        OR((exp_params MATCHES params for params in param_spec))
-        AND
-        OR((exp_ind MATCHES ind for ind in ind_spec))
-
-    Treats OR of an empty collection as falsy
-    Args:
-        exp_params: the experiment parameters to evaluate
-        exp_ind: the experiemnt's full-size grid index to evaluate
-        param_spec: the criteria for matching exp_params
-        ind_spec: the criteria for matching exp_ind
-    """
-    found_match = False
-    for params_or in param_spec:
-        try:
-            if all(exp_params[param] == value for param, value in params_or.items()):
-                found_match = True
-                break
-        except KeyError:
-            pass
-    for ind_or in ind_spec:
-        if _index_in(exp_ind, ind_or):
-            break
-    else: return False
-    return found_match
-
-
 def _marginalize_grid_views(
     grid_decisions: Iterable[str], results: np.ndarray
 ) -> tuple[list[GridsearchResult], list[GridsearchResult]]:
@@ -400,24 +358,3 @@ def _curr_skinny_specs(
         where_others.append(new_criteria)
     return skinny_param_inds, tuple(where_others)
 
-
-def _amax_to_full_inds(
-    amax_inds: Collection[tuple[int | slice, int] | ellipsis],
-    amax_arrays: list[list[GridsearchResult]]
-) -> set[tuple[int, ...]]:
-    def np_to_primitive(tuple_like: np.void) -> tuple[int, ...]:
-        return tuple(int(el) for el in tuple_like)
-    if amax_inds is ...:  # grab each element from arrays in list of lists of arrays
-        return {
-            np_to_primitive(el)
-            for ar_list in amax_arrays
-            for arr in ar_list
-            for el in arr.flatten()}
-    all_inds = set()
-    for plot_axis_results in [el for series in amax_arrays for el in series]:
-        for ind in amax_inds:
-            if isinstance(ind[0], int):
-                all_inds |= {np_to_primitive(plot_axis_results[ind])}
-            else:  # ind[0] is slice(None)
-                all_inds |= {np_to_primitive(el) for el in plot_axis_results[ind]}
-    return all_inds

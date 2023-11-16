@@ -55,22 +55,25 @@ class FullTrialData(TrialData):
     x_sim: np.ndarray
 
 
-class PlotData(TypedDict):
-    params: dict[str, Any]
-    data: TrialData
+class SavedData(TypedDict):
+    params: dict
+    pind: tuple[int]
+    data: TrialData | FullTrialData
 
+
+GridsearchResult = Annotated[NDArray[T], "(n_metrics, n_plot_axis)"]  # type: ignore
 
 SeriesData = Annotated[
     list[tuple[
-        Annotated[NDArray, "metrics: (n_metrics, n_grid_vals)"],
-        Annotated[NDArray, "arg_opts: (n_metrics, n_grid_vals)"]
+        Annotated[GridsearchResult, "metrics"],
+        Annotated[GridsearchResult, "arg_opts"]
     ]],"len=n_grid_axes"
 ]
 
 
 class GridsearchResultDetails(TypedDict):
     system: str
-    plot_data: list[PlotData]
+    plot_data: list[SavedData]
     series_data: dict[str, SeriesData]
     metrics: list[str]
     grid_params: list[str]
@@ -930,6 +933,28 @@ def load_results(hexstr: str) -> GridsearchResultDetails:
         return np.load(f, allow_pickle=True)[()]
 
 
+def _amax_to_full_inds(
+    amax_inds: Collection[tuple[int | slice, int] | ellipsis],
+    amax_arrays: list[list[GridsearchResult]]
+) -> set[tuple[int, ...]]:
+    def np_to_primitive(tuple_like: np.void) -> tuple[int, ...]:
+        return tuple(int(el) for el in tuple_like)
+    if amax_inds is ...:  # grab each element from arrays in list of lists of arrays
+        return {
+            np_to_primitive(el)
+            for ar_list in amax_arrays
+            for arr in ar_list
+            for el in arr.flatten()}
+    all_inds = set()
+    for plot_axis_results in [el for series in amax_arrays for el in series]:
+        for ind in amax_inds:
+            if isinstance(ind[0], int):
+                all_inds |= {np_to_primitive(plot_axis_results[ind])}
+            else:  # ind[0] is slice(None)
+                all_inds |= {np_to_primitive(el) for el in plot_axis_results[ind]}
+    return all_inds
+
+
 def _setup_summary_fig(
     n_sub: int, *, fig_cell: tuple[Figure, SubplotSpec] = None
 ) -> tuple[Figure, GridSpec | GridSpecFromSubplotSpec]:
@@ -958,15 +983,23 @@ def _setup_summary_fig(
 
 
 def plot_experiment_across_gridpoints(
-    hexstr: str, *args: tuple[str, dict], style: str, fig_cell: tuple[Figure, SubplotSpec]=None, annotations:bool = True
+    hexstr: str,
+    *args: tuple[str, dict] | ellipsis | tuple[int | slice, int],
+    style: str,
+    fig_cell: tuple[Figure, SubplotSpec]=None,
+    annotations:bool = True
 ) -> tuple[Figure, Sequence[str]]:
     """Plot a single experiment's test across multiple gridpoints
 
     Arguments:
         hexstr: hexadecimal suffix for the experiment's result file.
-        args (param name, params): From which gridpoints to load
-            data, described as a local name and the paramters defining
-            the gridpoint to match.
+        args: From which gridpoints to load data, described either as:
+            - a local name and the paramters defining the gridpoint to match.
+            - ellipsis, indicating optima across all metrics across all plot
+                axes
+            - an indexing tuple indicating optima for that tuple's location in
+                the gridsearch argmax array
+            Matching logic is AND(OR(parameter matches), OR(index matches))
         style: either "test" or "train"
     Returns:
         the plotted figure
@@ -976,10 +1009,23 @@ def plot_experiment_across_gridpoints(
     if fig_cell is not None:
         fig.suptitle("How do different smoothing compare on an ODE?")
     p_names = []
-    for cell, (p_name, params) in zip(gs, args):
-        results = load_results(hexstr)
+    results = load_results(hexstr)
+    amax_arrays = [
+        [single_ser_and_axis[1] for single_ser_and_axis in single_series_all_axes]
+        for _, single_series_all_axes in results["series_data"].items()
+    ]
+    parg_inds = {argind for argind, arg in enumerate(args) if isinstance(arg, tuple) and isinstance(arg[0], str)}
+    indarg_inds = set(range(len(args))) - parg_inds
+    pargs = [args[i] for i in parg_inds]
+    indargs = [args[i] for i in indarg_inds]
+    if not indargs:
+        indargs = {...}
+    full_inds = _amax_to_full_inds(indargs, amax_arrays)
+
+    for cell, (p_name, params) in zip(gs, pargs):
+
         for trajectory in results["plot_data"]:
-            if params == trajectory["params"]:
+            if _grid_locator_match(trajectory["params"], trajectory["pind"], pargs, full_inds):
                 p_names.append(p_name)
                 ax = _plot_train_test_cell((fig, cell), trajectory, style, annotations=False)
                 if annotations: ax.set_title(p_name)
@@ -992,7 +1038,7 @@ def plot_experiment_across_gridpoints(
 
 def _plot_train_test_cell(
     fig_cell: tuple[Figure, SubplotSpec | int | tuple[int, int, int]],
-    trajectory: PlotData,
+    trajectory: SavedData,
     style: str,
     annotations: bool=False,
 ) -> Axes:
@@ -1023,12 +1069,20 @@ def _plot_train_test_cell(
 
 
 def plot_point_across_experiments(
-    params: dict, *args: tuple[str, str], style: str
+    params: dict,
+    point: ellipsis | tuple[int | slice, int]=...,
+    *args: tuple[str, str],
+    style: str
 ) -> Figure:
     """Plot a single parameter's training or test across multiple experiments
 
     Arguments:
         params: paramters defining the gridpoint to match
+        point: gridpoint spec from the argmax array, defined as either an
+            - ellipsis, indicating optima across all metrics across all plot
+                axes
+            - indexing tuple indicating optima for that tuple's location in
+                the gridsearch argmax array
         args (experiment_name, hexstr): From which experiments to load
             data, described as a local name and the hexadecimal suffix
             of the result file.
@@ -1041,8 +1095,14 @@ def plot_point_across_experiments(
 
     for cell, (ode_name, hexstr) in zip(gs, args):
         results = load_results(hexstr)
+        amax_arrays = [
+            [single_ser_and_axis[1] for single_ser_and_axis in single_series_all_axes]
+            for _, single_series_all_axes in results["series_data"].items()
+        ]
+        full_inds = _amax_to_full_inds((point,), amax_arrays)
         for trajectory in results["plot_data"]:
-            if params == trajectory["params"]:
+            # Don't need to use _index_in because only matching single point
+            if params == trajectory["params"] and trajectory["pind"] in full_inds:
                 ax = _plot_train_test_cell([fig, cell], trajectory, style, annotations=False)
                 ax.set_title(ode_name)
                 break
@@ -1082,8 +1142,24 @@ def plot_summary_metric(
 
 
 def plot_summary_test_train(
-    exps: Sequence[tuple[str, str]], params: Sequence[tuple[str, dict]], style: str
-):
+    exps: Sequence[tuple[str, str]],
+    params: Sequence[tuple[str, dict] | ellipsis | tuple[int | slice, int]],
+    style: str
+) -> None:
+    """Plot a comparison of different variants across experiments
+
+    Args:
+        exps: From which experiments to load data, described as a local name
+            and the hexadecimal suffix of the result file.
+        params: which gridpoints to compare, described as either:
+            - a tuple of local name and paramters to match.
+            - ellipsis, indicating optima across all metrics across all plot
+                axes
+            - an indexing tuple indicating optima for that tuple's location in
+                the gridsearch argmax array
+            Matching logic is AND(OR(parameter matches), OR(index matches))
+        style
+    """
     n_exp = len(exps)
     n_params = len(params)
     figsize = (3*n_params, 3*n_exp)
@@ -1149,3 +1225,39 @@ def _index_in(base: tuple[int, ...], tgt: tuple[int | ellipsis | slice, ...]) ->
         curr_ax += 1
     if curr_ax == len(base): return True
     return  False
+
+
+def _grid_locator_match(
+    exp_params: dict,
+    exp_ind: tuple[int, ...],
+    param_spec: Collection[dict],
+    ind_spec: Collection[tuple[int, ...]]
+) -> bool:
+    """Determine whether experimental parameters match a specification
+
+    Logical clause applied is:
+
+        OR((exp_params MATCHES params for params in param_spec))
+        AND
+        OR((exp_ind MATCHES ind for ind in ind_spec))
+
+    Treats OR of an empty collection as falsy
+    Args:
+        exp_params: the experiment parameters to evaluate
+        exp_ind: the experiemnt's full-size grid index to evaluate
+        param_spec: the criteria for matching exp_params
+        ind_spec: the criteria for matching exp_ind
+    """
+    found_match = False
+    for params_or in param_spec:
+        try:
+            if all(exp_params[param] == value for param, value in params_or.items()):
+                found_match = True
+                break
+        except KeyError:
+            pass
+    for ind_or in ind_spec:
+        if _index_in(exp_ind, ind_or):
+            break
+    else: return False
+    return found_match

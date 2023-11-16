@@ -133,7 +133,7 @@ def test_grid_locator_match():
         (({"sim_params.t_end": 10},), ((0, 1),(1,))),
     ]
     for param_spec, ind_spec in good_specs:
-        assert gridsearch._grid_locator_match(m_params, m_ind, param_spec, ind_spec)
+        assert utils._grid_locator_match(m_params, m_ind, param_spec, ind_spec)
 
     bad_specs = [
         ((), ((0, 1),)),
@@ -143,7 +143,7 @@ def test_grid_locator_match():
         ((), ())
     ]
     for param_spec, ind_spec in bad_specs:
-        assert not gridsearch._grid_locator_match(m_params, m_ind, param_spec, ind_spec)
+        assert not utils._grid_locator_match(m_params, m_ind, param_spec, ind_spec)
 
 def test_amax_to_full_inds():
     amax_inds = ((1,1), (slice(None), 0))
