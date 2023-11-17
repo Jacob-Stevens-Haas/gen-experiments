@@ -56,9 +56,10 @@ def test_curr_skinny_specs():
 
 
 def test_marginalize_grid_views():
-    arr = np.arange(16).reshape(2, 2, 2, 2) # (metrics, param1, param2, param3)
+    arr = np.arange(16, dtype=np.float_).reshape(2, 2, 2, 2) # (metrics, param1, param2, param3)
     arr[0,0,0,0] = 1000
     arr[-1,-1,-1,0] = -1000
+    arr[0,0,0,1] = np.nan
     grid_decisions = ["plot", "max", "plot"]
     opts = ["max", "min"]
     res_val, res_ind = gridsearch._marginalize_grid_views(grid_decisions, arr, opts)

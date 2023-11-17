@@ -1184,6 +1184,8 @@ def _argopt(
     arr: np.ndarray, axis: int | tuple[int, ...]=None, opt: str="max"
 ) -> np.ndarray[tuple[int, ...]]:
     """Calculate the argmax, but accept tuple axis.
+
+    Ignores NaN values
     
     Args:
         arr: an array to search
@@ -1200,7 +1202,7 @@ def _argopt(
     keep_axes = tuple(sorted(set(range(arr.ndim)) - set(axis)))
     keep_shape = tuple(arr.shape[ax] for ax in keep_axes)
     result = np.empty(keep_shape, dtype=dtype)
-    optfun = np.argmax if opt is "max" else np.argmin
+    optfun = np.nanargmax if opt is "max" else np.nanargmin
     for slise in np.ndindex(keep_shape):
         sub_arr = arr
         # since we shrink shape, we need to chop of axes from the end

@@ -100,7 +100,7 @@ def run(
             ]
             where_others = None
         full_results_shape = (len(metrics), *(len(grid) for grid in new_grid_vals))
-        full_results = np.empty(full_results_shape)
+        full_results = np.full(full_results_shape, np.nan)
         full_results.fill(-np.inf)
         gridpoint_selector = _ndindex_skinny(
             full_results_shape[1:], ind_skinny, where_others
@@ -249,6 +249,7 @@ def _marginalize_grid_views(
 ) -> tuple[list[GridsearchResult[T]], list[GridsearchResult]]:
     """Marginalize unnecessary dimensions by taking max across axes.
 
+    Ignores NaN values
     Args:
         grid_decisions: list of how to treat each non-metric gridsearch
             axis.  An array of metrics for each "plot" grid decision
@@ -264,7 +265,7 @@ def _marginalize_grid_views(
     plot_param_inds = [ind for ind, val in enumerate(grid_decisions) if val == "plot"]
     grid_searches = []
     args_maxes = []
-    optfuns = [np.max if opt == "max" else np.min for opt in max_or_min]
+    optfuns = [np.nanmax if opt == "max" else np.nanmin for opt in max_or_min]
     for param_ind in plot_param_inds:
         reduce_axes = tuple(set(range(results.ndim-1)) - {param_ind})
         selection_results = np.array([
