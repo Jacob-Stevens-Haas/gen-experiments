@@ -37,15 +37,20 @@ dependencies = [
   "matplotlib",
   "black",
   "coverage",
+  "isort",
   "pre-commit",
   "sphinx",
   "codecov",
   "seaborn",
   "sqlalchemy<2.0",
+  "tomli",
 ]
 
 [project.urls]
 homepage = "https://github.com/Jake-Stevens-Haas/gen-experiments"
+
+[project.entry-points.'derivative.hyperparam_opt']
+"kalman.gcv" = "gen_experiments.utils:kalman_generalized_cv"
 
 [tool.setuptools_scm]
 
@@ -60,10 +65,19 @@ extend-exclude = '''
   | version.py
   | build
   | dist
+  | scratch
   | env
 )/
 '''
 preview = 1
+
+[tool.codespell]
+skip = '*.html,./env,./scratch/*,todo'
+ignore-words-list = "nd, aks, ser"
+
+[tool.isort]
+profile = "black"
+src_paths = ["src/gen_experiments", "tests"]
 
 [tool.pytest.ini_options]
 filterwarnings = [
@@ -71,6 +85,3 @@ filterwarnings = [
   "ignore::UserWarning",]
 addopts = '-m "not slow"'
 markers = ["slow"]
-
-[project.entry-points.'derivative.hyperparam_opt']
-"kalman.gcv" = "gen_experiments.utils:kalman_generalized_cv"
