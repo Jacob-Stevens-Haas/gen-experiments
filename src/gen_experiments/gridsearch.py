@@ -22,6 +22,7 @@ from gen_experiments.utils import (
     GridsearchResultDetails,
     NestedDict,
     TrialData,
+    FullTrialData,
     SavedData,
     SeriesList,
     SeriesDef,
@@ -141,7 +142,7 @@ def run(
             ) and int_data["params"] not in [saved["params"] for saved in plot_data]:
                 grid_data = int_data["data"]
                 print("Results for params: ", int_data["params"], flush=True)
-                grid_data["data"] |= simulate_test_data(
+                grid_data |= simulate_test_data(
                     grid_data["model"], grid_data["dt"], grid_data["x_test"]
                 )
                 plot_ode_panel(grid_data)

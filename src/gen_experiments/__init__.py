@@ -10,6 +10,7 @@ from gen_experiments import odes
 from gen_experiments import pdes
 from gen_experiments import gridsearch
 from gen_experiments.utils import (
+    FullTrialData,
     NestedDict,
     ParamDetails,
     SeriesDef,
@@ -94,9 +95,11 @@ def lookup_params(params: list[str]) -> list[Parameter]:
     return resolved_params
 
 
-def _convert_abs_rel_noise(grid_vals: list, grid_params: list, recent_results: dict):
+def _convert_abs_rel_noise(
+    grid_vals: list, grid_params: list, recent_results: FullTrialData
+):
     """Convert abs_noise grid_vals to rel_noise"""
-    signal = np.stack(recent_results["x_train_true"], axis=-1)
+    signal = np.stack(recent_results["x_true"], axis=-1)
     signal_power = _signal_avg_power(signal)
     ind = grid_params.index("sim_params.noise_abs")
     grid_vals[ind] = grid_vals[ind] / signal_power
