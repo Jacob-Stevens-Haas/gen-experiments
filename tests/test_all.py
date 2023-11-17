@@ -58,28 +58,30 @@ def test_curr_skinny_specs():
 def test_marginalize_grid_views():
     arr = np.arange(16).reshape(2, 2, 2, 2) # (metrics, param1, param2, param3)
     arr[0,0,0,0] = 1000
+    arr[-1,-1,-1,0] = -1000
     grid_decisions = ["plot", "max", "plot"]
-    result_val, result_ind = gridsearch._marginalize_grid_views(grid_decisions, arr)
-    assert len(result_val) == len([dec for dec in grid_decisions if dec =="plot"])
+    opts = ["max", "min"]
+    res_val, res_ind = gridsearch._marginalize_grid_views(grid_decisions, arr, opts)
+    assert len(res_val) == len([dec for dec in grid_decisions if dec =="plot"])
     expected_val = [
-        np.array([[1000, 7], [11, 15]]),
-        np.array([[1000, 7], [14, 15]]),
+        np.array([[1000, 7], [8, -1000]]),
+        np.array([[1000, 7], [-1000, 9]]),
     ]
-    for result, expected in zip(result_val, expected_val):
+    for result, expected in zip(res_val, expected_val):
         np.testing.assert_array_equal(result, expected)
 
     ts = "i,i,i,i"
     expected_ind = [
-        np.array([[(0, 0, 0, 0), (0, 1, 1, 1)], [(1, 0, 1, 1), (1, 1, 1, 1)]], ts),
-        np.array([[(0, 0, 0, 0), (0, 1, 1, 1)], [(1, 1, 1, 0), (1, 1, 1, 1)]], ts)
+        np.array([[(0, 0, 0, 0), (0, 1, 1, 1)], [(1, 0, 0, 0), (1, 1, 1, 0)]], ts),
+        np.array([[(0, 0, 0, 0), (0, 1, 1, 1)], [(1, 1, 1, 0), (1, 0, 0, 1)]], ts)
     ]
-    for result, expected in zip(result_ind, expected_ind):
+    for result, expected in zip(res_ind, expected_ind):
         np.testing.assert_array_equal(result, expected)
 
 def test_argmax_tuple_axis():
     arr = np.arange(16).reshape(2, 2, 2, 2)
     arr[0,0,0,0] = 1000
-    result = utils._argmax(arr, (1, 3))
+    result = utils._argopt(arr, (1, 3))
     expected = np.array(
         [[(0, 0, 0, 0), (0, 1, 1, 1)], [(1, 1, 0, 1), (1, 1, 1, 1)]],
         dtype="i,i,i,i"
@@ -90,7 +92,7 @@ def test_argmax_tuple_axis():
 def test_argmax_int_axis():
     arr = np.arange(8).reshape(2, 2, 2)
     arr[0,0,0] = 1000
-    result = utils._argmax(arr, 1)
+    result = utils._argopt(arr, 1)
     expected = np.array(
         [[(0, 0, 0), (0, 1, 1)], [(1, 1, 0), (1, 1, 1)]], dtype="i,i,i"
     )

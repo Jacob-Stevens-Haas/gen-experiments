@@ -5,7 +5,6 @@ from typing import (
     Iterable,
     Optional,
     Sequence,
-    TypedDict,
     TypeVar,
 )
 from warnings import warn
@@ -19,7 +18,6 @@ import gen_experiments
 from gen_experiments.odes import plot_ode_panel
 from gen_experiments.utils import (
     _PlotPrefs,
-    FullTrialData,
     GridsearchResult,
     GridsearchResultDetails,
     NestedDict,
@@ -29,14 +27,13 @@ from gen_experiments.utils import (
     SeriesDef,
     _grid_locator_match,
     _amax_to_full_inds,
-    _argmax,
+    _argopt,
     simulate_test_data
 )
 
 name = "gridsearch"
 OtherSliceDef = tuple[int | Callable]
 SkinnySpecs = Optional[tuple[tuple[str, ...], tuple[OtherSliceDef, ...]]]
-T = TypeVar("T")
 
 
 def run(
@@ -47,14 +44,15 @@ def run(
     grid_decisions: Sequence[str],
     other_params: dict,
     series_params: Optional[SeriesList] = None,
-    metrics: Optional[Sequence] = None,
+    metrics: Optional[Sequence[str]] = None,
     plot_prefs: _PlotPrefs = _PlotPrefs(True, False, ()),
     skinny_specs: SkinnySpecs = None,
 ) -> GridsearchResultDetails:
     """Run a grid-search wrapper of an experiment.
 
     Arguments:
-        ex_name: an experiment registered in gen_experiments
+        ex_name: an experiment registered in gen_experiments.  It must
+            have a name and a metric_ordering attribute
         grid_params: kwarg names to grid and pass to
             experiment
         grid_vals: kwarg values to grid.  Indices match grid_params
@@ -80,6 +78,7 @@ def run(
     else:
         legends = True
     n_metrics = len(metrics)
+    metric_ordering = [base_ex.metric_ordering[metric] for metric in metrics]
     n_plotparams = len([decide for decide in grid_decisions if decide == "plot"])
     series_searches: list[tuple[list[GridsearchResult], list[GridsearchResult]]] = []
     intermediate_data: list[SavedData] = []
@@ -124,7 +123,9 @@ def run(
             full_results[(slice(None), *ind)] = [
                 curr_results[metric] for metric in metrics
             ]
-        grid_optima, grid_ind = _marginalize_grid_views(new_grid_decisions, full_results)
+        grid_optima, grid_ind = _marginalize_grid_views(
+            new_grid_decisions, full_results, metric_ordering
+        )
         series_searches.append((grid_optima, grid_ind))
 
     if plot_prefs:
@@ -240,9 +241,12 @@ def plot(
         ax.legend()
 
 
+T = TypeVar("T", bound=np.generic)
 def _marginalize_grid_views(
-    grid_decisions: Iterable[str], results: np.ndarray
-) -> tuple[list[GridsearchResult], list[GridsearchResult]]:
+    grid_decisions: Iterable[str],
+    results: Annotated[NDArray[T], "shape (n_metrics, *n_gridsearch_values)"],
+    max_or_min: Sequence[str]=None
+) -> tuple[list[GridsearchResult[T]], list[GridsearchResult]]:
     """Marginalize unnecessary dimensions by taking max across axes.
 
     Args:
@@ -251,17 +255,28 @@ def _marginalize_grid_views(
             will be returned, along with an array of the the index
             of collapsed dimensions that returns that metric
         results: An array of shape (n_metrics, *n_gridsearch_values)
+        max_or_min: either "max" or "min" for each row of results
     Returns:
-        a list of the metric maxes for each plottable grid decision, and
-        a list of the flattened argmaxes.
+        a list of the metric optima for each plottable grid decision, and
+        a list of the flattened argoptima.
     """
+    arg_dtype: DTypeLike = ",".join(results.ndim * "i")
     plot_param_inds = [ind for ind, val in enumerate(grid_decisions) if val == "plot"]
     grid_searches = []
     args_maxes = []
+    optfuns = [np.max if opt == "max" else np.min for opt in max_or_min]
     for param_ind in plot_param_inds:
-        reduce_axes = tuple(set(range(results.ndim)) - {0, param_ind + 1})
-        selection_results = np.max(results, axis=reduce_axes)
-        args_max = _argmax(results, axis=reduce_axes)
+        reduce_axes = tuple(set(range(results.ndim-1)) - {param_ind})
+        selection_results = np.array([
+            opt(result, axis=reduce_axes) for opt, result in zip(optfuns, results)
+        ])
+        sub_arrs = []
+        for m_ind, (result, opt) in enumerate(zip(results, max_or_min)):
+            pad_m_ind = np.vectorize(lambda tp: np.void((m_ind, *tp), dtype=arg_dtype))
+            arg_max = pad_m_ind(_argopt(result, reduce_axes, opt))
+            sub_arrs.append(arg_max)
+
+        args_max = np.stack(sub_arrs)
         grid_searches.append(selection_results)
         args_maxes.append(args_max)
     return grid_searches, args_maxes

@@ -19,6 +19,16 @@ from .utils import (
 )
 
 name = "odes"
+metric_ordering = {
+    "coeff_precision": "max",
+    "coeff_f1": "max",
+    "coeff_recall": "max",
+    "coeff_mae": "min",
+    "coeff_mse": "min",
+    "mse_plot": "min",
+    "mae_plot": "min",
+}
+
 
 def nonlinear_pendulum(t, x, m=1, L=1, g=9.81, forcing=0, return_all=True):
     """Simple pendulum equation of motion

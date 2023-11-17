@@ -13,6 +13,7 @@ from typing import (
     Collection,
     Callable,
     TypedDict,
+    TypeVar,
 )
 from math import ceil
 from warnings import warn
@@ -61,6 +62,7 @@ class SavedData(TypedDict):
     data: TrialData | FullTrialData
 
 
+T = TypeVar("T", bound=np.generic)
 GridsearchResult = Annotated[NDArray[T], "(n_metrics, n_plot_axis)"]  # type: ignore
 
 SeriesData = Annotated[
@@ -1178,25 +1180,33 @@ def plot_summary_test_train(
     return fig
 
 
-def _argmax(
-    arr: np.ndarray, axis: int | tuple[int, ...]=None, *args, **kwargs
-) -> np.ndarray[tuple[int]]:
+def _argopt(
+    arr: np.ndarray, axis: int | tuple[int, ...]=None, opt: str="max"
+) -> np.ndarray[tuple[int, ...]]:
     """Calculate the argmax, but accept tuple axis.
     
-    Each argmax is the index of the max across axis.  The indices refer to the
-    positions in the full array.
+    Args:
+        arr: an array to search
+        axis: The axis or axes to search through for the argmax/argmin.
+        opt: One of {"max", "min"}
+
+    Returns:
+        array of indices for the argopt.  If m = arr.ndim and n = len(axis),
+        the final result will be an array of ndim = m-n with elements being
+        tuples of length m
     """
     dtype: DTypeLike = ",".join(arr.ndim * "i")
     axis = (axis,) if isinstance(axis, int) else axis
     keep_axes = tuple(sorted(set(range(arr.ndim)) - set(axis)))
     keep_shape = tuple(arr.shape[ax] for ax in keep_axes)
     result = np.empty(keep_shape, dtype=dtype)
+    optfun = np.argmax if opt is "max" else np.argmin
     for slise in np.ndindex(keep_shape):
         sub_arr = arr
         # since we shrink shape, we need to chop of axes from the end
         for ind, ax in zip(reversed(slise), reversed(keep_axes)):
             sub_arr = np.take(sub_arr, ind, ax)
-        subind_max = np.unravel_index(np.argmax(sub_arr), sub_arr.shape)
+        subind_max = np.unravel_index(optfun(sub_arr), sub_arr.shape)
         fullind_max = np.empty((arr.ndim), int)
         fullind_max[np.array(keep_axes, int)] = slise
         fullind_max[np.array(axis, int)] = subind_max
