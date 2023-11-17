@@ -1,8 +1,18 @@
+from pathlib import Path
 from collections import defaultdict
 from dataclasses import dataclass, field
 from itertools import chain
 from types import ModuleType
-from typing import Sequence, Mapping, Optional, Collection, Callable
+from typing import (
+    Annotated,
+    Any,
+    Sequence,
+    Mapping,
+    Optional,
+    Collection,
+    Callable,
+    TypedDict,
+)
 from math import ceil
 from warnings import warn
 
@@ -14,10 +24,14 @@ import scipy
 import pysindy as ps
 import sklearn
 import auto_ks as aks
+from matplotlib.gridspec import GridSpec, SubplotSpec, GridSpecFromSubplotSpec
+from matplotlib.pyplot import Axes
+from matplotlib.figure import Figure
 
 INTEGRATOR_KEYWORDS = {"rtol": 1e-12, "method": "LSODA", "atol": 1e-12}
 PAL = sns.color_palette("Set1")
 PLOT_KWS = dict(alpha=0.7, linewidth=3)
+TRIALS_FOLDER = Path(__file__).parent.absolute() / "trials"
 
 
 def gen_data(
@@ -138,6 +152,7 @@ def gen_data(
     x_dot_test = [xi for xi in x_dot_test]
     return dt, t_train, x_train, x_test, x_dot_test, x_train_true
 
+
 def gen_pde_data(
     rhs_func: Callable,
     init_cond: np.ndarray,
@@ -157,7 +172,7 @@ def gen_pde_data(
     Arguments:
         rhs_func: the function to integrate
         init_cond: Initial Conditions for the PDE
-        args: Arguments for rhsfunc 
+        args: Arguments for rhsfunc
         seed (int): the random seed for number generation
         noise_abs (float): measurement noise standard deviation.
             Defaults to .1 if noise_rel is None.
@@ -174,42 +189,46 @@ def gen_pde_data(
     if noise_abs is not None and noise_rel is not None:
         raise ValueError("Cannot specify both noise_abs and noise_rel")
     elif noise_abs is None and noise_rel is None:
-        noise_abs = .1
+        noise_abs = 0.1
     rng = np.random.default_rng(seed)
     t_train = np.arange(0, t_end, dt)
     t_train_span = (t_train[0], t_train[-1])
     x_train = []
     x_train.append(
-            scipy.integrate.solve_ivp(
+        scipy.integrate.solve_ivp(
             rhs_func,
             t_train_span,
             init_cond,
             t_eval=t_train,
-            args=args, 
-            **INTEGRATOR_KEYWORDS
+            args=args,
+            **INTEGRATOR_KEYWORDS,
         ).y.T
     )
     t, x = x_train[0].shape
     x_train = np.stack(x_train, axis=-1)
-    if dimension==1:
+    if dimension == 1:
         pass
-    elif dimension==2:
+    elif dimension == 2:
         x_train = np.reshape(x_train, (t, int(np.sqrt(x)), int(np.sqrt(x)), 1))
-    elif dimension==3:
-        x_train = np.reshape(x_train, (t, int(np.cbrt(x)), int(np.cbrt(x)), int(np.cbrt(x)), 1))
+    elif dimension == 3:
+        x_train = np.reshape(
+            x_train, (t, int(np.cbrt(x)), int(np.cbrt(x)), int(np.cbrt(x)), 1)
+        )
     x_test = x_train
     x_test = np.moveaxis(x_test, -1, 0)
     x_dot_test = np.array(
         [[rhs_func(0, xij, args[0], args[1]) for xij in xi] for xi in x_test]
     )
-    if dimension==1:
+    if dimension == 1:
         x_dot_test = [np.moveaxis(x_dot_test, [0, 1], [-1, -2])]
         pass
-    elif dimension==2:
+    elif dimension == 2:
         x_dot_test = np.reshape(x_dot_test, (t, int(np.sqrt(x)), int(np.sqrt(x)), 1))
         x_dot_test = [np.moveaxis(x_dot_test, 0, -2)]
-    elif dimension==3:
-        x_dot_test = np.reshape(x_dot_test, (t, int(np.cbrt(x)), int(np.cbrt(x)), int(np.cbrt(x)), 1))
+    elif dimension == 3:
+        x_dot_test = np.reshape(
+            x_dot_test, (t, int(np.cbrt(x)), int(np.cbrt(x)), int(np.cbrt(x)), 1)
+        )
         x_dot_test = [np.moveaxis(x_dot_test, 0, -2)]
     x_train_true = np.copy(x_train)
     if noise_rel is not None:
@@ -460,104 +479,142 @@ def _make_model(
     )
 
 
-def plot_training_data(
-    last_train: np.ndarray, last_train_true: np.ndarray, smoothed_last_train: np.ndarray
-):
-    """Plot training data (and smoothed training data, if different)."""
-    fig = plt.figure(figsize=(12, 6))
-    if last_train.shape[1] == 2:
-        ax = fig.add_subplot(1, 2, 1)
+def plot_training_trajectory(
+    ax: plt.Axes, x_train: np.ndarray, x_true: np.ndarray, x_smooth: np.ndarray, labels: bool=True,
+) -> None:
+    """Plot a single training trajectory"""
+    if x_train.shape[1] == 2:
+        ax.plot(x_true[:, 0], x_true[:, 1], ".", label="True", color=PAL[0], **PLOT_KWS)
         ax.plot(
-            last_train_true[:, 0],
-            last_train_true[:, 1],
+            x_train[:, 0],
+            x_train[:, 1],
             ".",
-            label="True values",
-            color=PAL[0],
-            **PLOT_KWS,
-        )
-        ax.plot(
-            last_train[:, 0],
-            last_train[:, 1],
-            ".",
-            label="Measured values",
+            label="Measured",
             color=PAL[1],
             **PLOT_KWS,
         )
-        if (
-            np.linalg.norm(smoothed_last_train - last_train) / smoothed_last_train.size
-            > 1e-12
-        ):
+        if np.linalg.norm(x_smooth - x_train) / x_smooth.size > 1e-12:
             ax.plot(
-                smoothed_last_train[:, 0],
-                smoothed_last_train[:, 1],
+                x_smooth[:, 0],
+                x_smooth[:, 1],
                 ".",
-                label="Smoothed values",
+                label="Smoothed",
                 color=PAL[2],
                 **PLOT_KWS,
             )
-        ax.set(xlabel="$x_0$", ylabel="$x_1$")
-    elif last_train.shape[1] == 3:
-        ax = fig.add_subplot(1, 2, 1, projection="3d")
+        if labels: ax.set(xlabel="$x_0$", ylabel="$x_1$")
+    elif x_train.shape[1] == 3:
         ax.plot(
-            last_train_true[:, 0],
-            last_train_true[:, 1],
-            last_train_true[:, 2],
+            x_true[:, 0],
+            x_true[:, 1],
+            x_true[:, 2],
             color=PAL[0],
             label="True values",
             **PLOT_KWS,
         )
 
         ax.plot(
-            last_train[:, 0],
-            last_train[:, 1],
-            last_train[:, 2],
+            x_train[:, 0],
+            x_train[:, 1],
+            x_train[:, 2],
             ".",
             color=PAL[1],
             label="Measured values",
             alpha=0.3,
         )
-        if (
-            np.linalg.norm(smoothed_last_train - last_train) / smoothed_last_train.size
-            > 1e-12
-        ):
+        if np.linalg.norm(x_smooth - x_train) / x_smooth.size > 1e-12:
             ax.plot(
-                smoothed_last_train[:, 0],
-                smoothed_last_train[:, 1],
-                smoothed_last_train[:, 2],
+                x_smooth[:, 0],
+                x_smooth[:, 1],
+                x_smooth[:, 2],
                 ".",
                 color=PAL[2],
                 label="Smoothed values",
                 alpha=0.3,
             )
-        ax.set(xlabel="$x$", ylabel="$y$", zlabel="$z$")
+        if labels: ax.set(xlabel="$x$", ylabel="$y$", zlabel="$z$")
     else:
         raise ValueError("Can only plot 2d or 3d data.")
-    ax.set(title="Training data")
-    ax.legend()
-    ax = fig.add_subplot(1, 2, 2)
-    ax.loglog(np.abs(scipy.fft.rfft(last_train, axis=0)) / np.sqrt(len(last_train)))
-    ax.set(title="Training Data Absolute Spectral Density")
-    ax.set(xlabel="Wavenumber")
-    ax.set(ylabel="Magnitude")
+
+
+def plot_training_data(x_train: np.ndarray, x_true: np.ndarray, x_smooth: np.ndarray):
+    """Plot training data (and smoothed training data, if different)."""
+    fig = plt.figure(figsize=(12, 6))
+    if x_train.shape[-1] == 2:
+        ax0 = fig.add_subplot(1, 2, 1)
+    elif x_train.shape[-1] == 3:
+        ax0 = fig.add_subplot(1, 2, 1, projection="3d")
+    plot_training_trajectory(ax0, x_train, x_true, x_smooth)
+    ax0.legend()
+    ax0.set(title="Training data")
+    ax1 = fig.add_subplot(1, 2, 2)
+    ax1.loglog(np.abs(scipy.fft.rfft(x_train, axis=0)) / np.sqrt(len(x_train)))
+    ax1.set(title="Training Data Absolute Spectral Density")
+    ax1.set(xlabel="Wavenumber")
+    ax1.set(ylabel="Magnitude")
     return fig
+
 
 def plot_pde_training_data(last_train, last_train_true, smoothed_last_train):
     """Plot training data (and smoothed training data, if different)."""
-    #1D:
-    if len(last_train.shape)==3:
-        fig, axs = plt.subplots(1, 3, figsize=(18,6))
+    # 1D:
+    if len(last_train.shape) == 3:
+        fig, axs = plt.subplots(1, 3, figsize=(18, 6))
         axs[0].imshow(last_train_true, vmin=0, vmax=last_train_true.max())
         axs[0].set(title="True Data")
-        axs[1].imshow(last_train_true - last_train, vmin=0, 
-                    vmax=last_train_true.max())
+        axs[1].imshow(last_train_true - last_train, vmin=0, vmax=last_train_true.max())
         axs[1].set(title="Noise")
-        axs[2].imshow(last_train_true - smoothed_last_train, vmin=0, 
-                    vmax=last_train_true.max())
+        axs[2].imshow(
+            last_train_true - smoothed_last_train, vmin=0, vmax=last_train_true.max()
+        )
         axs[2].set(title="Smoothed Data")
         return plt.show()
 
+
+def plot_test_sim_data_1d_panel(
+    axs: Sequence[plt.Axes],
+    x_test: np.ndarray,
+    x_sim: np.ndarray,
+    t_test: np.ndarray,
+    t_sim: np.ndarray,
+) -> None:
+    for ordinate, ax in enumerate(axs):
+        ax.plot(t_test, x_test[:, ordinate], "k", label="true trajectory")
+        axs[ordinate].plot(t_sim, x_sim[:, ordinate], "r--", label="model simulation")
+        axs[ordinate].legend()
+        axs[ordinate].set(xlabel="t", ylabel="$x_{}$".format(ordinate))
+
+
+def _plot_test_sim_data_2d(
+    axs: Annotated[Sequence[plt.Axes], "len=2"],
+    x_test: np.ndarray,
+    x_sim: np.ndarray,
+    labels: bool = True,
+) -> None:
+    axs[0].plot(x_test[:, 0], x_test[:, 1], "k", label="True Trajectory")
+    if labels:
+        axs[0].set(xlabel="$x_0$", ylabel="$x_1$")
+    axs[1].plot(x_sim[:, 0], x_sim[:, 1], "r--", label="Simulation")
+    if labels:
+        axs[1].set(xlabel="$x_0$", ylabel="$x_1$")
+
+
+def _plot_test_sim_data_3d(
+    axs: Annotated[Sequence[plt.Axes], "len=3"],
+    x_test: np.ndarray,
+    x_sim: np.ndarray,
+    labels: bool = True,
+) -> None:
+    axs[0].plot(x_test[:, 0], x_test[:, 1], x_test[:, 2], "k", label="True Trajectory")
+    if labels:
+        axs[0].set(xlabel="$x_0$", ylabel="$x_1$", zlabel="$x_2$")
+    axs[1].plot(x_sim[:, 0], x_sim[:, 1], x_sim[:, 2], "r--", label="Simulation")
+    if labels:
+        axs[1].set(xlabel="$x_0$", ylabel="$x_1$", zlabel="$x_2$")
+
+
 def plot_test_trajectories(
-    last_test: np.ndarray, model: ps.SINDy, dt: float
+    x_test: np.ndarray, model: ps.SINDy, dt: float
 ) -> Mapping[str, np.ndarray]:
     """Plot a test trajectory
 
@@ -570,44 +627,35 @@ def plot_test_trajectories(
         A dict with two keys, "t_sim" (the simulation times) and
     "x_sim" (the simulated trajectory)
     """
-    t_test = np.arange(len(last_test) * dt, step=dt)
+    t_test = np.arange(len(x_test) * dt, step=dt)
     t_sim = t_test
     try:
-        x_test_sim = model.simulate(last_test[0], t_test)
+        x_sim = model.simulate(x_test[0], t_test)
     except ValueError:
         warn(message="Simulation blew up; returning zeros")
-        x_test_sim = np.zeros_like(last_test)
+        x_sim = np.zeros_like(x_test)
     # truncate if integration returns wrong number of points
-    t_sim = t_test[: len(x_test_sim)]
-    fig, axs = plt.subplots(last_test.shape[1], 1, sharex=True, figsize=(7, 9))
+    t_sim = t_test[: len(x_sim)]
+    fig, axs = plt.subplots(x_test.shape[1], 1, sharex=True, figsize=(7, 9))
     plt.suptitle("Test Trajectories by Dimension")
-    for i in range(last_test.shape[1]):
-        axs[i].plot(t_test, last_test[:, i], "k", label="true trajectory")
-        axs[i].plot(t_sim, x_test_sim[:, i], "r--", label="model simulation")
-        axs[i].legend()
-        axs[i].set(xlabel="t", ylabel="$x_{}$".format(i))
+    plot_test_sim_data_1d_panel(axs, x_test, x_sim, t_test, t_sim)
+    axs[-1].legend()
 
-    fig = plt.figure(figsize=(10, 4.5))
     plt.suptitle("Full Test Trajectories")
-    if last_test.shape[1] == 2:
-        ax1 = fig.add_subplot(121)
-        ax1.plot(last_test[:, 0], last_test[:, 1], "k")
-        ax1.set(xlabel="$x_0$", ylabel="$x_1$", title="true trajectory")
-        ax2 = fig.add_subplot(122)
-        ax2.plot(x_test_sim[:, 0], x_test_sim[:, 1], "r--")
-        ax2.set(xlabel="$x_0$", ylabel="$x_1$", title="model simulation")
-    elif last_test.shape[1] == 3:
-        ax1 = fig.add_subplot(121, projection="3d")
-        ax1.plot(last_test[:, 0], last_test[:, 1], last_test[:, 2], "k")
-        ax1.set(xlabel="$x_0$", ylabel="$x_1$", zlabel="$x_2$", title="true trajectory")
-        ax2 = fig.add_subplot(122, projection="3d")
-        ax2.plot(x_test_sim[:, 0], x_test_sim[:, 1], x_test_sim[:, 2], "r--")
-        ax2.set(
-            xlabel="$x_0$", ylabel="$x_1$", zlabel="$x_2$", title="model simulation"
+    if x_test.shape[1] == 2:
+        fig, axs = plt.subplots(1, 2, figsize=(10, 4.5))
+        _plot_test_sim_data_2d(axs, x_test, x_sim)
+    elif x_test.shape[1] == 3:
+        fig, axs = plt.subplots(
+            1, 2, figsize=(10, 4.5), subplot_kw={"projection": "3d"}
         )
+        _plot_test_sim_data_3d(axs, x_test, x_sim)
     else:
         raise ValueError("Can only plot 2d or 3d data.")
-    return {"t_sim": t_sim, "x_sim": x_test_sim}
+    axs[0].set(title="true trajectory")
+    axs[1].set(title="model simulation")
+    return {"t_sim": t_sim, "x_sim": x_sim}
+
 
 @dataclass
 class ParamDetails:
@@ -708,6 +756,7 @@ class NestedDict(defaultdict):
         >>> foo["a"]["b"]
         1
     """
+
     def __missing__(self, key):
         try:
             prefix, subkey = key.split(".", 1)
@@ -779,3 +828,212 @@ def kalman_generalized_cv(
     est_Q = np.linalg.inv(params.W_neg_sqrt @ params.W_neg_sqrt.T)
     est_alpha = 1 / (est_Q / Qi).mean()
     return est_alpha
+
+
+class GridPointData(TypedDict):
+    x_train: np.ndarray
+    x_true: np.ndarray
+    smooth_train: np.ndarray
+    x_test: np.ndarray
+    t_sim: np.ndarray
+    x_sim: np.ndarray
+
+
+class PlotData(TypedDict):
+    params: dict[str, Any]
+    data: GridPointData
+
+
+SeriesData = Annotated[
+    list[Annotated[np.ndarray, "(n_metrics, n_grid_vals)"]], "len=n_grid_axes"
+]
+
+
+class Results(TypedDict):
+    plot_data: list[PlotData]
+    series_data: dict[str, SeriesData]
+    metrics: list[str]
+    grid_axes: dict[str, Collection[float]]
+    main: float
+
+
+def load_results(hexstr: str) -> Results:
+    """Load the results that mitosis saves
+
+    Args:
+        hexstr: randomly-assigned identifier for the results to open
+    """
+    with open(TRIALS_FOLDER / f"results_{hexstr}.npy", "rb") as f:
+        return np.load(f, allow_pickle=True)[()]
+
+
+def _setup_summary_fig(
+    n_sub: int, *, fig_cell: tuple[Figure, SubplotSpec] = None
+) -> tuple[Figure, GridSpec | GridSpecFromSubplotSpec]:
+    """Create neatly laid-out arrangements for subplots
+
+    Creates an evenly-spaced gridpsec to fit follow-on plots and a
+    figure, if required.
+
+    Args:
+        n_sub: number of grid elements to create
+        nest_parent: parent grid cell within which to to build a nested
+            gridspec
+    Returns:
+        a figure and gridspec if nest_parent is not provided, otherwise,
+        None and a sub-gridspec
+    """
+    n_rows = max(n_sub // 3, (n_sub + 2) // 3)
+    n_cols = min(n_sub, 3)
+    figsize = [3 * n_cols, 3 * n_rows]
+    if fig_cell is None:
+        fig = plt.figure(figsize=figsize)
+        gs = fig.add_gridspec(n_rows, n_cols)
+        return fig, gs
+    fig, cell = fig_cell
+    return fig, cell.subgridspec(n_rows, n_cols)
+
+
+def plot_experiment_across_gridpoints(
+    hexstr: str, *args: tuple[str, dict], style: str, fig_cell: tuple[Figure, SubplotSpec]=None, annotations:bool = True
+) -> tuple[Figure, Sequence[str]]:
+    """Plot a single experiment's test across multiple gridpoints
+
+    Arguments:
+        hexstr: hexadecimal suffix for the experiment's result file.
+        args (param name, params): From which gridpoints to load
+            data, described as a local name and the paramters defining
+            the gridpoint to match.
+        style: either "test" or "train"
+    Returns:
+        the plotted figure
+    """
+    
+    fig, gs = _setup_summary_fig(len(args), fig_cell=fig_cell)
+    if fig_cell is not None:
+        fig.suptitle("How do different smoothing compare on an ODE?")
+    p_names = []
+    for cell, (p_name, params) in zip(gs, args):
+        results = load_results(hexstr)
+        for trajectory in results["plot_data"]:
+            if params == trajectory["params"]:
+                p_names.append(p_name)
+                ax = _plot_train_test_cell((fig, cell), trajectory, style, annotations=False)
+                if annotations: ax.set_title(p_name)
+                break
+        else:
+            warn(f"Did not find a parameter match for {p_name} experiment")
+    if annotations: ax.legend()
+    return Figure, p_names
+
+
+def _plot_train_test_cell(
+    fig_cell: tuple[Figure, SubplotSpec | int | tuple[int, int, int]],
+    trajectory: PlotData,
+    style: str,
+    annotations: bool=False,
+) -> Axes:
+    """Plot either the training or test data in a single cell"""
+    fig, cell = fig_cell
+    if trajectory["data"]["x_test"].shape[1] == 2:
+        ax = fig.add_subplot(cell)
+        plot_func = _plot_test_sim_data_2d
+    else:
+        ax = fig.add_subplot(cell, projection="3d")
+        plot_func = _plot_test_sim_data_3d
+    if style.lower() == "training":
+        plot_func = plot_training_trajectory
+        plot_location = ax
+        data = (
+            trajectory["data"]["x_train"],
+            trajectory["data"]["x_true"],
+            trajectory["data"]["smooth_train"],
+        )
+    elif style.lower() == "test":
+        plot_location = [ax, ax]
+        data = (
+            trajectory["data"]["x_test"],
+            trajectory["data"]["x_sim"],
+        )
+    plot_func(plot_location, *data, labels=annotations)
+    return ax
+
+
+def plot_point_across_experiments(
+    params: dict, *args: tuple[str, str], style: str
+) -> Figure:
+    """Plot a single parameter's training or test across multiple experiments
+
+    Arguments:
+        params: paramters defining the gridpoint to match
+        args (experiment_name, hexstr): From which experiments to load
+            data, described as a local name and the hexadecimal suffix
+            of the result file.
+        style: either "test" or "train"
+    Returns:
+        the plotted figure
+    """
+    fig, gs = _setup_summary_fig(len(args))
+    fig.suptitle("How well does a smoothing method perform across ODEs?")
+
+    for cell, (ode_name, hexstr) in zip(gs, args):
+        results = load_results(hexstr)
+        for trajectory in results["plot_data"]:
+            if params == trajectory["params"]:
+                ax = _plot_train_test_cell([fig, cell], trajectory, style, annotations=False)
+                ax.set_title(ode_name)
+                break
+        else:
+            warn(f"Did not find a parameter match for {ode_name} experiment")
+    ax.legend()
+    return fig
+
+
+def plot_summary_metric(
+    metric: str, grid_axis_name: tuple[str, Collection], *args: tuple[str, str]
+) -> None:
+    """After multiple gridsearches, plot a comparison for all ODEs
+
+    Plots the overall results for a single metric, single grid axis
+    Args:
+        metric: which metric is being plotted
+        grid_axis: the name of the parameter varied and the values of
+            the parameter.
+        *args: each additional tuple contains the name of an ODE and
+            the hexstr under which it's data is saved.
+    """
+    fig, gs = _setup_summary_fig(len(args))
+    fig.suptitle(
+        f"How well do the methods work on different ODEs as {grid_axis_name} changes?"
+    )
+    for cell, (ode_name, hexstr) in zip(gs, args):
+        results = load_results(hexstr)
+        grid_axis_index = results["grid_params"].index(grid_axis_name)
+        grid_axis = results["grid_vals"][grid_axis_index]
+        metric_index = results["metrics"].index(metric)
+        ax = fig.add_subplot(cell)
+        for s_name, s_data in results["series_data"].items():
+            ax.plot(grid_axis, s_data[grid_axis_index][metric_index], label=s_name)
+        ax.set_title(ode_name)
+    ax.legend()
+
+
+def plot_summary_test_train(
+    exps: Sequence[tuple[str, str]], params: Sequence[tuple[str, dict]], style: str
+):
+    n_exp = len(exps)
+    n_params = len(params)
+    figsize = (3*n_params, 3*n_exp)
+    fig = plt.figure(figsize=figsize)
+    grid = fig.add_gridspec(n_exp, 2, width_ratios=(1,20))
+    for n_row, (ode_name, hexstr) in enumerate(exps):
+        cell = grid[n_row, 1]
+        _, p_names = plot_experiment_across_gridpoints(hexstr, *params, style=style, fig_cell=(fig, cell), annotations=False)
+        empty_ax = fig.add_subplot(grid[n_row, 0])
+        empty_ax.axis("off")
+        empty_ax.text(-.1, .5, ode_name, va="center", transform=empty_ax.transAxes, rotation=90)
+    first_row = fig.get_axes()[:n_params]
+    for ax, p_name in zip(first_row, p_names):
+        ax.set_title(p_name)
+    fig.subplots_adjust(top=.95)
+    return fig
