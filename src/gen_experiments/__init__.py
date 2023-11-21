@@ -28,6 +28,7 @@ def identity(x):
 
 
 class NoExperiment:
+    metric_ordering = defaultdict(lambda: "max")
     @staticmethod
     def run(*args, return_all=True, **kwargs):
         boring_array = np.ones((2, 2))

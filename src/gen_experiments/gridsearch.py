@@ -102,7 +102,6 @@ def run(
             where_others = None
         full_results_shape = (len(metrics), *(len(grid) for grid in new_grid_vals))
         full_results = np.full(full_results_shape, np.nan)
-        full_results.fill(-np.inf)
         gridpoint_selector = _ndindex_skinny(
             full_results_shape[1:], ind_skinny, where_others
         )
