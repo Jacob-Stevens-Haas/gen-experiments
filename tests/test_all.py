@@ -128,12 +128,13 @@ def test_grid_locator_match():
     m_ind = (0, 1)
     # Effectively testing the clause: (x OR y OR ...) AND (a OR b OR ...)
     # Note: OR() with no args is falsy
+    # also note first index is stripped ind_spec
     good_specs = [
-        (({"sim_params.t_end": 10},), ((0, 1),)),
-        (({"sim_params.t_end": 10},), ((0, 1),(0, ...))),
-        (({"sim_params.t_end": 10}, {"foo": 1}), ((0, 1),)),
-        (({"sim_params.t_end": 10}, {"bar: 1"}), ((0, 1),)),
-        (({"sim_params.t_end": 10},), ((0, 1),(1,))),
+        (({"sim_params.t_end": 10},), ((1, 0, 1),)),
+        (({"sim_params.t_end": 10},), ((1, 0, 1),(1, 0, ...))),
+        (({"sim_params.t_end": 10}, {"foo": 1}), ((1, 0, 1),)),
+        (({"sim_params.t_end": 10}, {"bar: 1"}), ((1, 0, 1),)),
+        (({"sim_params.t_end": 10},), ((1, 0, 1),(1, 1,))),
     ]
     for param_spec, ind_spec in good_specs:
         assert utils._grid_locator_match(m_params, m_ind, param_spec, ind_spec)
@@ -141,8 +142,8 @@ def test_grid_locator_match():
     bad_specs = [
         ((), ((0, 1),)),
         (({"sim_params.t_end": 10},), ()),
-        (({"sim_params.t_end": 9},), ((0, 1),)),
-        (({"sim_params.t_end": 10},), ((0, 0),)),
+        (({"sim_params.t_end": 9},), ((1, 0, 1),)),
+        (({"sim_params.t_end": 10},), ((1, 0, 0),)),
         ((), ())
     ]
     for param_spec, ind_spec in bad_specs:

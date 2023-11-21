@@ -1025,7 +1025,6 @@ def plot_experiment_across_gridpoints(
     full_inds = _amax_to_full_inds(indargs, amax_arrays)
 
     for cell, (p_name, params) in zip(gs, pargs):
-
         for trajectory in results["plot_data"]:
             if _grid_locator_match(trajectory["params"], trajectory["pind"], pargs, full_inds):
                 p_names.append(p_name)
@@ -1103,8 +1102,12 @@ def plot_point_across_experiments(
         ]
         full_inds = _amax_to_full_inds((point,), amax_arrays)
         for trajectory in results["plot_data"]:
-            # Don't need to use _index_in because only matching single point
-            if params == trajectory["params"] and trajectory["pind"] in full_inds:
+            if _grid_locator_match(
+                trajectory["params"],
+                trajectory["pind"],
+                params,
+                full_inds
+            ):
                 ax = _plot_train_test_cell([fig, cell], trajectory, style, annotations=False)
                 ax.set_title(ode_name)
                 break
@@ -1269,7 +1272,8 @@ def _grid_locator_match(
         except KeyError:
             pass
     for ind_or in ind_spec:
-        if _index_in(exp_ind, ind_or):
+        # exp_ind doesn't include metric, so skip first metric
+        if _index_in(exp_ind, ind_or[1:]):
             break
     else: return False
     return found_match
