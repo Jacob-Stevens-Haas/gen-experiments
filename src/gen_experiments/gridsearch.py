@@ -151,6 +151,7 @@ def run(
 
     main_metric_ind = metrics.index("main") if "main" in metrics else 0
     return {
+        "system": ex_name,
         "plot_data": plot_data,
         "series_data": {
             name: data
@@ -159,7 +160,8 @@ def run(
             )
         },
         "metrics": metrics,
-        "grid_axes": {name: data for name, data in zip(grid_params, grid_vals)},
+        "grid_params": grid_params,
+        "grid_vals": grid_vals,
         "main": max(grid[main_metric_ind].max() for grid in series_searches),
     }
 
