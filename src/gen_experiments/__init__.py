@@ -232,14 +232,38 @@ feat_params = {
     "test2": ND({"featcls": "Fourier"}),
     "cubic": ND({"featcls": "Polynomial", "degree": 3}),
     "testweak": ND({"featcls": "WeakPDELibrary"}),  # needs work
-    "pde": ParamDetails(
+    "pde2": ParamDetails(
         ND({
             "featcls": "pde",
-            "library_functions": [lambda x: x, lambda x: x * x],
-            "function_names": [lambda x: x, lambda x: x + x],
+            "library_functions": [identity, quadratic],
+            "function_names": [identity, addn],
             "derivative_order": 2,
             "spatial_grid": np.arange(0, 10, 0.1),
             "include_interaction": True
+        }),[ps]
+    ),
+    "pde3": ParamDetails(
+        ND({
+            "featcls": "pde",
+            "library_functions": [identity, quadratic],
+            "function_names": [identity, addn],
+            "derivative_order": 3,
+            "spatial_grid": np.arange(0, 10, 0.1),
+            "include_interaction": True,
+            "is_uniform": True,
+        }),[ps]
+    ),
+    "pde4": ParamDetails(
+        ND({
+            "featcls": "pde",
+            "library_functions": [identity, quadratic],
+            "function_names": [identity, addn],
+            "derivative_order": 4,
+            "spatial_grid": np.arange(0, 10, 0.1),
+            "include_interaction": True,
+            "is_uniform": True,
+            "periodic": True,
+            "include_bias": True,
         }),[ps]
     )
 }

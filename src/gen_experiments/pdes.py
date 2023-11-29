@@ -35,7 +35,6 @@ def ks(t, u ,dx, nx):
     uxx = SpectralDerivative(d=2, axis=0)._differentiate(u, dx)
     uxxxx = SpectralDerivative(d=4, axis=0)._differentiate(u, dx)
     return np.reshape(-uxx-uxxxx-u*ux, nx)
-    # return np.reshape(-uxx-uxxxx-0.5*ux*ux)
 
 def kdv(t, u, dx, nx):
     u = np.reshape(u, nx)
@@ -70,7 +69,7 @@ pde_setup = {
         "spatial_args": [0.1, 100],
         "time_args": [0.1, 10],
         "coeff_true": [
-            {"u_11": 1, "u*u_1": 1}
+            {"u_11": 1, "uu_1": 1}
         ],
         "spatial_grid": np.arange(0, 10, 0.1)
     },
@@ -80,28 +79,14 @@ pde_setup = {
             "dimension": 1
         },
         "input_features": ["u"],
-        "initial_condition": 10*np.exp(-(np.arange(0, 10, 0.1)-5)**2/2),
+        "initial_condition": np.cos(np.arange(0,10,0.1))*(1+np.sin(np.arange(0, 10, 0.1))),
         "spatial_args": [0.1, 100],
         "time_args": [0.1, 10],
         "coeff_true": [
-            {"u_11": -1, "u_1111": -1, "u*u_1": -1}, # "u_1*u_1": -0.5
+            {"u_11": -1, "u_1111": -1, "uu_1": -1},
         ],
         "spatial_grid": np.arange(0, 10, 0.1)
-    },
-    "kdv": {
-        "rhsfunc": {
-            "func": kdv,
-            "dimension": 1
-        },
-        "input_features": ["u"],
-        "initial_condition": 10*np.exp(-(np.arange(0, 10, 0.1)-5)**2/2),
-        "spatial_args": [0.1, 100],
-        "time_args": [0.1, 10],
-        "coeff_true": [
-            {"u*u_1": 6, "u_111": -1},
-        ],
-        "spatial_grid": np.arange(0, 10, 0.1)
-    },
+    }
 }
 
 def run(
