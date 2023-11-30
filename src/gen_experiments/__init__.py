@@ -27,6 +27,11 @@ this_module = importlib.import_module(__name__)
 def identity(x):
     return x
 
+def quadratic(x):
+    return x*x
+
+def addn(x):
+    return x+x
 
 class NoExperiment:
     @staticmethod
@@ -76,6 +81,8 @@ experiments = {
     "ross": (odes, "ross"),
     "gridsearch": (gridsearch, None),
     "diffuse1D": (pdes, "diffuse1D"),
+    "burgers1D": (pdes, "burgers1D"),
+    "ks": (pdes, "ks"),
     "none": (NoExperiment, None),
 }
 ex_name = type("identidict", (), {"__getitem__": lambda self, key: key})()
@@ -225,14 +232,38 @@ feat_params = {
     "test2": ND({"featcls": "Fourier"}),
     "cubic": ND({"featcls": "Polynomial", "degree": 3}),
     "testweak": ND({"featcls": "WeakPDELibrary"}),  # needs work
-    "pde": ParamDetails(
+    "pde2": ParamDetails(
         ND({
             "featcls": "pde",
-            "library_functions": [identity],
-            "function_names": [identity],
+            "library_functions": [identity, quadratic],
+            "function_names": [identity, addn],
             "derivative_order": 2,
             "spatial_grid": np.arange(0, 10, 0.1),
-            "include_interaction": False
+            "include_interaction": True
+        }),[ps]
+    ),
+    "pde3": ParamDetails(
+        ND({
+            "featcls": "pde",
+            "library_functions": [identity, quadratic],
+            "function_names": [identity, addn],
+            "derivative_order": 3,
+            "spatial_grid": np.arange(0, 10, 0.1),
+            "include_interaction": True,
+            "is_uniform": True,
+        }),[ps]
+    ),
+    "pde4": ParamDetails(
+        ND({
+            "featcls": "pde",
+            "library_functions": [identity, quadratic],
+            "function_names": [identity, addn],
+            "derivative_order": 4,
+            "spatial_grid": np.arange(0, 10, 0.1),
+            "include_interaction": True,
+            "is_uniform": True,
+            "periodic": True,
+            "include_bias": True,
         }),[ps]
     )
 }

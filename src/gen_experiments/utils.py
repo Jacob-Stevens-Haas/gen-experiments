@@ -172,7 +172,8 @@ def gen_pde_data(
     Arguments:
         rhs_func: the function to integrate
         init_cond: Initial Conditions for the PDE
-        args: Arguments for rhsfunc
+        args: Arguments for rhsfunc 
+        dimension: Number of spatial dimensions (1, 2, or 3) 
         seed (int): the random seed for number generation
         noise_abs (float): measurement noise standard deviation.
             Defaults to .1 if noise_rel is None.
