@@ -1,2 +1,2 @@
-# gen-experiments
-Pysindy experiments for my general exam
+# SINDy Experiments
+`pysindy` experiments on Kalman SINDy and single-step SINDy.
