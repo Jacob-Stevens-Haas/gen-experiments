@@ -1,7 +1,12 @@
+from typing import Callable
+
 import pysindy as ps
 import numpy as np
+import matplotlib.pyplot as plt
 
 from .utils import (
+    TrialData,
+    FullTrialData,
     gen_data,
     compare_coefficient_plots,
     plot_training_data,
@@ -10,9 +15,38 @@ from .utils import (
     integration_metrics,
     unionize_coeff_matrices,
     _make_model,
+    simulate_test_data
 )
 
 name = "odes"
+metric_ordering = {
+    "coeff_precision": "max",
+    "coeff_f1": "max",
+    "coeff_recall": "max",
+    "coeff_mae": "min",
+    "coeff_mse": "min",
+    "mse_plot": "min",
+    "mae_plot": "min",
+}
+
+
+def nonlinear_pendulum(t, x, m=1, L=1, g=9.81, forcing=0, return_all=True):
+    """Simple pendulum equation of motion
+
+    Arguments:
+        t (float): ignored if system and forcing is autonomous
+        x ([np.array, Sequence]): angular position and velocity
+        m (float): mass of pendulum weight in kilograms
+        L (float): length of pendulum in meters
+        g (float): gravitational acceleration in :math:`m/s^2`.
+        forcing ([float, Callable]): Constant forcing or forcing
+            function.  If function, accepts arguments (t, x).
+    """
+    if not isinstance(forcing, Callable):
+        const_force = forcing
+        forcing = lambda t, x: const_force
+    moment_of_inertia = m * L**2
+    return (x[1], (-m * g * np.sin(x[0]) + forcing(t, x)) / moment_of_inertia)
 
 p_duff = [0.2, 0.05, 1]
 p_lotka = [1, 10]
@@ -89,6 +123,22 @@ ode_setup = {
             {"x": -1, "x'": 0.5, "x^2 x'": -0.5},
         ],
     },
+    "pendulum": {
+        "rhsfunc": nonlinear_pendulum,
+        "input_features": ["x", "x'"],
+        "coeff_true": [
+            {"x'": 1},
+            {"sin(1 x)": -9.81},
+        ]
+    },
+    "lorenz_xy": {
+        "rhsfunc": ps.utils.lorenz,
+        "input_features": ["x", "y"],
+        "coeff_true": [
+            {"x": -10, "y": 10},
+            {"y": 28, "y": -1},
+        ]
+    }
 }
 
 
@@ -102,7 +152,7 @@ def run(
     opt_params: dict,
     display: bool = True,
     return_all: bool = False,
-) -> dict:
+) -> dict | tuple[dict, TrialData | FullTrialData]:
     rhsfunc = ode_setup[group]["rhsfunc"]
     input_features = ode_setup[group]["input_features"]
     coeff_true = ode_setup[group]["coeff_true"]
@@ -127,37 +177,46 @@ def run(
     model.fit(x_train)
     coeff_true, coefficients, feature_names = unionize_coeff_matrices(model, coeff_true)
 
-    # make the plots
+    sim_ind = -1
+    trial_data: TrialData = {
+                "dt": dt,
+                "coeff_true": coeff_true,
+                "coeff_fit": coefficients,
+                "feature_names": feature_names,
+                "input_features": input_features,
+                "t_train": t_train,
+                "x_true": x_train_true[sim_ind],
+                "x_train": x_train[sim_ind],
+                "smooth_train": model.differentiation_method.smoothed_x_,
+                "x_test": x_test[sim_ind],
+                "x_dot_test": x_dot_test[sim_ind],
+                "model": model,
+            }
     if display:
-        model.print()
-        compare_coefficient_plots(
-            coefficients,
-            coeff_true,
-            input_features=input_features,
-            feature_names=feature_names,
+        trial_data: FullTrialData = trial_data | simulate_test_data(
+            trial_data["model"], trial_data["dt"], trial_data["x_test"]
         )
-        smoothed_last_train = model.differentiation_method.smoothed_x_
-        plot_training_data(x_train[-1], x_train_true[-1], smoothed_last_train)
-        plot_test_trajectories(x_test[-1], model, dt)
+        plot_ode_panel(trial_data)
 
-    # calculate metrics
     metrics = coeff_metrics(coefficients, coeff_true)
     metrics.update(integration_metrics(model, x_test, t_train, x_dot_test))
     if return_all:
         return (
-            metrics,
-            {
-                "dt": dt,
-                "coeff_true": coeff_true,
-                "coefficients": coefficients,
-                "feature_names": feature_names,
-                "input_features": input_features,
-                "t_train": t_train,
-                "x_train": x_train,
-                "x_test": x_test,
-                "x_dot_test": x_dot_test,
-                "x_train_true": x_train_true,
-                "model": model,
-            },
+            metrics, trial_data
         )
     return metrics
+
+
+def plot_ode_panel(trial_data: FullTrialData):
+    trial_data["model"].print()
+    plot_training_data(trial_data["x_train"], trial_data["x_true"], trial_data["smooth_train"])
+    compare_coefficient_plots(
+        trial_data["coeff_fit"],
+        trial_data["coeff_true"],
+        input_features=trial_data["input_features"],
+        feature_names=trial_data["feature_names"],
+    )
+    plot_test_trajectories(
+        trial_data["x_test"], trial_data["x_sim"], trial_data["t_test"], trial_data["t_sim"]
+    )
+    plt.show()

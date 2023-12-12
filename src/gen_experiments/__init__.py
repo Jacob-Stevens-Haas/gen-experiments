@@ -6,12 +6,11 @@ import pysindy as ps
 
 from mitosis import Parameter
 
-from gen_experiments import nonlinear_pendulum
 from gen_experiments import odes
 from gen_experiments import pdes
-from gen_experiments import lorenz_missing
 from gen_experiments import gridsearch
 from gen_experiments.utils import (
+    FullTrialData,
     NestedDict,
     ParamDetails,
     SeriesDef,
@@ -34,6 +33,7 @@ def addn(x):
     return x+x
 
 class NoExperiment:
+    metric_ordering = defaultdict(lambda: "max")
     @staticmethod
     def run(*args, return_all=True, **kwargs):
         boring_array = np.ones((2, 2))
@@ -71,8 +71,8 @@ class NoExperiment:
 experiments = {
     "sho": (odes, "sho"),
     "lorenz": (odes, "lorenz"),
-    "lorenz_2d": (lorenz_missing, None),
-    "pendulum": (nonlinear_pendulum, None),
+    "lorenz_2d": (odes, "lorenz_2d"),
+    "pendulum": (odes, "pendulum"),
     "cubic_ho": (odes, "cubic_ho"),
     "vdp": (odes, "vdp"),
     "hopf": (odes, "hopf"),
@@ -103,9 +103,11 @@ def lookup_params(params: list[str]) -> list[Parameter]:
     return resolved_params
 
 
-def _convert_abs_rel_noise(grid_vals: list, grid_params: list, recent_results: dict):
+def _convert_abs_rel_noise(
+    grid_vals: list, grid_params: list, recent_results: FullTrialData
+):
     """Convert abs_noise grid_vals to rel_noise"""
-    signal = np.stack(recent_results["x_train_true"], axis=-1)
+    signal = np.stack(recent_results["x_true"], axis=-1)
     signal_power = _signal_avg_power(signal)
     ind = grid_params.index("sim_params.noise_abs")
     grid_vals[ind] = grid_vals[ind] / signal_power
@@ -178,23 +180,24 @@ plot_prefs = {
             (
                 {
                     "sim_params.noise_abs": 1,
-                    "diff_params.smoother_kws.window_length": 15,
+                    "diff_params.diffcls": "SmoothedFiniteDifference",
                 },
                 {"sim_params.noise_abs": 1, "diff_params.kind": "kalman"},
-                {"sim_params.noise_abs": 1, "diff_params.alpha": 1e0},
+                {"sim_params.noise_abs": 1, "diff_params.kind": "total_variation"},
                 {
                     "sim_params.noise_abs": 2,
-                    "diff_params.smoother_kws.window_length": 15,
+                    "diff_params.diffcls": "SmoothedFiniteDifference",
                 },
                 {"sim_params.noise_abs": 2, "diff_params.kind": "kalman"},
-                {"sim_params.noise_abs": 2, "diff_params.alpha": 1e0},
+                {"sim_params.noise_abs": 2, "diff_params.kind": "total_variation"},
                 {
                     "sim_params.noise_abs": 4,
-                    "diff_params.smoother_kws.window_length": 15,
+                    "diff_params.diffcls": "SmoothedFiniteDifference",
                 },
                 {"sim_params.noise_abs": 4, "diff_params.kind": "kalman"},
-                {"sim_params.noise_abs": 4, "diff_params.alpha": 1e0},
+                {"sim_params.noise_abs": 4, "diff_params.kind": "total_variation"},
             ),
+            {(0, 2), (3, 2), (0, 3), (3, 3), (0, 4), (3, 4)}
         ),
         [utils, this_module],
     ),
@@ -629,10 +632,4 @@ skinny_specs = {
         ),
         [this_module],
     ),
-}
-skinny_specs = {
-    "exp3": (
-        ("sim_params.noise_abs", "diff_params.meas_var"),
-        (lambda x: x, lambda x: x)
-    )
 }

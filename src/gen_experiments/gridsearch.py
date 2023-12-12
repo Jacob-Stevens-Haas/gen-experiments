@@ -1,25 +1,40 @@
-from copy import copy, deepcopy
-from typing import Iterable, Sequence, Optional, Callable, Collection, Annotated
+from copy import copy
+from typing import (
+    Annotated,
+    Callable,
+    Iterable,
+    Optional,
+    Sequence,
+    TypeVar,
+)
+from warnings import warn
 
 from scipy.stats import kstest
 import matplotlib.pyplot as plt
 import numpy as np
+from numpy.typing import NDArray, DTypeLike
 
 import gen_experiments
+from gen_experiments.odes import plot_ode_panel
 from gen_experiments.utils import (
     _PlotPrefs,
+    GridsearchResult,
+    GridsearchResultDetails,
     NestedDict,
+    TrialData,
+    FullTrialData,
+    SavedData,
     SeriesList,
     SeriesDef,
-    plot_training_data,
-    plot_test_trajectories,
-    compare_coefficient_plots,
+    _grid_locator_match,
+    _amax_to_full_inds,
+    _argopt,
+    simulate_test_data
 )
 
 name = "gridsearch"
 OtherSliceDef = tuple[int | Callable]
 SkinnySpecs = Optional[tuple[tuple[str, ...], tuple[OtherSliceDef, ...]]]
-GridsearchResult = Annotated[np.ndarray, "(n_metrics, n_plot_axis)"]
 
 
 def run(
@@ -30,14 +45,15 @@ def run(
     grid_decisions: Sequence[str],
     other_params: dict,
     series_params: Optional[SeriesList] = None,
-    metrics: Optional[Sequence] = None,
+    metrics: Optional[Sequence[str]] = None,
     plot_prefs: _PlotPrefs = _PlotPrefs(True, False, ()),
     skinny_specs: SkinnySpecs = None,
-):
+) -> GridsearchResultDetails:
     """Run a grid-search wrapper of an experiment.
 
     Arguments:
-        ex_name: an experiment registered in gen_experiments
+        ex_name: an experiment registered in gen_experiments.  It must
+            have a name and a metric_ordering attribute
         grid_params: kwarg names to grid and pass to
             experiment
         grid_vals: kwarg values to grid.  Indices match grid_params
@@ -63,9 +79,11 @@ def run(
     else:
         legends = True
     n_metrics = len(metrics)
+    metric_ordering = [base_ex.metric_ordering[metric] for metric in metrics]
     n_plotparams = len([decide for decide in grid_decisions if decide == "plot"])
-    series_searches = []
-    plot_data = []
+    series_searches: list[tuple[list[GridsearchResult], list[GridsearchResult]]] = []
+    intermediate_data: list[SavedData] = []
+    plot_data: list[SavedData] = []
     if base_group is not None:
         other_params["group"] = base_group
     for s_counter, series_data in enumerate(series_params.series_list):
@@ -83,8 +101,7 @@ def run(
             ]
             where_others = None
         full_results_shape = (len(metrics), *(len(grid) for grid in new_grid_vals))
-        full_results = np.empty(full_results_shape)
-        full_results.fill(-np.inf)
+        full_results = np.full(full_results_shape, np.nan)
         gridpoint_selector = _ndindex_skinny(
             full_results_shape[1:], ind_skinny, where_others
         )
@@ -96,30 +113,42 @@ def run(
             for axis_ind, key, val_list in zip(ind, new_grid_params, new_grid_vals):
                 param_updates[key] = val_list[axis_ind]
                 curr_other_params.update(param_updates)
-            curr_results, recent_data = base_ex.run(
+            curr_results, grid_data = base_ex.run(
                 new_seed, **curr_other_params, display=False, return_all=True
             )
-            if (
-                _params_match(curr_other_params, plot_prefs.grid_plot_match)
-                and plot_prefs
-            ):
-                plot_data.append(
-                    {
-                        "params": param_updates | {"name": series_data.name},
-                        "data": plot_gridpoint(recent_data, curr_other_params),
-                    }
-                )
+            grid_data: TrialData
+            intermediate_data.append(
+                {"params": curr_other_params.flatten(), "pind": ind, "data": grid_data}
+            )
             full_results[(slice(None), *ind)] = [
                 curr_results[metric] for metric in metrics
             ]
-        series_searches.append(
-            _marginalize_grid_views(new_grid_decisions, full_results)
+        grid_optima, grid_ind = _marginalize_grid_views(
+            new_grid_decisions, full_results, metric_ordering
         )
+        series_searches.append((grid_optima, grid_ind))
 
     if plot_prefs:
+        full_m_inds = _amax_to_full_inds(
+            plot_prefs.grid_ind_match, [s[1] for s in series_searches]
+        )
+        for int_data in intermediate_data:
+            if _grid_locator_match(
+                int_data["params"],
+                int_data["pind"],
+                plot_prefs.grid_params_match,
+                full_m_inds
+            ) and int_data["params"] not in [saved["params"] for saved in plot_data]:
+                grid_data = int_data["data"]
+                print("Results for params: ", int_data["params"], flush=True)
+                grid_data |= simulate_test_data(
+                    grid_data["model"], grid_data["dt"], grid_data["x_test"]
+                )
+                plot_ode_panel(grid_data)
+                plot_data.append(int_data)
         if plot_prefs.rel_noise:
             grid_vals, grid_params = plot_prefs.rel_noise(
-                grid_vals, grid_params, recent_data
+                grid_vals, grid_params, grid_data
             )
         fig, subplots = plt.subplots(
             n_metrics,
@@ -138,7 +167,7 @@ def run(
                 metrics,
                 grid_params,
                 grid_vals,
-                series_data,
+                series_data[0],
                 series_name,
                 legends,
             )
@@ -156,13 +185,21 @@ def run(
         "series_data": {
             name: data
             for data, name in zip(
-                series_searches, [ser.name for ser in series_params.series_list]
+                [
+                    list(zip(metrics, argopts))
+                    for metrics, argopts in series_searches
+                ],
+                [ser.name for ser in series_params.series_list]
             )
         },
         "metrics": metrics,
         "grid_params": grid_params,
         "grid_vals": grid_vals,
-        "main": max(grid[main_metric_ind].max() for grid in series_searches),
+        "main": max(
+            grid[main_metric_ind].max()
+            for metrics, _ in series_searches
+            for grid in metrics
+        ),
     }
 
 
@@ -204,58 +241,46 @@ def plot(
         ax.legend()
 
 
-def _params_match(exp_params: dict, plot_params: Collection[dict]) -> bool:
-    """Determine whether experimental parameters match a specification"""
-    for pref_or in plot_params:
-        try:
-            if all(exp_params[param] == value for param, value in pref_or.items()):
-                return True
-        except KeyError:
-            pass
-    return False
-
-
-def plot_gridpoint(grid_data: dict, other_params: dict):
-    print("Results for params: ", other_params, flush=True)
-    sim_ind = -1  # The last trajectory, and thus the one saved in smoothed_x_
-    x_train = grid_data["x_train"][sim_ind]
-    x_true = grid_data["x_train_true"][sim_ind]
-    model = grid_data["model"]
-    model.print()
-    smooth_train = model.differentiation_method.smoothed_x_
-    plot_training_data(x_train, x_true, smooth_train)
-    compare_coefficient_plots(
-        grid_data["coefficients"],
-        grid_data["coeff_true"],
-        input_features=grid_data["input_features"],
-        feature_names=grid_data["feature_names"],
-    )
-    plot_data = plot_test_trajectories(
-        grid_data["x_test"][sim_ind], model, grid_data["dt"]
-    )
-    plt.show()
-    return {
-        "x_train": x_train,
-        "x_true": x_true,
-        "smooth_train": smooth_train,
-        "x_test": grid_data["x_test"][sim_ind],
-        "t_sim": plot_data["t_sim"],
-        "x_sim": plot_data["x_sim"],
-    }
-
-
+T = TypeVar("T", bound=np.generic)
 def _marginalize_grid_views(
-    grid_decisions: Iterable, results: np.ndarray
-) -> list[GridsearchResult]:
-    """Marginalize unnecessary dimensions by taking max across axes."""
+    grid_decisions: Iterable[str],
+    results: Annotated[NDArray[T], "shape (n_metrics, *n_gridsearch_values)"],
+    max_or_min: Sequence[str]=None
+) -> tuple[list[GridsearchResult[T]], list[GridsearchResult]]:
+    """Marginalize unnecessary dimensions by taking max across axes.
+
+    Ignores NaN values
+    Args:
+        grid_decisions: list of how to treat each non-metric gridsearch
+            axis.  An array of metrics for each "plot" grid decision
+            will be returned, along with an array of the the index
+            of collapsed dimensions that returns that metric
+        results: An array of shape (n_metrics, *n_gridsearch_values)
+        max_or_min: either "max" or "min" for each row of results
+    Returns:
+        a list of the metric optima for each plottable grid decision, and
+        a list of the flattened argoptima.
+    """
+    arg_dtype: DTypeLike = ",".join(results.ndim * "i")
     plot_param_inds = [ind for ind, val in enumerate(grid_decisions) if val == "plot"]
     grid_searches = []
+    args_maxes = []
+    optfuns = [np.nanmax if opt == "max" else np.nanmin for opt in max_or_min]
     for param_ind in plot_param_inds:
-        selection_results = np.moveaxis(results, param_ind + 1, 1)
-        new_shape = selection_results.shape
-        selection_results = selection_results.reshape(*new_shape[:2], -1).max(-1)
+        reduce_axes = tuple(set(range(results.ndim-1)) - {param_ind})
+        selection_results = np.array([
+            opt(result, axis=reduce_axes) for opt, result in zip(optfuns, results)
+        ])
+        sub_arrs = []
+        for m_ind, (result, opt) in enumerate(zip(results, max_or_min)):
+            pad_m_ind = np.vectorize(lambda tp: np.void((m_ind, *tp), dtype=arg_dtype))
+            arg_max = pad_m_ind(_argopt(result, reduce_axes, opt))
+            sub_arrs.append(arg_max)
+
+        args_max = np.stack(sub_arrs)
         grid_searches.append(selection_results)
-    return grid_searches
+        args_maxes.append(args_max)
+    return grid_searches, args_maxes
 
 
 def _ndindex_skinny(
@@ -348,3 +373,4 @@ def _curr_skinny_specs(
         )
         where_others.append(new_criteria)
     return skinny_param_inds, tuple(where_others)
+
