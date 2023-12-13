@@ -15,6 +15,7 @@ import numpy as np
 from numpy.typing import NDArray, DTypeLike
 
 import gen_experiments
+from gen_experiments import config
 from gen_experiments.odes import plot_ode_panel
 from gen_experiments.utils import (
     _PlotPrefs,
@@ -33,6 +34,8 @@ from gen_experiments.utils import (
 )
 
 name = "gridsearch"
+lookup_dict = vars(config)
+
 OtherSliceDef = tuple[int | Callable]
 SkinnySpecs = Optional[tuple[tuple[str, ...], tuple[OtherSliceDef, ...]]]
 

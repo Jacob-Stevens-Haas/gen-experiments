@@ -36,7 +36,10 @@ parser.add_argument(
 args = parser.parse_args()
 ex, group = gen_experiments.experiments[args.experiment]
 seed = args.seed
-params = gen_experiments.lookup_params(args.param)
+lookup_dict = ex.lookup_dict if hasattr(ex, "lookup_dict") else None
+if args.param is None:
+    args.param = ()
+params = gen_experiments.lookup_params(args.param, lookup_dict)
 trials_folder = gen_experiments.utils.TRIALS_FOLDER
 if not trials_folder.exists():
     trials_folder.mkdir(parents=True)
