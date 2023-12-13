@@ -15,16 +15,21 @@ parser = argparse.ArgumentParser(
 )
 parser.add_argument("experiment", help="Name to identify the experiment")
 parser.add_argument(
-    "--debug",
+    "--debug", "-d",
     action="store_true",
     help=(
         "Run in debug mode, allowing one to use uncommitted code changes and not"
         " recording results"
     ),
 )
-parser.add_argument("--seed", type=int, help="Random seed for the trial", required=True)
 parser.add_argument(
-    "--param",
+    "--eval-param", "-e", 
+    type=str,
+    action="append",
+    help="Parameters directly passed on command line",
+)
+parser.add_argument(
+    "--param", "-p",
     action="append",
     help=(
         "Name of parameters to use with this trial, in format 'key=value'\ne.g."
@@ -35,11 +40,19 @@ parser.add_argument(
 )
 args = parser.parse_args()
 ex, group = gen_experiments.experiments[args.experiment]
-seed = args.seed
+params = []
+if args.eval_param is None:
+    args.eval_param == ()
+for ep in args.eval_param:
+    arg_name, arg_str = ep.split("=")
+    arg_val = eval(arg_str)
+    params.append(mitosis.Parameter(str(arg_val), arg_name, arg_val))
+    if arg_name == "seed":
+        seed = arg_val
 lookup_dict = ex.lookup_dict if hasattr(ex, "lookup_dict") else None
 if args.param is None:
     args.param = ()
-params = gen_experiments.lookup_params(args.param, lookup_dict)
+params += gen_experiments.lookup_params(args.param, lookup_dict)
 trials_folder = gen_experiments.utils.TRIALS_FOLDER
 if not trials_folder.exists():
     trials_folder.mkdir(parents=True)
