@@ -42,7 +42,7 @@ args = parser.parse_args()
 ex, group = gen_experiments.experiments[args.experiment]
 params = []
 if args.eval_param is None:
-    args.eval_param == ()
+    args.eval_param = ()
 for ep in args.eval_param:
     arg_name, arg_str = ep.split("=")
     arg_val = eval(arg_str)
