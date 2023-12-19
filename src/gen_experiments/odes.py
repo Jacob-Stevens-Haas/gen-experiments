@@ -4,6 +4,8 @@ import pysindy as ps
 import numpy as np
 import matplotlib.pyplot as plt
 
+from . import config
+
 from .utils import (
     TrialData,
     FullTrialData,
@@ -19,6 +21,7 @@ from .utils import (
 )
 
 name = "odes"
+lookup_dict = vars(config)
 metric_ordering = {
     "coeff_precision": "max",
     "coeff_f1": "max",
@@ -144,7 +147,6 @@ ode_setup = {
 
 def run(
     seed: float,
-    /,
     group: str,
     sim_params: dict,
     diff_params: dict,

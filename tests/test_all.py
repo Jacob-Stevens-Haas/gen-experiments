@@ -79,7 +79,7 @@ def test_marginalize_grid_views():
     for result, expected in zip(res_ind, expected_ind):
         np.testing.assert_array_equal(result, expected)
 
-def test_argmax_tuple_axis():
+def test_argopt_tuple_axis():
     arr = np.arange(16).reshape(2, 2, 2, 2)
     arr[0,0,0,0] = 1000
     result = utils._argopt(arr, (1, 3))
@@ -90,7 +90,17 @@ def test_argmax_tuple_axis():
     np.testing.assert_array_equal(result, expected)
 
 
-def test_argmax_int_axis():
+def test_argopt_empty_tuple_axis():
+    arr = np.arange(4).reshape(4)
+    result = utils._argopt(arr, ())
+    expected = np.array(
+        [(0,), (1,), (2,), (3,)],
+        dtype=[("f0", "i")]
+    )
+    np.testing.assert_array_equal(result, expected)
+
+
+def test_argopt_int_axis():
     arr = np.arange(8).reshape(2, 2, 2)
     arr[0,0,0] = 1000
     result = utils._argopt(arr, 1)

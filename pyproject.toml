@@ -25,7 +25,7 @@ classifiers = [
 # Since the point of the package is reproducibility, incl. all dev
 # dependencies
 dependencies = [
-  "mitosis @ git+https://github.com/Jacob-Stevens-Haas/mitosis@0.3.0",
+  "mitosis @ git+https://github.com/Jacob-Stevens-Haas/mitosis@1a58c31",
   "derivative @ git+https://github.com/Jacob-Stevens-Haas/derivative@hyperparams",
   "pysindy[cvxpy,miosr] @ git+https://github.com/dynamicslab/pysindy@master",
   "kalman @ git+https://github.com/Jacob-Stevens-Haas/kalman@0.1.0",

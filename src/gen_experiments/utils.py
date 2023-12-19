@@ -1187,7 +1187,7 @@ def plot_summary_test_train(
 def _argopt(
     arr: np.ndarray, axis: int | tuple[int, ...]=None, opt: str="max"
 ) -> np.ndarray[tuple[int, ...]]:
-    """Calculate the argmax, but accept tuple axis.
+    """Calculate the argmax/min, but accept tuple axis.
 
     Ignores NaN values
     
@@ -1201,7 +1201,7 @@ def _argopt(
         the final result will be an array of ndim = m-n with elements being
         tuples of length m
     """
-    dtype: DTypeLike = ",".join(arr.ndim * "i")
+    dtype: DTypeLike = [(f"f{axind}", "i") for axind in range(arr.ndim)]
     axis = (axis,) if isinstance(axis, int) else axis
     keep_axes = tuple(sorted(set(range(arr.ndim)) - set(axis)))
     keep_shape = tuple(arr.shape[ax] for ax in keep_axes)
