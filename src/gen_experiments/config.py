@@ -6,7 +6,6 @@ from gen_experiments import utils
 from gen_experiments.utils import (
     FullTrialData,
     NestedDict,
-    ParamDetails,
     SeriesDef,
     SeriesList,
     _PlotPrefs,
@@ -41,89 +40,76 @@ def addn(x):
 
 
 plot_prefs = {
-    "test": ParamDetails(_PlotPrefs(True, False, ({"sim_params.t_end": 10},)), [utils, gen_experiments]),
-    "test-absrel": ParamDetails(
-        _PlotPrefs(True, _convert_abs_rel_noise, ({"sim_params.noise_abs": 1},)),
-        [utils, gen_experiments],
+    "test": _PlotPrefs(True, False, ({"sim_params.t_end": 10},)),
+    "test-absrel": _PlotPrefs(
+        True, _convert_abs_rel_noise, ({"sim_params.noise_abs": 1},)
     ),
-    "test-absrel2": ParamDetails(
-        _PlotPrefs(
-            True,
-            _convert_abs_rel_noise,
-            (
-                {"sim_params.noise_abs": 0.1},
-                {"sim_params.noise_abs": 0.5},
-                {"sim_params.noise_abs": 1},
-                {"sim_params.noise_abs": 2},
-                {"sim_params.noise_abs": 4},
-                {"sim_params.noise_abs": 8},
-            ),
+    "test-absrel2": _PlotPrefs(
+        True,
+        _convert_abs_rel_noise,
+        (
+            {"sim_params.noise_abs": 0.1},
+            {"sim_params.noise_abs": 0.5},
+            {"sim_params.noise_abs": 1},
+            {"sim_params.noise_abs": 2},
+            {"sim_params.noise_abs": 4},
+            {"sim_params.noise_abs": 8},
         ),
-        [utils, gen_experiments],
     ),
-    "test-absrel3": ParamDetails(
-        _PlotPrefs(
-            True,
-            _convert_abs_rel_noise,
-            (
-                {
-                    "sim_params.noise_abs": 1,
-                    "diff_params.smoother_kws.window_length": 15,
-                },
-                {"sim_params.noise_abs": 1, "diff_params.meas_var": 1},
-                {"sim_params.noise_abs": 1, "diff_params.alpha": 1e-2},
-            ),
+    "test-absrel3": _PlotPrefs(
+        True,
+        _convert_abs_rel_noise,
+        (
+            {
+                "sim_params.noise_abs": 1,
+                "diff_params.smoother_kws.window_length": 15,
+            },
+            {"sim_params.noise_abs": 1, "diff_params.meas_var": 1},
+            {"sim_params.noise_abs": 1, "diff_params.alpha": 1e-2},
         ),
-        [utils, gen_experiments],
     ),
-    "test-absrel4": ParamDetails(
-        _PlotPrefs(
-            True,
-            _convert_abs_rel_noise,
-            (
-                {
-                    "sim_params.noise_abs": 1,
-                    "diff_params.smoother_kws.window_length": 15,
-                },
-                {"sim_params.noise_abs": 1, "diff_params.meas_var": 1},
-                {"sim_params.noise_abs": 1, "diff_params.alpha": 1e0},
-                {
-                    "sim_params.noise_abs": 2,
-                    "diff_params.smoother_kws.window_length": 15,
-                },
-                {"sim_params.noise_abs": 2, "diff_params.meas_var": 4},
-                {"sim_params.noise_abs": 2, "diff_params.alpha": 1e-1},
-            ),
+    "test-absrel4": _PlotPrefs(
+        True,
+        _convert_abs_rel_noise,
+        (
+            {
+                "sim_params.noise_abs": 1,
+                "diff_params.smoother_kws.window_length": 15,
+            },
+            {"sim_params.noise_abs": 1, "diff_params.meas_var": 1},
+            {"sim_params.noise_abs": 1, "diff_params.alpha": 1e0},
+            {
+                "sim_params.noise_abs": 2,
+                "diff_params.smoother_kws.window_length": 15,
+            },
+            {"sim_params.noise_abs": 2, "diff_params.meas_var": 4},
+            {"sim_params.noise_abs": 2, "diff_params.alpha": 1e-1},
         ),
-        [utils, gen_experiments],
     ),
-    "test-absrel5": ParamDetails(
-        _PlotPrefs(
-            True,
-            _convert_abs_rel_noise,
-            (
-                {
-                    "sim_params.noise_abs": 1,
-                    "diff_params.diffcls": "SmoothedFiniteDifference",
-                },
-                {"sim_params.noise_abs": 1, "diff_params.kind": "kalman"},
-                {"sim_params.noise_abs": 1, "diff_params.kind": "total_variation"},
-                {
-                    "sim_params.noise_abs": 2,
-                    "diff_params.diffcls": "SmoothedFiniteDifference",
-                },
-                {"sim_params.noise_abs": 2, "diff_params.kind": "kalman"},
-                {"sim_params.noise_abs": 2, "diff_params.kind": "total_variation"},
-                {
-                    "sim_params.noise_abs": 4,
-                    "diff_params.diffcls": "SmoothedFiniteDifference",
-                },
-                {"sim_params.noise_abs": 4, "diff_params.kind": "kalman"},
-                {"sim_params.noise_abs": 4, "diff_params.kind": "total_variation"},
-            ),
-            {(0, 2), (3, 2), (0, 3), (3, 3), (0, 4), (3, 4)}
+    "test-absrel5": _PlotPrefs(
+        True,
+        _convert_abs_rel_noise,
+        (
+            {
+                "sim_params.noise_abs": 1,
+                "diff_params.diffcls": "SmoothedFiniteDifference",
+            },
+            {"sim_params.noise_abs": 1, "diff_params.kind": "kalman"},
+            {"sim_params.noise_abs": 1, "diff_params.kind": "total_variation"},
+            {
+                "sim_params.noise_abs": 2,
+                "diff_params.diffcls": "SmoothedFiniteDifference",
+            },
+            {"sim_params.noise_abs": 2, "diff_params.kind": "kalman"},
+            {"sim_params.noise_abs": 2, "diff_params.kind": "total_variation"},
+            {
+                "sim_params.noise_abs": 4,
+                "diff_params.diffcls": "SmoothedFiniteDifference",
+            },
+            {"sim_params.noise_abs": 4, "diff_params.kind": "kalman"},
+            {"sim_params.noise_abs": 4, "diff_params.kind": "total_variation"},
         ),
-        [utils, gen_experiments],
+        {(0, 2), (3, 2), (0, 3), (3, 3), (0, 4), (3, 4)}
     ),
 }
 sim_params = {
@@ -159,80 +145,64 @@ feat_params = {
     "test2": ND({"featcls": "Fourier"}),
     "cubic": ND({"featcls": "Polynomial", "degree": 3}),
     "testweak": ND({"featcls": "WeakPDELibrary"}),  # needs work
-    "pde2": ParamDetails(
-        ND({
-            "featcls": "pde",
-            "library_functions": [identity, quadratic],
-            "function_names": [identity, addn],
-            "derivative_order": 2,
-            "spatial_grid": np.arange(0, 10, 0.1),
-            "include_interaction": True
-        }),[ps]
-    ),
-    "pde3": ParamDetails(
-        ND({
-            "featcls": "pde",
-            "library_functions": [identity, quadratic],
-            "function_names": [identity, addn],
-            "derivative_order": 3,
-            "spatial_grid": np.arange(0, 10, 0.1),
-            "include_interaction": True,
-            "is_uniform": True,
-        }),[ps]
-    ),
-    "pde4": ParamDetails(
-        ND({
-            "featcls": "pde",
-            "library_functions": [identity, quadratic],
-            "function_names": [identity, addn],
-            "derivative_order": 4,
-            "spatial_grid": np.arange(0, 10, 0.1),
-            "include_interaction": True,
-            "is_uniform": True,
-            "periodic": True,
-            "include_bias": True,
-        }),[ps]
-    )
+    "pde2": ND({
+        "featcls": "pde",
+        "library_functions": [identity, quadratic],
+        "function_names": [identity, addn],
+        "derivative_order": 2,
+        "spatial_grid": np.arange(0, 10, 0.1),
+        "include_interaction": True
+    }),
+    "pde3": ND({
+        "featcls": "pde",
+        "library_functions": [identity, quadratic],
+        "function_names": [identity, addn],
+        "derivative_order": 3,
+        "spatial_grid": np.arange(0, 10, 0.1),
+        "include_interaction": True,
+        "is_uniform": True,
+    }),
+    "pde4": ND({
+        "featcls": "pde",
+        "library_functions": [identity, quadratic],
+        "function_names": [identity, addn],
+        "derivative_order": 4,
+        "spatial_grid": np.arange(0, 10, 0.1),
+        "include_interaction": True,
+        "is_uniform": True,
+        "periodic": True,
+        "include_bias": True,
+    }),
 }
 opt_params = {
     "test": ND({"optcls": "STLSQ"}),
     "miosr": ND({"optcls": "MIOSR"}),
-    "enslsq": ParamDetails(
-        ND({"optcls": "ensemble", "opt": ps.STLSQ(), "bagging": True, "n_models": 20}),
-        [ps],
+    "enslsq": ND({
+        "optcls": "ensemble", "opt": ps.STLSQ(), "bagging": True, "n_models": 20
+    }),
+    "ensmio-ho-vdp-lv-duff": ND(
+        {
+            "optcls": "ensemble",
+            "opt": ps.MIOSR(target_sparsity=4),
+            "bagging": True,
+            "n_models": 20,
+        }
     ),
-    "ensmio-ho-vdp-lv-duff": ParamDetails(
-        ND(
-            {
-                "optcls": "ensemble",
-                "opt": ps.MIOSR(target_sparsity=4),
-                "bagging": True,
-                "n_models": 20,
-            }
-        ),
-        [ps],
+    "ensmio-hopf": ND(
+        {
+            "optcls": "ensemble",
+            "opt": ps.MIOSR(target_sparsity=8),
+            "bagging": True,
+            "n_models": 20,
+        }
     ),
-    "ensmio-hopf": ParamDetails(
-        ND(
-            {
-                "optcls": "ensemble",
-                "opt": ps.MIOSR(target_sparsity=8),
-                "bagging": True,
-                "n_models": 20,
-            }
-        ),
-        [ps],
-    ),
-    "ensmio-lorenz-ross": ParamDetails(
-        ND(
-            {
-                "optcls": "ensemble",
-                "opt": ps.MIOSR(target_sparsity=7),
-                "bagging": True,
-                "n_models": 20,
-            }
-        ),
-        [ps],
+    "ensmio-lorenz-ross": ND(
+        {
+            "optcls": "ensemble",
+            "opt": ps.MIOSR(target_sparsity=7),
+            "bagging": True,
+            "n_models": 20,
+        }
     ),
     "mio-lorenz-ross": ND({"optcls": "MIOSR", "target_sparsity": 7}),
 }
@@ -285,15 +255,12 @@ other_params = {
             "opt_params": opt_params["test"],
         }
     ),
-    "exp1": ParamDetails(
-        ND(
-            {
-                "sim_params": sim_params["10x"],
-                "feat_params": feat_params["test"],
-                "opt_params": opt_params["enslsq"].vals,
-            }
-        ),
-        [ps],
+    "exp1": ND(
+        {
+            "sim_params": sim_params["10x"],
+            "feat_params": feat_params["test"],
+            "opt_params": opt_params["enslsq"],
+        }
     ),
     "cubic": ND(
         {
@@ -302,75 +269,54 @@ other_params = {
             "opt_params": opt_params["test"],
         }
     ),
-    "exp2": ParamDetails(
-        ND(
-            {
-                "sim_params": sim_params["10x"],
-                "feat_params": feat_params["cubic"],
-                "opt_params": opt_params["enslsq"].vals,
-            }
-        ),
-        [ps],
+    "exp2": ND(
+        {
+            "sim_params": sim_params["10x"],
+            "feat_params": feat_params["cubic"],
+            "opt_params": opt_params["enslsq"],
+        }
     ),
-    "abs-exp3": ParamDetails(
-        ND(
-            {
-                "sim_params": sim_params["med-noise-many"],
-                "feat_params": feat_params["cubic"],
-                "opt_params": opt_params["ensmio-lorenz-ross"].vals,
-            }
-        ),
-        [ps],
+    "abs-exp3": ND(
+        {
+            "sim_params": sim_params["med-noise-many"],
+            "feat_params": feat_params["cubic"],
+            "opt_params": opt_params["ensmio-lorenz-ross"],
+        }
     ),
-    "rel-exp3-lorenz": ParamDetails(
-        ND(
-            {
-                "sim_params": sim_params["10x"],
-                "feat_params": feat_params["cubic"],
-                "opt_params": opt_params["ensmio-lorenz-ross"].vals,
-            }
-        ),
-        [ps],
+    "rel-exp3-lorenz": ND(
+        {
+            "sim_params": sim_params["10x"],
+            "feat_params": feat_params["cubic"],
+            "opt_params": opt_params["ensmio-lorenz-ross"],
+        }
     ),
-    "lor-ross-cubic": ParamDetails(
-        ND(
-            {
-                "sim_params": sim_params["10x"],
-                "feat_params": feat_params["cubic"],
-                "opt_params": opt_params["ensmio-lorenz-ross"].vals,
-            }
-        ),
-        [ps],
+    "lor-ross-cubic": ND(
+        {
+            "sim_params": sim_params["10x"],
+            "feat_params": feat_params["cubic"],
+            "opt_params": opt_params["ensmio-lorenz-ross"],
+        }
     ),
-    "lor-ross-cubic-fast": ParamDetails(
-        ND(
-            {
-                "sim_params": sim_params["test"],
-                "feat_params": feat_params["cubic"],
-                "opt_params": opt_params["mio-lorenz-ross"],
-            }
-        ),
-        [ps],
+    "lor-ross-cubic-fast": ND(
+        {
+            "sim_params": sim_params["test"],
+            "feat_params": feat_params["cubic"],
+            "opt_params": opt_params["mio-lorenz-ross"],
+        }
     ),
-    "4nonzero-cubic": ParamDetails(
-        ND(
-            {
-                "sim_params": sim_params["10x"],
-                "feat_params": feat_params["cubic"],
-                "opt_params": opt_params["ensmio-ho-vdp-lv-duff"].vals,
-            }
-        ),
-        [ps],
+    "4nonzero-cubic": ND(
+        {
+            "sim_params": sim_params["10x"],
+            "feat_params": feat_params["cubic"],
+            "opt_params": opt_params["ensmio-ho-vdp-lv-duff"],
+        }
     ),
-    "hopf-cubic": ParamDetails(
-        ND(
-            {
-                "sim_params": sim_params["10x"],
-                "feat_params": feat_params["cubic"],
-                "opt_params": opt_params["ensmio-hopf"].vals,
-            }
-        ),
-        [ps],
+    "hopf-cubic": ND(
+        {
+            "sim_params": sim_params["10x"],
+            "feat_params": feat_params["cubic"],
+            "opt_params": opt_params["ensmio-hopf"],
+        }
     ),
 }
 grid_params = {
@@ -387,9 +333,9 @@ grid_vals = {
     "abs_noise": [[0.1, 0.5, 1, 2, 4, 8]],
     "abs_noise-kalman": [[0.1, 0.5, 1, 2, 4, 8], [0.1, 0.5, 1, 2, 4, 8]],
     "abs_noise-kalman2": [[0.1, 0.5, 1, 2, 4, 8], [0.01, 0.25, 1, 4, 16, 64]],
-    "tv1": ParamDetails([np.logspace(-4, 0, 5)], [np]),
-    "tv2": ParamDetails([np.logspace(-3, -1, 5)], [np]),
-    "lorenzk": ParamDetails([[1, 9, 27], [0.1, 0.8], np.logspace(-6, -1, 4)], [np]),
+    "tv1": [np.logspace(-4, 0, 5)],
+    "tv2": [np.logspace(-3, -1, 5)],
+    "lorenzk": [[1, 9, 27], [0.1, 0.8], np.logspace(-6, -1, 4)],
     "lorenz1": [[1, 3, 9, 27], [0.01, 0.1, 1]],
     "duration-absnoise": [[0.5, 1, 2, 4, 8, 16], [0.1, 0.5, 1, 2, 4, 8]],
     "rel_noise": [[0.25, 1, 4, 16], [0.05, 0.1, 0.15, 0.2, 0.25, 0.3]],
@@ -457,103 +403,60 @@ diff_series = {
     ),
 }
 series_params = {
-    "test": ParamDetails(
-        SeriesList(
-            "diff_params",
-            "Differentiation Method",
-            [
-                diff_series["kalman1"],
-                diff_series["tv1"],
-                diff_series["sg1"],
-            ],
-        ),
-        [np],
+    "test": SeriesList(
+        "diff_params",
+        "Differentiation Method",
+        [
+            diff_series["kalman1"],
+            diff_series["tv1"],
+            diff_series["sg1"],
+        ],
     ),
-    "lorenz1": ParamDetails(
-        SeriesList(
-            "diff_params",
-            "Differentiation Method",
-            [
-                diff_series["kalman2"],
-                diff_series["tv2"],
-                diff_series["sg2"],
-            ],
-        ),
-        [np],
+    "lorenz1": SeriesList(
+        "diff_params",
+        "Differentiation Method",
+        [
+            diff_series["kalman2"],
+            diff_series["tv2"],
+            diff_series["sg2"],
+        ],
     ),
-    "kalman-auto": ParamDetails(
-        SeriesList(
-            "diff_params",
-            "Differentiation Method",
-            [
-                diff_series["auto-kalman"],
-                diff_series["tv2"],
-                diff_series["sg2"],
-            ],
-        ),
-        [np],
+    "kalman-auto": SeriesList(
+        "diff_params",
+        "Differentiation Method",
+        [
+            diff_series["auto-kalman"],
+            diff_series["tv2"],
+            diff_series["sg2"],
+        ],
     ),
-    "kalman-auto2": ParamDetails(
-        SeriesList(
-            "diff_params",
-            "Differentiation Method",
-            [
-                diff_series["auto-kalman2"],
-                diff_series["tv2"],
-                diff_series["sg2"],
-            ],
-        ),
-        [np],
+    "kalman-auto2": SeriesList(
+        "diff_params",
+        "Differentiation Method",
+        [
+            diff_series["auto-kalman2"],
+            diff_series["tv2"],
+            diff_series["sg2"],
+        ],
     ),
-    "kalman-auto3": ParamDetails(
-        SeriesList(
-            "diff_params",
-            "Differentiation Method",
-            [
-                diff_series["auto-kalman3"],
-                diff_series["tv2"],
-                diff_series["sg2"],
-            ],
-        ),
-        [np],
+    "kalman-auto3": SeriesList(
+        "diff_params",
+        "Differentiation Method",
+        [
+            diff_series["auto-kalman3"],
+            diff_series["tv2"],
+            diff_series["sg2"],
+        ],
     ),
 }
 
 
 skinny_specs = {
-    "exp3": ParamDetails(
-        (("sim_params.noise_abs", "diff_params.meas_var"), ((identity,), (identity,))),
-        [gen_experiments],
+    "exp3": (("sim_params.noise_abs", "diff_params.meas_var"), ((identity,), (identity,))),
+    "abs_noise-kalman": (tuple(grid_params["abs_noise-kalman"]), ((identity,), (identity,))),
+    "duration-noise-kalman": (
+        ("sim_params.t_end", "sim_params.noise_abs", "diff_params.meas_var"),
+        ((1, 1), (-1, identity), (-1, identity))
     ),
-    "abs_noise-kalman": ParamDetails(
-        (tuple(grid_params["abs_noise-kalman"]), ((identity,), (identity,))),
-        [gen_experiments],
-    ),
-    "duration-noise-kalman": ParamDetails(
-        (
-            ("sim_params.t_end", "sim_params.noise_abs", "diff_params.meas_var"),
-            (
-                (1, 1),
-                (
-                    -1,
-                    identity,
-                ),
-                (
-                    -1,
-                    identity,
-                ),
-            ),
-        ),
-        [gen_experiments],
-    ),
-    "duration-noise": ParamDetails(
-        (
-            ("sim_params.t_end", "sim_params.noise_abs"),
-            (
-                (1,),
-                (-1,),
-            ),
-        ),
-        [gen_experiments],
-    ),
+    "duration-noise": (("sim_params.t_end", "sim_params.noise_abs"), ((1,), (-1,))),
 }

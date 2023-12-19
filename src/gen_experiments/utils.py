@@ -749,12 +749,6 @@ def plot_test_trajectories(
 
 
 @dataclass
-class ParamDetails:
-    vals: Sequence | Mapping
-    modules: Sequence[ModuleType]
-
-
-@dataclass
 class SeriesDef:
     """The details of constructing the ragged axes of a grid search.
 
