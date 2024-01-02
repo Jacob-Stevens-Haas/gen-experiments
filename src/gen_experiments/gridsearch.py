@@ -15,6 +15,7 @@ import numpy as np
 from numpy.typing import NDArray, DTypeLike
 
 import gen_experiments
+from gen_experiments import config
 from gen_experiments.odes import plot_ode_panel
 from gen_experiments.utils import (
     _PlotPrefs,
@@ -33,13 +34,15 @@ from gen_experiments.utils import (
 )
 
 name = "gridsearch"
+lookup_dict = vars(config)
+
 OtherSliceDef = tuple[int | Callable]
 SkinnySpecs = Optional[tuple[tuple[str, ...], tuple[OtherSliceDef, ...]]]
 
 
 def run(
     seed: int,
-    ex_name: str,
+    group: str,
     grid_params: list[str],
     grid_vals: list[Sequence],
     grid_decisions: Sequence[str],
@@ -52,7 +55,7 @@ def run(
     """Run a grid-search wrapper of an experiment.
 
     Arguments:
-        ex_name: an experiment registered in gen_experiments.  It must
+        group: an experiment registered in gen_experiments.  It must
             have a name and a metric_ordering attribute
         grid_params: kwarg names to grid and pass to
             experiment
@@ -72,9 +75,9 @@ def run(
             are made skinny with respect to each other.
     """
     other_params = NestedDict(**other_params)
-    base_ex, base_group = gen_experiments.experiments[ex_name]
+    base_ex, base_group = gen_experiments.experiments[group]
     if series_params is None:
-        series_params = SeriesList(None, None, [SeriesDef(ex_name, {}, [], [])])
+        series_params = SeriesList(None, None, [SeriesDef(group, {}, [], [])])
         legends = False
     else:
         legends = True
@@ -172,15 +175,15 @@ def run(
                 legends,
             )
         if series_params.print_name is not None:
-            title = f"Grid Search on {series_params.print_name} in {ex_name}"
+            title = f"Grid Search on {series_params.print_name} in {group}"
         else:
-            title = f"Grid Search in {ex_name}"
+            title = f"Grid Search in {group}"
         fig.suptitle(title)
         fig.tight_layout()
 
     main_metric_ind = metrics.index("main") if "main" in metrics else 0
     return {
-        "system": ex_name,
+        "system": group,
         "plot_data": plot_data,
         "series_data": {
             name: data
