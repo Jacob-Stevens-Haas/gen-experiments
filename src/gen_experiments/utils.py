@@ -19,6 +19,7 @@ from math import ceil
 from warnings import warn
 
 import matplotlib.pyplot as plt
+import mitosis
 import kalman
 import numpy as np
 import seaborn as sns
@@ -926,8 +927,7 @@ def load_results(hexstr: str) -> GridsearchResultDetails:
     Args:
         hexstr: randomly-assigned identifier for the results to open
     """
-    with open(TRIALS_FOLDER / f"results_{hexstr}.npy", "rb") as f:
-        return np.load(f, allow_pickle=True)[()]
+    return mitosis.load_trial_data(hexstr, trials_folder=TRIALS_FOLDER)
 
 
 def _amax_to_full_inds(
