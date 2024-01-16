@@ -1,17 +1,34 @@
+import matplotlib.pyplot as plt
 import numpy as np
 from pysindy.differentiation import SpectralDerivative
 
+from . import config
+
 from .utils import (
-    _make_model,
-    coeff_metrics,
-    compare_coefficient_plots,
+    TrialData,
+    FullTrialData,
     gen_pde_data,
-    integration_metrics,
+    compare_coefficient_plots,
     plot_pde_training_data,
+    coeff_metrics,
+    integration_metrics,
     unionize_coeff_matrices,
+    _make_model,
+    plot_test_trajectories,
+    simulate_test_data
 )
 
 name = "pdes"
+lookup_dict = vars(config)
+metric_ordering = {
+    "coeff_precision": "max",
+    "coeff_f1": "max",
+    "coeff_recall": "max",
+    "coeff_mae": "min",
+    "coeff_mse": "min",
+    "mse_plot": "min",
+    "mae_plot": "min",
+}
 
 
 def diffuse1D(t, u, dx, nx):
@@ -94,7 +111,7 @@ def run(
     opt_params: dict,
     display: bool = True,
     return_all: bool = False,
-) -> dict:
+) -> dict | tuple[dict, TrialData | FullTrialData]:
     rhsfunc = pde_setup[group]["rhsfunc"]["func"]
     input_features = pde_setup[group]["input_features"]
     initial_condition = pde_setup[group]["initial_condition"]
@@ -121,31 +138,38 @@ def run(
     model.fit(x_train, t=t_train)
     coeff_true, coefficients, feature_names = unionize_coeff_matrices(model, coeff_true)
 
-    # make the plots
+    sim_ind = -1
+    trial_data: TrialData = {
+                "dt": dt,
+                "coeff_true": coeff_true,
+                "coeff_fit": coefficients,
+                "feature_names": feature_names,
+                "input_features": input_features,
+                "t_train": t_train,
+                "x_true": x_train_true,
+                "x_train": x_train[sim_ind],
+                "smooth_train": model.differentiation_method.smoothed_x_,
+                "x_test": x_test[sim_ind],
+                "x_dot_test": x_dot_test[sim_ind],
+                "model": model,
+            }
     if display:
-        model.print()
-        compare_coefficient_plots(
-            coefficients,
-            coeff_true,
-            input_features=input_features,
-            feature_names=feature_names,
+        trial_data: FullTrialData = trial_data | simulate_test_data(
+            trial_data["model"], trial_data["dt"], trial_data["x_test"]
         )
-        smoothed_last_train = model.differentiation_method.smoothed_x_
-        plot_pde_training_data(x_train[-1], x_train_true, smoothed_last_train)
+        trial_data["model"].print()
+        plot_pde_training_data(trial_data["x_train"], trial_data["x_true"], trial_data["smooth_train"])
+        compare_coefficient_plots(
+        trial_data["coeff_fit"],
+        trial_data["coeff_true"],
+        input_features=trial_data["input_features"],
+        feature_names=trial_data["feature_names"],
+        )
 
-    # calculate metrics
     metrics = coeff_metrics(coefficients, coeff_true)
     metrics.update(integration_metrics(model, x_test, t_train, x_dot_test))
     if return_all:
         return (
-            metrics,
-            {
-                "t_train": t_train,
-                "x_train": x_train,
-                "x_test": x_test,
-                "x_dot_test": x_dot_test,
-                "x_train_true": x_train_true,
-                "model": model,
-            },
+            metrics, trial_data
         )
     return metrics
