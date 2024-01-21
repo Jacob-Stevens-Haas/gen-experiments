@@ -14,6 +14,7 @@ from typing import (
     Callable,
     TypedDict,
     TypeVar,
+    Literal,
 )
 from math import ceil
 from warnings import warn
@@ -100,7 +101,7 @@ class _PlotPrefs:
             indices
     """
     plot: bool = True
-    rel_noise: bool | Callable = False
+    rel_noise: Literal[False] | Callable = False
     grid_params_match: Collection[dict] = field(default_factory=lambda: ())
     grid_ind_match: Collection[tuple[int | slice, int]] | ellipsis = field(default_factory=lambda: ...)
 

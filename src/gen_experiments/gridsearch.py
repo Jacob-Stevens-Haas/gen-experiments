@@ -1,4 +1,5 @@
 from copy import copy
+from logging import getLogger
 from typing import (
     Annotated,
     Callable,
@@ -33,6 +34,7 @@ from gen_experiments.utils import (
     simulate_test_data
 )
 
+logger = getLogger()
 name = "gridsearch"
 lookup_dict = vars(config)
 
@@ -136,6 +138,11 @@ def run(
             plot_prefs.grid_ind_match, [s[1] for s in series_searches]
         )
         for int_data in intermediate_data:
+            logger.debug(
+                f"Checking whether to save/plot {int_data['params']}, at location"
+                f" {int_data['pind']} against spec: {plot_prefs.grid_params_match}"
+                f" with allowed locations {full_m_inds}"
+            )
             if _grid_locator_match(
                 int_data["params"],
                 int_data["pind"],
