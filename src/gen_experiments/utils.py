@@ -945,7 +945,14 @@ def _amax_to_full_inds(
     all_inds = set()
     for plot_axis_results in [el for series in amax_arrays for el in series]:
         for ind in amax_inds:
-            if isinstance(ind[0], int):
+            if ind is ...: # grab each element from arrays in list of lists of arrays
+                all_inds |= {
+                    np_to_primitive(el)
+                    for ar_list in amax_arrays
+                    for arr in ar_list
+                    for el in arr.flatten()
+                }
+            elif isinstance(ind[0], int):
                 all_inds |= {np_to_primitive(plot_axis_results[ind])}
             else:  # ind[0] is slice(None)
                 all_inds |= {np_to_primitive(el) for el in plot_axis_results[ind]}
@@ -953,7 +960,7 @@ def _amax_to_full_inds(
 
 
 def _setup_summary_fig(
-    n_sub: int, *, fig_cell: tuple[Figure, SubplotSpec] = None
+    n_sub: int, *, fig_cell: Optional[tuple[Figure, SubplotSpec]] = None
 ) -> tuple[Figure, GridSpec | GridSpecFromSubplotSpec]:
     """Create neatly laid-out arrangements for subplots
 
@@ -1021,7 +1028,9 @@ def plot_experiment_across_gridpoints(
 
     for cell, (p_name, params) in zip(gs, pargs):
         for trajectory in results["plot_data"]:
-            if _grid_locator_match(trajectory["params"], trajectory["pind"], pargs, full_inds):
+            if _grid_locator_match(
+                trajectory["params"], trajectory["pind"], [params], full_inds
+            ):
                 p_names.append(p_name)
                 ax = _plot_train_test_cell((fig, cell), trajectory, style, annotations=False)
                 if annotations: ax.set_title(p_name)
@@ -1100,7 +1109,7 @@ def plot_point_across_experiments(
             if _grid_locator_match(
                 trajectory["params"],
                 trajectory["pind"],
-                params,
+                [params],
                 full_inds
             ):
                 ax = _plot_train_test_cell([fig, cell], trajectory, style, annotations=False)
@@ -1136,7 +1145,7 @@ def plot_summary_metric(
         metric_index = results["metrics"].index(metric)
         ax = fig.add_subplot(cell)
         for s_name, s_data in results["series_data"].items():
-            ax.plot(grid_axis, s_data[grid_axis_index][metric_index][0], label=s_name)
+            ax.plot(grid_axis, s_data[grid_axis_index][0][metric_index], label=s_name)
         ax.set_title(ode_name)
     ax.legend()
 
@@ -1260,8 +1269,13 @@ def _grid_locator_match(
     """
     found_match = False
     for params_or in param_spec:
+        params_or = {k: _param_normalize(v) for k, v in params_or.items()}
+
         try:
-            if all(exp_params[param] == value for param, value in params_or.items()):
+            if all(
+                _param_normalize(exp_params[param]) == value
+                for param, value in params_or.items()
+            ):
                 found_match = True
                 break
         except KeyError:
@@ -1272,3 +1286,23 @@ def _grid_locator_match(
             break
     else: return False
     return found_match
+
+
+_EqTester = TypeVar("_EqTester")
+def _param_normalize(val: _EqTester) -> _EqTester | str:
+    if type(val).__eq__ == object.__eq__:
+        return repr(val)
+    else:
+        return val
+
+
+# class GridMatch:
+#     bad_keys: dict
+#     truth: bool
+#     def __init__(self, truth: bool):
+#         self.truth = truth
+#         self.bad_keys = {}
+    
+#     def __bool__(self) -> bool:
+#         return not self.bad_keys
+
