@@ -86,3 +86,6 @@ filterwarnings = [
   "ignore::UserWarning",]
 addopts = '-m "not slow"'
 markers = ["slow"]
+
+[tool.mypy]
+files = "src/gen_experiments/__init__.py"
