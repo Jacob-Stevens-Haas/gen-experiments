@@ -1,8 +1,8 @@
+from typing import TypeVar
+
 import numpy as np
 import pysindy as ps
 
-import gen_experiments
-from gen_experiments import utils
 from gen_experiments.utils import (
     FullTrialData,
     NestedDict,
@@ -12,7 +12,13 @@ from gen_experiments.utils import (
     _signal_avg_power,
 )
 
-ND = lambda d: NestedDict(**d)
+T = TypeVar("T")
+U = TypeVar("U")
+
+
+def ND(d: dict[T, U]) -> NestedDict[T, U]:
+    return NestedDict(**d)
+
 
 def _convert_abs_rel_noise(
     grid_vals: list, grid_params: list, recent_results: FullTrialData
@@ -32,11 +38,11 @@ def identity(x):
 
 
 def quadratic(x):
-    return x*x
+    return x * x
 
 
 def addn(x):
-    return x+x
+    return x + x
 
 
 plot_prefs = {
@@ -109,7 +115,7 @@ plot_prefs = {
             {"sim_params.noise_abs": 4, "diff_params.kind": "kalman"},
             {"sim_params.noise_abs": 4, "diff_params.kind": "total_variation"},
         ),
-        {(0, 2), (3, 2), (0, 3), (3, 3), (0, 4), (3, 4)}
+        {(0, 2), (3, 2), (0, 3), (3, 3), (0, 4), (3, 4)},
     ),
 }
 sim_params = {
@@ -151,7 +157,7 @@ feat_params = {
         "function_names": [identity, addn],
         "derivative_order": 2,
         "spatial_grid": np.arange(0, 10, 0.1),
-        "include_interaction": True
+        "include_interaction": True,
     }),
     "pde3": ND({
         "featcls": "pde",
@@ -177,33 +183,27 @@ feat_params = {
 opt_params = {
     "test": ND({"optcls": "STLSQ"}),
     "miosr": ND({"optcls": "MIOSR"}),
-    "enslsq": ND({
-        "optcls": "ensemble", "opt": ps.STLSQ(), "bagging": True, "n_models": 20
+    "enslsq": ND(
+        {"optcls": "ensemble", "opt": ps.STLSQ(), "bagging": True, "n_models": 20}
+    ),
+    "ensmio-ho-vdp-lv-duff": ND({
+        "optcls": "ensemble",
+        "opt": ps.MIOSR(target_sparsity=4),
+        "bagging": True,
+        "n_models": 20,
     }),
-    "ensmio-ho-vdp-lv-duff": ND(
-        {
-            "optcls": "ensemble",
-            "opt": ps.MIOSR(target_sparsity=4),
-            "bagging": True,
-            "n_models": 20,
-        }
-    ),
-    "ensmio-hopf": ND(
-        {
-            "optcls": "ensemble",
-            "opt": ps.MIOSR(target_sparsity=8),
-            "bagging": True,
-            "n_models": 20,
-        }
-    ),
-    "ensmio-lorenz-ross": ND(
-        {
-            "optcls": "ensemble",
-            "opt": ps.MIOSR(target_sparsity=7),
-            "bagging": True,
-            "n_models": 20,
-        }
-    ),
+    "ensmio-hopf": ND({
+        "optcls": "ensemble",
+        "opt": ps.MIOSR(target_sparsity=8),
+        "bagging": True,
+        "n_models": 20,
+    }),
+    "ensmio-lorenz-ross": ND({
+        "optcls": "ensemble",
+        "opt": ps.MIOSR(target_sparsity=7),
+        "bagging": True,
+        "n_models": 20,
+    }),
     "mio-lorenz-ross": ND({"optcls": "MIOSR", "target_sparsity": 7}),
 }
 
@@ -216,108 +216,80 @@ metrics = {
     "1": ["coeff_f1", "coeff_precision", "coeff_mse", "coeff_mae"],
 }
 other_params = {
-    "test": ND(
-        {
-            "sim_params": sim_params["test"],
-            "diff_params": diff_params["test"],
-            "feat_params": feat_params["test"],
-            "opt_params": opt_params["test"],
-        }
-    ),
-    "tv1": ND(
-        {
-            "sim_params": sim_params["test"],
-            "diff_params": diff_params["tv"],
-            "feat_params": feat_params["test"],
-            "opt_params": opt_params["test"],
-        }
-    ),
-    "test2": ND(
-        {
-            "sim_params": sim_params["test"],
-            "feat_params": feat_params["test"],
-            "opt_params": opt_params["test"],
-        }
-    ),
-    "test-kalman-heuristic2": ND(
-        {
-            "sim_params": sim_params["test"],
-            "diff_params": diff_params["kalman-empty2"],
-            "feat_params": feat_params["test"],
-            "opt_params": opt_params["test"],
-        }
-    ),
-    "lorenzk": ND(
-        {
-            "sim_params": sim_params["test"],
-            "diff_params": diff_params["kalman"],
-            "feat_params": feat_params["test"],
-            "opt_params": opt_params["test"],
-        }
-    ),
-    "exp1": ND(
-        {
-            "sim_params": sim_params["10x"],
-            "feat_params": feat_params["test"],
-            "opt_params": opt_params["enslsq"],
-        }
-    ),
-    "cubic": ND(
-        {
-            "sim_params": sim_params["test"],
-            "feat_params": feat_params["cubic"],
-            "opt_params": opt_params["test"],
-        }
-    ),
-    "exp2": ND(
-        {
-            "sim_params": sim_params["10x"],
-            "feat_params": feat_params["cubic"],
-            "opt_params": opt_params["enslsq"],
-        }
-    ),
-    "abs-exp3": ND(
-        {
-            "sim_params": sim_params["med-noise-many"],
-            "feat_params": feat_params["cubic"],
-            "opt_params": opt_params["ensmio-lorenz-ross"],
-        }
-    ),
-    "rel-exp3-lorenz": ND(
-        {
-            "sim_params": sim_params["10x"],
-            "feat_params": feat_params["cubic"],
-            "opt_params": opt_params["ensmio-lorenz-ross"],
-        }
-    ),
-    "lor-ross-cubic": ND(
-        {
-            "sim_params": sim_params["10x"],
-            "feat_params": feat_params["cubic"],
-            "opt_params": opt_params["ensmio-lorenz-ross"],
-        }
-    ),
-    "lor-ross-cubic-fast": ND(
-        {
-            "sim_params": sim_params["test"],
-            "feat_params": feat_params["cubic"],
-            "opt_params": opt_params["mio-lorenz-ross"],
-        }
-    ),
-    "4nonzero-cubic": ND(
-        {
-            "sim_params": sim_params["10x"],
-            "feat_params": feat_params["cubic"],
-            "opt_params": opt_params["ensmio-ho-vdp-lv-duff"],
-        }
-    ),
-    "hopf-cubic": ND(
-        {
-            "sim_params": sim_params["10x"],
-            "feat_params": feat_params["cubic"],
-            "opt_params": opt_params["ensmio-hopf"],
-        }
-    ),
+    "test": ND({
+        "sim_params": sim_params["test"],
+        "diff_params": diff_params["test"],
+        "feat_params": feat_params["test"],
+        "opt_params": opt_params["test"],
+    }),
+    "tv1": ND({
+        "sim_params": sim_params["test"],
+        "diff_params": diff_params["tv"],
+        "feat_params": feat_params["test"],
+        "opt_params": opt_params["test"],
+    }),
+    "test2": ND({
+        "sim_params": sim_params["test"],
+        "feat_params": feat_params["test"],
+        "opt_params": opt_params["test"],
+    }),
+    "test-kalman-heuristic2": ND({
+        "sim_params": sim_params["test"],
+        "diff_params": diff_params["kalman-empty2"],
+        "feat_params": feat_params["test"],
+        "opt_params": opt_params["test"],
+    }),
+    "lorenzk": ND({
+        "sim_params": sim_params["test"],
+        "diff_params": diff_params["kalman"],
+        "feat_params": feat_params["test"],
+        "opt_params": opt_params["test"],
+    }),
+    "exp1": ND({
+        "sim_params": sim_params["10x"],
+        "feat_params": feat_params["test"],
+        "opt_params": opt_params["enslsq"],
+    }),
+    "cubic": ND({
+        "sim_params": sim_params["test"],
+        "feat_params": feat_params["cubic"],
+        "opt_params": opt_params["test"],
+    }),
+    "exp2": ND({
+        "sim_params": sim_params["10x"],
+        "feat_params": feat_params["cubic"],
+        "opt_params": opt_params["enslsq"],
+    }),
+    "abs-exp3": ND({
+        "sim_params": sim_params["med-noise-many"],
+        "feat_params": feat_params["cubic"],
+        "opt_params": opt_params["ensmio-lorenz-ross"],
+    }),
+    "rel-exp3-lorenz": ND({
+        "sim_params": sim_params["10x"],
+        "feat_params": feat_params["cubic"],
+        "opt_params": opt_params["ensmio-lorenz-ross"],
+    }),
+    "lor-ross-cubic": ND({
+        "sim_params": sim_params["10x"],
+        "feat_params": feat_params["cubic"],
+        "opt_params": opt_params["ensmio-lorenz-ross"],
+    }),
+    "lor-ross-cubic-fast": ND({
+        "sim_params": sim_params["test"],
+        "feat_params": feat_params["cubic"],
+        "opt_params": opt_params["mio-lorenz-ross"],
+    }),
+    "4nonzero-cubic": ND({
+        "sim_params": sim_params["10x"],
+        "feat_params": feat_params["cubic"],
+        "opt_params": opt_params["ensmio-ho-vdp-lv-duff"],
+    }),
+    "hopf-cubic": ND({
+        "sim_params": sim_params["10x"],
+        "feat_params": feat_params["cubic"],
+        "opt_params": opt_params["ensmio-hopf"],
+    }),
 }
 grid_params = {
     "test": ["sim_params.t_end"],
@@ -452,11 +424,17 @@ series_params = {
 
 
 skinny_specs = {
-    "exp3": (("sim_params.noise_abs", "diff_params.meas_var"), ((identity,), (identity,))),
-    "abs_noise-kalman": (tuple(grid_params["abs_noise-kalman"]), ((identity,), (identity,))),
+    "exp3": (
+        ("sim_params.noise_abs", "diff_params.meas_var"),
+        ((identity,), (identity,)),
+    ),
+    "abs_noise-kalman": (
+        tuple(grid_params["abs_noise-kalman"]),
+        ((identity,), (identity,)),
+    ),
     "duration-noise-kalman": (
         ("sim_params.t_end", "sim_params.noise_abs", "diff_params.meas_var"),
-        ((1, 1), (-1, identity), (-1, identity))
+        ((1, 1), (-1, identity), (-1, identity)),
     ),
     "duration-noise": (("sim_params.t_end", "sim_params.noise_abs"), ((1,), (-1,))),
 }

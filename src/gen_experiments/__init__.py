@@ -5,11 +5,9 @@ from typing import Any
 
 import numpy as np
 from numpy.typing import NDArray
-from pysindy import SINDy, BaseDifferentiation, FiniteDifference  # type: ignore
+from pysindy import BaseDifferentiation, FiniteDifference, SINDy  # type: ignore
 
-from . import odes
-from . import pdes
-from . import gridsearch
+from . import gridsearch, odes, pdes
 from .utils import TrialData
 
 this_module = importlib.import_module(__name__)
@@ -33,11 +31,14 @@ class FakeModel(SINDy):
 
 
 class NoExperiment:
-    metric_ordering: dict[str, str]= defaultdict(lambda: "max")
+    metric_ordering: dict[str, str] = defaultdict(lambda: "max")
     name = "No Experiment"
     lookup_dict = {"arg": {"foo": 1}}
+
     @staticmethod
-    def run(*args: Any, return_all: bool=True, **kwargs: Any) -> Scores | tuple[Scores, TrialData]:
+    def run(
+        *args: Any, return_all: bool = True, **kwargs: Any
+    ) -> Scores | tuple[Scores, TrialData]:
         metrics = defaultdict(
             lambda: 1,
             main=1,
@@ -57,7 +58,7 @@ class NoExperiment:
                 "x_test": BORING_ARRAY,
                 "x_dot_test": BORING_ARRAY,
                 # "x_train_true": [boring_array],
-                "model": FakeModel()
+                "model": FakeModel(),
             }
             return (
                 metrics,

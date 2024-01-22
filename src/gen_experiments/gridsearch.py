@@ -1,37 +1,28 @@
 from copy import copy
 from logging import getLogger
-from typing import (
-    Annotated,
-    Callable,
-    Iterable,
-    Optional,
-    Sequence,
-    TypeVar,
-)
-from warnings import warn
+from typing import Annotated, Callable, Iterable, Optional, Sequence, TypeVar
 
-from scipy.stats import kstest
 import matplotlib.pyplot as plt
 import numpy as np
-from numpy.typing import NDArray, DTypeLike
+from numpy.typing import DTypeLike, NDArray
+from scipy.stats import kstest
 
 import gen_experiments
 from gen_experiments import config
 from gen_experiments.odes import plot_ode_panel
 from gen_experiments.utils import (
-    _PlotPrefs,
     GridsearchResult,
     GridsearchResultDetails,
     NestedDict,
-    TrialData,
-    FullTrialData,
     SavedData,
-    SeriesList,
     SeriesDef,
-    _grid_locator_match,
+    SeriesList,
+    TrialData,
     _amax_to_full_inds,
     _argopt,
-    simulate_test_data
+    _grid_locator_match,
+    _PlotPrefs,
+    simulate_test_data,
 )
 
 logger = getLogger()
@@ -70,7 +61,7 @@ def run(
             intercept and modify plot data.  Use this for applying any
             scaling or conversions.
         skinny_specs: Allow only conducting some of the grid search,
-            where axes are all searched, but not all combinates are
+            where axes are all searched, but not all combinations are
             searched.  The first element is a sequence of grid_names to
             skinnify.  The second is the thin_slices criteria (see
             docstring for _ndindex_skinny).  By default, all plot axes
@@ -147,7 +138,7 @@ def run(
                 int_data["params"],
                 int_data["pind"],
                 plot_prefs.grid_params_match,
-                full_m_inds
+                full_m_inds,
             ) and int_data["params"] not in [saved["params"] for saved in plot_data]:
                 grid_data = int_data["data"]
                 print("Results for params: ", int_data["params"], flush=True)
@@ -195,11 +186,8 @@ def run(
         "series_data": {
             name: data
             for data, name in zip(
-                [
-                    list(zip(metrics, argopts))
-                    for metrics, argopts in series_searches
-                ],
-                [ser.name for ser in series_params.series_list]
+                [list(zip(metrics, argopts)) for metrics, argopts in series_searches],
+                [ser.name for ser in series_params.series_list],
             )
         },
         "metrics": metrics,
@@ -252,10 +240,12 @@ def plot(
 
 
 T = TypeVar("T", bound=np.generic)
+
+
 def _marginalize_grid_views(
     grid_decisions: Iterable[str],
     results: Annotated[NDArray[T], "shape (n_metrics, *n_gridsearch_values)"],
-    max_or_min: Sequence[str]=None
+    max_or_min: Sequence[str] = None,
 ) -> tuple[list[GridsearchResult[T]], list[GridsearchResult]]:
     """Marginalize unnecessary dimensions by taking max across axes.
 
@@ -277,10 +267,10 @@ def _marginalize_grid_views(
     args_maxes = []
     optfuns = [np.nanmax if opt == "max" else np.nanmin for opt in max_or_min]
     for param_ind in plot_param_inds:
-        reduce_axes = tuple(set(range(results.ndim-1)) - {param_ind})
-        selection_results = np.array([
-            opt(result, axis=reduce_axes) for opt, result in zip(optfuns, results)
-        ])
+        reduce_axes = tuple(set(range(results.ndim - 1)) - {param_ind})
+        selection_results = np.array(
+            [opt(result, axis=reduce_axes) for opt, result in zip(optfuns, results)]
+        )
         sub_arrs = []
         for m_ind, (result, opt) in enumerate(zip(results, max_or_min)):
             pad_m_ind = np.vectorize(lambda tp: np.void((m_ind, *tp), dtype=arg_dtype))
@@ -302,7 +292,7 @@ def _ndindex_skinny(
     Return an iterator like ndindex, but only traverse thin_axes once
 
     This is useful for grid searches with multiple plot axes, where
-    searching across all combinations of plot axes is undesireable.
+    searching across all combinations of plot axes is undesirable.
     Slow for big arrays! (But still probably trivial compared to the
     gridsearch operation :))
 
@@ -320,8 +310,8 @@ def _ndindex_skinny(
     {(0, 0), (0, 1), (1, 1)}
     """
     if thin_axes is None and thin_slices is None:
-        thin_axes = tuple()
-        thin_slices = tuple()
+        thin_axes = ()
+        thin_slices = ()
     elif thin_axes is None:
         raise ValueError("Must pass thin_axes if thin_slices is not None")
     elif thin_slices is None:  # slice other thin axes at 0th index
@@ -383,4 +373,3 @@ def _curr_skinny_specs(
         )
         where_others.append(new_criteria)
     return skinny_param_inds, tuple(where_others)
-

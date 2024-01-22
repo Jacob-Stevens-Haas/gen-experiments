@@ -1,42 +1,41 @@
-from pathlib import Path
 from collections import defaultdict
 from dataclasses import dataclass, field
 from itertools import chain
-from types import ModuleType
+from math import ceil
+from pathlib import Path
 from types import EllipsisType as ellipsis
 from typing import (
     Annotated,
-    Any,
-    Sequence,
+    Callable,
+    Collection,
+    Literal,
     Mapping,
     Optional,
-    Collection,
-    Callable,
+    Sequence,
     TypedDict,
     TypeVar,
-    Literal,
 )
-from math import ceil
 from warnings import warn
 
+import auto_ks as aks
+import kalman
 import matplotlib.pyplot as plt
 import mitosis
-import kalman
 import numpy as np
-import seaborn as sns
-import scipy
 import pysindy as ps
+import scipy
+import seaborn as sns
 import sklearn
-import auto_ks as aks
-from matplotlib.gridspec import GridSpec, SubplotSpec, GridSpecFromSubplotSpec
-from matplotlib.pyplot import Axes
 from matplotlib.figure import Figure
+from matplotlib.gridspec import GridSpec, GridSpecFromSubplotSpec, SubplotSpec
+from matplotlib.pyplot import Axes
 from numpy.typing import DTypeLike, NDArray
 
 INTEGRATOR_KEYWORDS = {"rtol": 1e-12, "method": "LSODA", "atol": 1e-12}
 PAL = sns.color_palette("Set1")
-PLOT_KWS = dict(alpha=0.7, linewidth=3)
+PLOT_KWS = {"alpha": 0.7, "linewidth": 3}
 TRIALS_FOLDER = Path(__file__).parent.absolute() / "trials"
+
 
 class TrialData(TypedDict):
     dt: float
@@ -68,10 +67,13 @@ T = TypeVar("T", bound=np.generic)
 GridsearchResult = Annotated[NDArray[T], "(n_metrics, n_plot_axis)"]  # type: ignore
 
 SeriesData = Annotated[
-    list[tuple[
-        Annotated[GridsearchResult, "metrics"],
-        Annotated[GridsearchResult, "arg_opts"]
-    ]],"len=n_grid_axes"
+    list[
+        tuple[
+            Annotated[GridsearchResult, "metrics"],
+            Annotated[GridsearchResult, "arg_opts"],
+        ]
+    ],
+    "len=n_grid_axes",
 ]
 
 
@@ -100,10 +102,13 @@ class _PlotPrefs:
             element may be slice(None).  Alternatively, ellipsis to match all
             indices
     """
+
     plot: bool = True
     rel_noise: Literal[False] | Callable = False
     grid_params_match: Collection[dict] = field(default_factory=lambda: ())
-    grid_ind_match: Collection[tuple[int | slice, int]] | ellipsis = field(default_factory=lambda: ...)
+    grid_ind_match: Collection[tuple[int | slice, int]] | ellipsis = field(
+        default_factory=lambda: ...
+    )
 
     def __bool__(self):
         return self.plot
@@ -161,12 +166,10 @@ def gen_data(
         x0_train = np.array(
             [rng.gamma(k, theta, n_trajectories) for k, theta in zip(shape, scale)]
         ).T
-        x0_test = np.array(
-            [
-                rng.gamma(k, theta, ceil(n_trajectories / 2))
-                for k, theta in zip(shape, scale)
-            ]
-        ).T
+        x0_test = np.array([
+            rng.gamma(k, theta, ceil(n_trajectories / 2))
+            for k, theta in zip(shape, scale)
+        ]).T
     else:
         x0_train = ic_stdev * rng.standard_normal((n_trajectories, n_coord)) + x0_center
         x0_test = (
@@ -222,9 +225,9 @@ def gen_data(
     if noise_rel is not None:
         noise_abs = np.sqrt(_signal_avg_power(x_test) * noise_rel)
     x_train = x_train + noise_abs * rng.standard_normal(x_train.shape)
-    x_train = [xi for xi in x_train]
-    x_test = [xi for xi in x_test]
-    x_dot_test = [xi for xi in x_dot_test]
+    x_train = list(x_train)
+    x_test = list(x_test)
+    x_dot_test = list(x_dot_test)
     return dt, t_train, x_train, x_test, x_dot_test, x_train_true
 
 
@@ -247,8 +250,8 @@ def gen_pde_data(
     Arguments:
         rhs_func: the function to integrate
         init_cond: Initial Conditions for the PDE
-        args: Arguments for rhsfunc 
-        dimension: Number of spatial dimensions (1, 2, or 3) 
+        args: Arguments for rhsfunc
+        dimension: Number of spatial dimensions (1, 2, or 3)
         seed (int): the random seed for number generation
         noise_abs (float): measurement noise standard deviation.
             Defaults to .1 if noise_rel is None.
@@ -368,10 +371,10 @@ def opt_lookup(kind):
 
 def plot_coefficients(
     coefficients: Annotated[np.ndarray, "(n_coord, n_features)"],
-    input_features: Sequence[str]=None,
-    feature_names: Sequence[str]=None,
-    ax: bool=None,
-    **heatmap_kws
+    input_features: Sequence[str] = None,
+    feature_names: Sequence[str] = None,
+    ax: bool = None,
+    **heatmap_kws,
 ):
     if input_features is None:
         input_features = [r"$\dot x_" + f"{k}$" for k in range(coefficients.shape[0])]
@@ -406,11 +409,12 @@ def plot_coefficients(
 def compare_coefficient_plots(
     coefficients_est: Annotated[np.ndarray, "(n_coord, n_feat)"],
     coefficients_true: Annotated[np.ndarray, "(n_coord, n_feat)"],
-    input_features: Sequence[str]=None,
-    feature_names: Sequence[str]=None
+    input_features: Sequence[str] = None,
+    feature_names: Sequence[str] = None,
 ):
     """Create plots of true and estimated coefficients."""
     n_cols = len(coefficients_est)
+
     # helps boost the color of small coefficients.  Maybe log is better?
     def signed_sqrt(x):
         return np.sign(x) * np.sqrt(np.abs(x))
@@ -564,7 +568,11 @@ def _make_model(
 
 
 def plot_training_trajectory(
-    ax: plt.Axes, x_train: np.ndarray, x_true: np.ndarray, x_smooth: np.ndarray, labels: bool=True,
+    ax: plt.Axes,
+    x_train: np.ndarray,
+    x_true: np.ndarray,
+    x_smooth: np.ndarray,
+    labels: bool = True,
 ) -> None:
     """Plot a single training trajectory"""
     if x_train.shape[1] == 2:
@@ -586,7 +594,8 @@ def plot_training_trajectory(
                 color=PAL[2],
                 **PLOT_KWS,
             )
-        if labels: ax.set(xlabel="$x_0$", ylabel="$x_1$")
+        if labels:
+            ax.set(xlabel="$x_0$", ylabel="$x_1$")
     elif x_train.shape[1] == 3:
         ax.plot(
             x_true[:, 0],
@@ -616,7 +625,8 @@ def plot_training_trajectory(
                 label="Smoothed values",
                 alpha=0.3,
             )
-        if labels: ax.set(xlabel="$x$", ylabel="$y$", zlabel="$z$")
+        if labels:
+            ax.set(xlabel="$x$", ylabel="$y$", zlabel="$z$")
     else:
         raise ValueError("Can only plot 2d or 3d data.")
 
@@ -760,7 +770,7 @@ class SeriesDef:
 
     Attributes:
         name: The name of the slice, as a label for printing
-        static_param: the constant paramter to this slice. Then key is
+        static_param: the constant parameter to this slice. Then key is
             the name of the parameter, as understood by the experiment
             Conceptually, the key serves as an index of this slice in
             the gridsearch.
@@ -797,7 +807,7 @@ class SeriesList:
 
         Truck = SeriesDef("trucks")
 
-    Attribtues:
+    Attributes:
         param_name: the key of the parameter in the experiment that
             varies along the series axis.
         print_name: the print name of the parameter in the experiment
@@ -864,11 +874,12 @@ class NestedDict(defaultdict):
         try:
             for k, v in other.items():
                 self.__setitem__(k, v)
-        except:
+        except:  # noqa: E722
             super().update(other)
 
     def flatten(self):
         """Flattens a nested dictionary without mutating.  Returns new dict"""
+
         def _flatten(nested_d: dict) -> dict:
             new = {}
             for key, value in nested_d.items():
@@ -880,6 +891,7 @@ class NestedDict(defaultdict):
                 for sub_key, sub_value in _flatten(value).items():
                     new[key + "." + sub_key] = sub_value
             return new
+
         return _flatten(self)
 
 
@@ -891,7 +903,6 @@ def kalman_generalized_cv(
     See Boyd & Barratt, Fitting a Kalman Smoother to Data.  No regularization
     """
     measurements = measurements.reshape((-1, 1))
-    nt = len(measurements)
     dt = times[1] - times[0]
     Ai = np.array([[1, 0], [dt, 1]])
     Qi = kalman.gen_Qi(dt)
@@ -933,20 +944,22 @@ def load_results(hexstr: str) -> GridsearchResultDetails:
 
 def _amax_to_full_inds(
     amax_inds: Collection[tuple[int | slice, int] | ellipsis],
-    amax_arrays: list[list[GridsearchResult]]
+    amax_arrays: list[list[GridsearchResult]],
 ) -> set[tuple[int, ...]]:
     def np_to_primitive(tuple_like: np.void) -> tuple[int, ...]:
         return tuple(int(el) for el in tuple_like)
+
     if amax_inds is ...:  # grab each element from arrays in list of lists of arrays
         return {
             np_to_primitive(el)
             for ar_list in amax_arrays
             for arr in ar_list
-            for el in arr.flatten()}
+            for el in arr.flatten()
+        }
     all_inds = set()
     for plot_axis_results in [el for series in amax_arrays for el in series]:
         for ind in amax_inds:
-            if ind is ...: # grab each element from arrays in list of lists of arrays
+            if ind is ...:  # grab each element from arrays in list of lists of arrays
                 all_inds |= {
                     np_to_primitive(el)
                     for ar_list in amax_arrays
@@ -991,15 +1004,15 @@ def plot_experiment_across_gridpoints(
     hexstr: str,
     *args: tuple[str, dict] | ellipsis | tuple[int | slice, int],
     style: str,
-    fig_cell: tuple[Figure, SubplotSpec]=None,
-    annotations:bool = True
+    fig_cell: tuple[Figure, SubplotSpec] = None,
+    annotations: bool = True,
 ) -> tuple[Figure, Sequence[str]]:
     """Plot a single experiment's test across multiple gridpoints
 
     Arguments:
         hexstr: hexadecimal suffix for the experiment's result file.
         args: From which gridpoints to load data, described either as:
-            - a local name and the paramters defining the gridpoint to match.
+            - a local name and the parameters defining the gridpoint to match.
             - ellipsis, indicating optima across all metrics across all plot
                 axes
             - an indexing tuple indicating optima for that tuple's location in
@@ -1009,7 +1022,7 @@ def plot_experiment_across_gridpoints(
     Returns:
         the plotted figure
     """
-    
+
     fig, gs = _setup_summary_fig(len(args), fig_cell=fig_cell)
     if fig_cell is not None:
         fig.suptitle("How do different smoothing compare on an ODE?")
@@ -1019,7 +1032,11 @@ def plot_experiment_across_gridpoints(
         [single_ser_and_axis[1] for single_ser_and_axis in single_series_all_axes]
         for _, single_series_all_axes in results["series_data"].items()
     ]
-    parg_inds = {argind for argind, arg in enumerate(args) if isinstance(arg, tuple) and isinstance(arg[0], str)}
+    parg_inds = {
+        argind
+        for argind, arg in enumerate(args)
+        if isinstance(arg, tuple) and isinstance(arg[0], str)
+    }
     indarg_inds = set(range(len(args))) - parg_inds
     pargs = [args[i] for i in parg_inds]
     indargs = [args[i] for i in indarg_inds]
@@ -1033,12 +1050,16 @@ def plot_experiment_across_gridpoints(
                 trajectory["params"], trajectory["pind"], [params], full_inds
             ):
                 p_names.append(p_name)
-                ax = _plot_train_test_cell((fig, cell), trajectory, style, annotations=False)
-                if annotations: ax.set_title(p_name)
+                ax = _plot_train_test_cell(
+                    (fig, cell), trajectory, style, annotations=False
+                )
+                if annotations:
+                    ax.set_title(p_name)
                 break
         else:
             warn(f"Did not find a parameter match for {p_name} experiment")
-    if annotations: ax.legend()
+    if annotations:
+        ax.legend()
     return Figure, p_names
 
 
@@ -1046,7 +1067,7 @@ def _plot_train_test_cell(
     fig_cell: tuple[Figure, SubplotSpec | int | tuple[int, int, int]],
     trajectory: SavedData,
     style: str,
-    annotations: bool=False,
+    annotations: bool = False,
 ) -> Axes:
     """Plot either the training or test data in a single cell"""
     fig, cell = fig_cell
@@ -1076,14 +1097,14 @@ def _plot_train_test_cell(
 
 def plot_point_across_experiments(
     params: dict,
-    point: ellipsis | tuple[int | slice, int]=...,
+    point: ellipsis | tuple[int | slice, int] = ...,
     *args: tuple[str, str],
-    style: str
+    style: str,
 ) -> Figure:
     """Plot a single parameter's training or test across multiple experiments
 
     Arguments:
-        params: paramters defining the gridpoint to match
+        params: parameters defining the gridpoint to match
         point: gridpoint spec from the argmax array, defined as either an
             - ellipsis, indicating optima across all metrics across all plot
                 axes
@@ -1108,12 +1129,11 @@ def plot_point_across_experiments(
         full_inds = _amax_to_full_inds((point,), amax_arrays)
         for trajectory in results["plot_data"]:
             if _grid_locator_match(
-                trajectory["params"],
-                trajectory["pind"],
-                [params],
-                full_inds
+                trajectory["params"], trajectory["pind"], [params], full_inds
             ):
-                ax = _plot_train_test_cell([fig, cell], trajectory, style, annotations=False)
+                ax = _plot_train_test_cell(
+                    [fig, cell], trajectory, style, annotations=False
+                )
                 ax.set_title(ode_name)
                 break
         else:
@@ -1154,7 +1174,7 @@ def plot_summary_metric(
 def plot_summary_test_train(
     exps: Sequence[tuple[str, str]],
     params: Sequence[tuple[str, dict] | ellipsis | tuple[int | slice, int]],
-    style: str
+    style: str,
 ) -> None:
     """Plot a comparison of different variants across experiments
 
@@ -1162,7 +1182,7 @@ def plot_summary_test_train(
         exps: From which experiments to load data, described as a local name
             and the hexadecimal suffix of the result file.
         params: which gridpoints to compare, described as either:
-            - a tuple of local name and paramters to match.
+            - a tuple of local name and parameters to match.
             - ellipsis, indicating optima across all metrics across all plot
                 axes
             - an indexing tuple indicating optima for that tuple's location in
@@ -1172,29 +1192,33 @@ def plot_summary_test_train(
     """
     n_exp = len(exps)
     n_params = len(params)
-    figsize = (3*n_params, 3*n_exp)
+    figsize = (3 * n_params, 3 * n_exp)
     fig = plt.figure(figsize=figsize)
-    grid = fig.add_gridspec(n_exp, 2, width_ratios=(1,20))
+    grid = fig.add_gridspec(n_exp, 2, width_ratios=(1, 20))
     for n_row, (ode_name, hexstr) in enumerate(exps):
         cell = grid[n_row, 1]
-        _, p_names = plot_experiment_across_gridpoints(hexstr, *params, style=style, fig_cell=(fig, cell), annotations=False)
+        _, p_names = plot_experiment_across_gridpoints(
+            hexstr, *params, style=style, fig_cell=(fig, cell), annotations=False
+        )
         empty_ax = fig.add_subplot(grid[n_row, 0])
         empty_ax.axis("off")
-        empty_ax.text(-.1, .5, ode_name, va="center", transform=empty_ax.transAxes, rotation=90)
+        empty_ax.text(
+            -0.1, 0.5, ode_name, va="center", transform=empty_ax.transAxes, rotation=90
+        )
     first_row = fig.get_axes()[:n_params]
     for ax, p_name in zip(first_row, p_names):
         ax.set_title(p_name)
-    fig.subplots_adjust(top=.95)
+    fig.subplots_adjust(top=0.95)
     return fig
 
 
 def _argopt(
-    arr: np.ndarray, axis: int | tuple[int, ...]=None, opt: str="max"
+    arr: np.ndarray, axis: int | tuple[int, ...] = None, opt: str = "max"
 ) -> np.ndarray[tuple[int, ...]]:
     """Calculate the argmax/min, but accept tuple axis.
 
     Ignores NaN values
-    
+
     Args:
         arr: an array to search
         axis: The axis or axes to search through for the argmax/argmin.
@@ -1226,12 +1250,14 @@ def _argopt(
 
 def _index_in(base: tuple[int, ...], tgt: tuple[int | ellipsis | slice, ...]) -> bool:
     """Determine whether base indexing tuple will match given numpy index"""
-    if len(base) > len(tgt): return False
+    if len(base) > len(tgt):
+        return False
     curr_ax = 0
     for ax, ind in enumerate(tgt):
         if isinstance(ind, int):
             try:
-                if ind != base[curr_ax]: return False
+                if ind != base[curr_ax]:
+                    return False
             except IndexError:
                 return False
         elif isinstance(ind, slice):
@@ -1243,15 +1269,16 @@ def _index_in(base: tuple[int, ...], tgt: tuple[int | ellipsis | slice, ...]) ->
             # ellipsis can take 0 or more spots
             curr_ax += max(base_ind_remaining - tgt_ind_remaining, -1)
         curr_ax += 1
-    if curr_ax == len(base): return True
-    return  False
+    if curr_ax == len(base):
+        return True
+    return False
 
 
 def _grid_locator_match(
     exp_params: dict,
     exp_ind: tuple[int, ...],
     param_spec: Collection[dict],
-    ind_spec: Collection[tuple[int, ...]]
+    ind_spec: Collection[tuple[int, ...]],
 ) -> bool:
     """Determine whether experimental parameters match a specification
 
@@ -1285,11 +1312,14 @@ def _grid_locator_match(
         # exp_ind doesn't include metric, so skip first metric
         if _index_in(exp_ind, ind_or[1:]):
             break
-    else: return False
+    else:
+        return False
     return found_match
 
 
 _EqTester = TypeVar("_EqTester")
+
+
 def _param_normalize(val: _EqTester) -> _EqTester | str:
     if type(val).__eq__ == object.__eq__:
         return repr(val)
@@ -1303,7 +1333,6 @@ def _param_normalize(val: _EqTester) -> _EqTester | str:
 #     def __init__(self, truth: bool):
 #         self.truth = truth
 #         self.bad_keys = {}
-    
+
 #     def __bool__(self) -> bool:
 #         return not self.bad_keys
-
