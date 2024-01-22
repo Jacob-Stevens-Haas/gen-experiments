@@ -30,16 +30,19 @@ metric_ordering = {
     "mae_plot": "min",
 }
 
-
-def diffuse1D(t, u, dx, nx):
+def diffuse1D_dirichlet(t, u, dx, nx):
     u = np.reshape(u, nx)
     u[0] = 0
     u[-1] = 0
     uxx = SpectralDerivative(d=2, axis=0)._differentiate(u, dx)
     return np.reshape(uxx, nx)
 
+def diffuse1D_periodic(t, u, dx, nx):
+    u = np.reshape(u, nx)
+    uxx = SpectralDerivative(d=2, axis=0)._differentiate(u, dx)
+    return np.reshape(uxx, nx)
 
-def burgers1D(t, u, dx, nx):
+def burgers1D_dirichlet(t, u, dx, nx):
     u = np.reshape(u, nx)
     u[0] = 0
     u[-1] = 0
@@ -47,8 +50,13 @@ def burgers1D(t, u, dx, nx):
     ux = SpectralDerivative(d=1, axis=0)._differentiate(u, dx)
     return np.reshape((uxx - u * ux), nx)
 
+def burgers1D_periodic(t, u, dx, nx):
+    u = np.reshape(u, nx)
+    uxx = SpectralDerivative(d=2, axis=0)._differentiate(u, dx)
+    ux = SpectralDerivative(d=1, axis=0)._differentiate(u, dx)
+    return np.reshape((uxx - u*ux), nx)
 
-def ks(t, u, dx, nx):
+def ks_dirichlet(t, u ,dx, nx):
     u = np.reshape(u, nx)
     u[0] = 0
     u[-1] = 0
@@ -57,6 +65,13 @@ def ks(t, u, dx, nx):
     uxxxx = SpectralDerivative(d=4, axis=0)._differentiate(u, dx)
     return np.reshape(-uxx - uxxxx - u * ux, nx)
 
+
+def ks_periodic(t, u ,dx, nx):
+    u = np.reshape(u, nx)
+    ux = SpectralDerivative(d=1, axis=0)._differentiate(u, dx)
+    uxx = SpectralDerivative(d=2, axis=0)._differentiate(u, dx)
+    uxxxx = SpectralDerivative(d=4, axis=0)._differentiate(u, dx)
+    return np.reshape(-uxx-uxxxx-u*ux, nx)
 
 def kdv(t, u, dx, nx):
     u = np.reshape(u, nx)
@@ -68,8 +83,11 @@ def kdv(t, u, dx, nx):
 
 
 pde_setup = {
-    "diffuse1D": {
-        "rhsfunc": {"func": diffuse1D, "dimension": 1},
+    "diffuse1D_dirichlet": {
+        "rhsfunc": {
+            "func": diffuse1D_dirichlet,
+            "dimension": 1
+        },
         "input_features": ["u"],
         "initial_condition": 10 * np.exp(-((np.arange(0, 10, 0.1) - 5) ** 2) / 2),
         "spatial_args": [0.1, 100],
@@ -77,8 +95,25 @@ pde_setup = {
         "coeff_true": [{"u_11": 1}],
         "spatial_grid": np.arange(0, 10, 0.1),
     },
-    "burgers1D": {
-        "rhsfunc": {"func": burgers1D, "dimension": 1},
+    "diffuse1D_periodic": {
+        "rhsfunc": {
+            "func": diffuse1D_periodic,
+            "dimension": 1
+        },
+        "input_features": ["u"],
+        "initial_condition": np.exp(-(np.arange(0, 10, 0.1)-5)**2/2),
+        "spatial_args": [0.1, 100],
+        "time_args": [0.1, 10],
+        "coeff_true": [
+            {"u_11": 1}
+        ],
+        "spatial_grid": np.arange(0, 10, 0.1)
+    },
+    "burgers1D_dirichlet": {
+        "rhsfunc": {
+            "func": burgers1D_dirichlet,
+            "dimension": 1
+        },
         "input_features": ["u"],
         "initial_condition": 10 * np.exp(-((np.arange(0, 10, 0.1) - 5) ** 2) / 2),
         "spatial_args": [0.1, 100],
@@ -86,8 +121,25 @@ pde_setup = {
         "coeff_true": [{"u_11": 1, "uu_1": 1}],
         "spatial_grid": np.arange(0, 10, 0.1),
     },
-    "ks": {
-        "rhsfunc": {"func": ks, "dimension": 1},
+    "burgers1D_periodic": {
+        "rhsfunc": {
+            "func": burgers1D_periodic,
+            "dimension": 1
+        },
+        "input_features": ["u"],
+        "initial_condition": np.exp(-(np.arange(0, 10, 0.1)-5)**2/2),
+        "spatial_args": [0.1, 100],
+        "time_args": [0.1, 10],
+        "coeff_true": [
+            {"u_11": 1, "uu_1": -1}
+        ],
+        "spatial_grid": np.arange(0, 10, 0.1)
+    },
+    "ks_dirichlet": {
+        "rhsfunc": {
+            "func": ks_dirichlet,
+            "dimension": 1
+        },
         "input_features": ["u"],
         "initial_condition": np.cos(np.arange(0, 10, 0.1)) * (
             1 + np.sin(np.arange(0, 10, 0.1))
@@ -97,8 +149,22 @@ pde_setup = {
         "coeff_true": [
             {"u_11": -1, "u_1111": -1, "uu_1": -1},
         ],
-        "spatial_grid": np.arange(0, 10, 0.1),
+        "spatial_grid": np.arange(0, 10, 0.1)
     },
+    "ks_periodic": {
+        "rhsfunc": {
+            "func": ks_periodic,
+            "dimension": 1
+        },
+        "input_features": ["u"],
+        "initial_condition": (np.cos(np.arange(0,10,0.1)))*(1+np.sin(np.arange(0, 10, 0.1)-0.5)),
+        "spatial_args": [0.1, 100],
+        "time_args": [0.1, 10],
+        "coeff_true": [
+            {"u_11": -1, "u_1111": -1, "uu_1": -1},
+        ],
+        "spatial_grid": np.arange(0, 10, 0.1)
+    }
 }
 
 
