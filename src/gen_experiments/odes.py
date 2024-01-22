@@ -1,23 +1,22 @@
 from typing import Callable
 
-import pysindy as ps
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+import pysindy as ps
 
 from . import config
-
 from .utils import (
-    TrialData,
     FullTrialData,
-    gen_data,
-    compare_coefficient_plots,
-    plot_training_data,
-    plot_test_trajectories,
-    coeff_metrics,
-    integration_metrics,
-    unionize_coeff_matrices,
+    TrialData,
     _make_model,
-    simulate_test_data
+    coeff_metrics,
+    compare_coefficient_plots,
+    gen_data,
+    integration_metrics,
+    plot_test_trajectories,
+    plot_training_data,
+    simulate_test_data,
+    unionize_coeff_matrices,
 )
 
 name = "odes"
@@ -47,9 +46,13 @@ def nonlinear_pendulum(t, x, m=1, L=1, g=9.81, forcing=0, return_all=True):
     """
     if not isinstance(forcing, Callable):
         const_force = forcing
-        forcing = lambda t, x: const_force
+
+        def forcing(t, x):
+            return const_force
+
     moment_of_inertia = m * L**2
     return (x[1], (-m * g * np.sin(x[0]) + forcing(t, x)) / moment_of_inertia)
+
 
 p_duff = [0.2, 0.05, 1]
 p_lotka = [1, 10]
@@ -89,7 +92,7 @@ ode_setup = {
         "input_features": ["x", "y", "z"],
         "coeff_true": [
             {"x": -10, "y": 10},
-            {"y": 28, "y": -1, "x z": -1},
+            {"x": 28, "y": -1, "x z": -1},
             {"z": -8 / 3, "x y": 1},
         ],
         "x0_center": np.array([0, 0, 15]),
@@ -132,16 +135,16 @@ ode_setup = {
         "coeff_true": [
             {"x'": 1},
             {"sin(1 x)": -9.81},
-        ]
+        ],
     },
     "lorenz_xy": {
         "rhsfunc": ps.utils.lorenz,
         "input_features": ["x", "y"],
         "coeff_true": [
             {"x": -10, "y": 10},
-            {"y": 28, "y": -1},
-        ]
-    }
+            {"x": 28, "y": -1},
+        ],
+    },
 }
 
 
@@ -181,19 +184,19 @@ def run(
 
     sim_ind = -1
     trial_data: TrialData = {
-                "dt": dt,
-                "coeff_true": coeff_true,
-                "coeff_fit": coefficients,
-                "feature_names": feature_names,
-                "input_features": input_features,
-                "t_train": t_train,
-                "x_true": x_train_true[sim_ind],
-                "x_train": x_train[sim_ind],
-                "smooth_train": model.differentiation_method.smoothed_x_,
-                "x_test": x_test[sim_ind],
-                "x_dot_test": x_dot_test[sim_ind],
-                "model": model,
-            }
+        "dt": dt,
+        "coeff_true": coeff_true,
+        "coeff_fit": coefficients,
+        "feature_names": feature_names,
+        "input_features": input_features,
+        "t_train": t_train,
+        "x_true": x_train_true[sim_ind],
+        "x_train": x_train[sim_ind],
+        "smooth_train": model.differentiation_method.smoothed_x_,
+        "x_test": x_test[sim_ind],
+        "x_dot_test": x_dot_test[sim_ind],
+        "model": model,
+    }
     if display:
         trial_data: FullTrialData = trial_data | simulate_test_data(
             trial_data["model"], trial_data["dt"], trial_data["x_test"]
@@ -203,15 +206,15 @@ def run(
     metrics = coeff_metrics(coefficients, coeff_true)
     metrics.update(integration_metrics(model, x_test, t_train, x_dot_test))
     if return_all:
-        return (
-            metrics, trial_data
-        )
+        return (metrics, trial_data)
     return metrics
 
 
 def plot_ode_panel(trial_data: FullTrialData):
     trial_data["model"].print()
-    plot_training_data(trial_data["x_train"], trial_data["x_true"], trial_data["smooth_train"])
+    plot_training_data(
+        trial_data["x_train"], trial_data["x_true"], trial_data["smooth_train"]
+    )
     compare_coefficient_plots(
         trial_data["coeff_fit"],
         trial_data["coeff_true"],
@@ -219,6 +222,9 @@ def plot_ode_panel(trial_data: FullTrialData):
         feature_names=trial_data["feature_names"],
     )
     plot_test_trajectories(
-        trial_data["x_test"], trial_data["x_sim"], trial_data["t_test"], trial_data["t_sim"]
+        trial_data["x_test"],
+        trial_data["x_sim"],
+        trial_data["t_test"],
+        trial_data["t_sim"],
     )
     plt.show()

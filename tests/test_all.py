@@ -1,8 +1,7 @@
 import numpy as np
 import pytest
 
-from gen_experiments import gridsearch
-from gen_experiments import utils
+from gen_experiments import gridsearch, utils
 
 
 def test_thin_indexing():
@@ -56,14 +55,16 @@ def test_curr_skinny_specs():
 
 
 def test_marginalize_grid_views():
-    arr = np.arange(16, dtype=np.float_).reshape(2, 2, 2, 2) # (metrics, param1, param2, param3)
-    arr[0,0,0,0] = 1000
-    arr[-1,-1,-1,0] = -1000
-    arr[0,0,0,1] = np.nan
+    arr = np.arange(16, dtype=np.float_).reshape(
+        2, 2, 2, 2
+    )  # (metrics, param1, param2, param3)
+    arr[0, 0, 0, 0] = 1000
+    arr[-1, -1, -1, 0] = -1000
+    arr[0, 0, 0, 1] = np.nan
     grid_decisions = ["plot", "max", "plot"]
     opts = ["max", "min"]
     res_val, res_ind = gridsearch._marginalize_grid_views(grid_decisions, arr, opts)
-    assert len(res_val) == len([dec for dec in grid_decisions if dec =="plot"])
+    assert len(res_val) == len([dec for dec in grid_decisions if dec == "plot"])
     expected_val = [
         np.array([[1000, 7], [8, -1000]]),
         np.array([[1000, 7], [-1000, 9]]),
@@ -74,18 +75,18 @@ def test_marginalize_grid_views():
     ts = "i,i,i,i"
     expected_ind = [
         np.array([[(0, 0, 0, 0), (0, 1, 1, 1)], [(1, 0, 0, 0), (1, 1, 1, 0)]], ts),
-        np.array([[(0, 0, 0, 0), (0, 1, 1, 1)], [(1, 1, 1, 0), (1, 0, 0, 1)]], ts)
+        np.array([[(0, 0, 0, 0), (0, 1, 1, 1)], [(1, 1, 1, 0), (1, 0, 0, 1)]], ts),
     ]
     for result, expected in zip(res_ind, expected_ind):
         np.testing.assert_array_equal(result, expected)
 
+
 def test_argopt_tuple_axis():
     arr = np.arange(16).reshape(2, 2, 2, 2)
-    arr[0,0,0,0] = 1000
+    arr[0, 0, 0, 0] = 1000
     result = utils._argopt(arr, (1, 3))
     expected = np.array(
-        [[(0, 0, 0, 0), (0, 1, 1, 1)], [(1, 1, 0, 1), (1, 1, 1, 1)]],
-        dtype="i,i,i,i"
+        [[(0, 0, 0, 0), (0, 1, 1, 1)], [(1, 1, 0, 1), (1, 1, 1, 1)]], dtype="i,i,i,i"
     )
     np.testing.assert_array_equal(result, expected)
 
@@ -93,20 +94,15 @@ def test_argopt_tuple_axis():
 def test_argopt_empty_tuple_axis():
     arr = np.arange(4).reshape(4)
     result = utils._argopt(arr, ())
-    expected = np.array(
-        [(0,), (1,), (2,), (3,)],
-        dtype=[("f0", "i")]
-    )
+    expected = np.array([(0,), (1,), (2,), (3,)], dtype=[("f0", "i")])
     np.testing.assert_array_equal(result, expected)
 
 
 def test_argopt_int_axis():
     arr = np.arange(8).reshape(2, 2, 2)
-    arr[0,0,0] = 1000
+    arr[0, 0, 0] = 1000
     result = utils._argopt(arr, 1)
-    expected = np.array(
-        [[(0, 0, 0), (0, 1, 1)], [(1, 1, 0), (1, 1, 1)]], dtype="i,i,i"
-    )
+    expected = np.array([[(0, 0, 0), (0, 1, 1)], [(1, 1, 0), (1, 1, 1)]], dtype="i,i,i")
     np.testing.assert_array_equal(result, expected)
 
 
@@ -141,10 +137,19 @@ def test_grid_locator_match():
     # also note first index is stripped ind_spec
     good_specs = [
         (({"sim_params.t_end": 10},), ((1, 0, 1),)),
-        (({"sim_params.t_end": 10},), ((1, 0, 1),(1, 0, ...))),
+        (({"sim_params.t_end": 10},), ((1, 0, 1), (1, 0, ...))),
         (({"sim_params.t_end": 10}, {"foo": 1}), ((1, 0, 1),)),
         (({"sim_params.t_end": 10}, {"bar: 1"}), ((1, 0, 1),)),
-        (({"sim_params.t_end": 10},), ((1, 0, 1),(1, 1,))),
+        (
+            ({"sim_params.t_end": 10},),
+            (
+                (1, 0, 1),
+                (
+                    1,
+                    1,
+                ),
+            ),
+        ),
     ]
     for param_spec, ind_spec in good_specs:
         assert utils._grid_locator_match(m_params, m_ind, param_spec, ind_spec)
@@ -154,13 +159,14 @@ def test_grid_locator_match():
         (({"sim_params.t_end": 10},), ()),
         (({"sim_params.t_end": 9},), ((1, 0, 1),)),
         (({"sim_params.t_end": 10},), ((1, 0, 0),)),
-        ((), ())
+        ((), ()),
     ]
     for param_spec, ind_spec in bad_specs:
         assert not utils._grid_locator_match(m_params, m_ind, param_spec, ind_spec)
 
+
 def test_amax_to_full_inds():
-    amax_inds = ((1,1), (slice(None), 0))
+    amax_inds = ((1, 1), (slice(None), 0))
     arr = np.array([[(0, 0), (0, 1)], [(1, 0), (1, 1)]], dtype="i,i")
     amax_arrays = [[arr, arr], [arr]]
     result = gridsearch._amax_to_full_inds(amax_inds, amax_arrays)

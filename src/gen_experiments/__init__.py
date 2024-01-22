@@ -1,53 +1,68 @@
 import importlib
 from collections import defaultdict
-from warnings import warn
+from collections.abc import Mapping
+from typing import Any
 
 import numpy as np
+from numpy.typing import NDArray
+from pysindy import BaseDifferentiation, FiniteDifference, SINDy  # type: ignore
 
-from mitosis import Parameter
-
-from . import odes
-from . import pdes
-from . import gridsearch
-from . import config
+from . import gridsearch, odes, pdes
+from .utils import TrialData
 
 this_module = importlib.import_module(__name__)
+BORING_ARRAY = np.ones((2, 2))
+
+Scores = Mapping[str, float]
+
+
+class FakeModel(SINDy):
+    differentiation_method: BaseDifferentiation
+
+    def __init__(self) -> None:
+        self.differentiation_method = FiniteDifference()
+        self.differentiation_method.smoothed_x_ = np.ones((1, 2))
+
+    def print(self, *args: Any, **kwargs: Any) -> None:
+        print("fake model")
+
+    def simulate(self, *args: Any, **kwargs: Any) -> NDArray[np.float64]:
+        return BORING_ARRAY
 
 
 class NoExperiment:
-    metric_ordering = defaultdict(lambda: "max")
+    metric_ordering: dict[str, str] = defaultdict(lambda: "max")
     name = "No Experiment"
     lookup_dict = {"arg": {"foo": 1}}
+
     @staticmethod
-    def run(*args, return_all=True, **kwargs):
-        boring_array = np.ones((2, 2))
-        metrics = {"main": 1, **defaultdict(lambda: 1)}
+    def run(
+        *args: Any, return_all: bool = True, **kwargs: Any
+    ) -> Scores | tuple[Scores, TrialData]:
+        metrics = defaultdict(
+            lambda: 1,
+            main=1,
+        )
         if return_all:
+            trial_data: TrialData = {
+                "dt": 1,
+                "coeff_true": BORING_ARRAY[:1],
+                "coeff_fit": BORING_ARRAY[:1],
+                # "coefficients": boring_array,
+                "feature_names": ["1"],
+                "input_features": ["x", "y"],
+                "t_train": np.arange(0, 1, 1),
+                "x_train": BORING_ARRAY,
+                "x_true": BORING_ARRAY,
+                "smooth_train": BORING_ARRAY,
+                "x_test": BORING_ARRAY,
+                "x_dot_test": BORING_ARRAY,
+                # "x_train_true": [boring_array],
+                "model": FakeModel(),
+            }
             return (
                 metrics,
-                {
-                    "dt": 1,
-                    "coeff_true": boring_array,
-                    "coefficients": boring_array,
-                    "feature_names": ["1"],
-                    "input_features": ["x", "y"],
-                    "t_train": np.arange(0, 1, 1),
-                    "x_train": [boring_array],
-                    "x_test": [boring_array],
-                    "x_dot_test": [boring_array],
-                    "x_train_true": [boring_array],
-                    "model": type(
-                        "FakeModel",
-                        (),
-                        {
-                            "print": lambda self: print("fake model"),
-                            "simulate": lambda self, x0, ts: boring_array,
-                            "differentiation_method": type(
-                                "FakeDiff", (), {"smoothed_x_": np.ones((1, 2))}
-                            )(),
-                        },
-                    )(),
-                },
+                trial_data,
             )
         return metrics
 
@@ -69,36 +84,3 @@ experiments = {
     "ks": (pdes, "ks"),
     "none": (NoExperiment, None),
 }
-ex_name = type("identidict", (), {"__getitem__": lambda self, key: key})()
-
-
-def lookup_params(params: list[str], config_dict: dict=None) -> list[Parameter]:
-    def create_parameter(choice):
-        try:
-            vals = choice.vals
-            modules = choice.modules
-        except AttributeError:
-            vals = choice
-            modules = []
-        return vals, modules
-    def lookup(arg_name, variant_name):
-        if config_dict:
-            try:
-                return config_dict[arg_name][variant_name]
-            except KeyError:
-                pass
-                warn(
-                    f"Could not locate [{arg_name}][{variant_name}] in config_dict",
-                    stacklevel=2
-                )
-        else:
-            warn("No configuration dictionary passed.", DeprecationWarning)
-        return vars(config)[arg_name][variant_name]
-
-    resolved_params = []
-    for param in params:
-        arg_name, variant_name = param.split("=")
-        vals, modules = create_parameter(lookup(arg_name, variant_name))
-        resolved_params.append(Parameter(variant_name, arg_name, vals, modules))
-
-    return resolved_params

@@ -40,11 +40,15 @@ dependencies = [
   "coverage",
   "isort",
   "pre-commit",
-  "sphinx",
   "codecov",
   "seaborn",
   "sqlalchemy<2.0",
   "tomli",
+]
+
+[project.optional-dependencies]
+dev = [
+  "mypy",
 ]
 
 [project.urls]
@@ -86,3 +90,6 @@ filterwarnings = [
   "ignore::UserWarning",]
 addopts = '-m "not slow"'
 markers = ["slow"]
+
+[tool.mypy]
+files = ["src/gen_experiments/__init__.py"]
