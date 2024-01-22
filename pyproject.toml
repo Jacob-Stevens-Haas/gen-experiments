@@ -40,11 +40,15 @@ dependencies = [
   "coverage",
   "isort",
   "pre-commit",
-  "sphinx",
   "codecov",
   "seaborn",
   "sqlalchemy<2.0",
   "tomli",
+]
+
+[project.optional-dependencies]
+dev = [
+  "mypy",
 ]
 
 [project.urls]
