@@ -36,7 +36,7 @@ jobs:
         pip install .[dev]
     - name: run mypy
       run: |
-        mypy -v --config-file pyproject.toml
+        mypy -v
 
 
   Tests:
