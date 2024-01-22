@@ -1,5 +1,7 @@
 from copy import copy
+from functools import partial
 from logging import getLogger
+from pprint import pformat
 from typing import Annotated, Callable, Iterable, Optional, Sequence, TypeVar
 
 import matplotlib.pyplot as plt
@@ -25,7 +27,8 @@ from gen_experiments.utils import (
     simulate_test_data,
 )
 
-logger = getLogger()
+pformat = partial(pformat, indent=4, sort_dicts=True)
+logger = getLogger(__name__)
 name = "gridsearch"
 lookup_dict = vars(config)
 
@@ -130,9 +133,10 @@ def run(
         )
         for int_data in intermediate_data:
             logger.debug(
-                f"Checking whether to save/plot {int_data['params']}, at location"
-                f" {int_data['pind']} against spec: {plot_prefs.grid_params_match}"
-                f" with allowed locations {full_m_inds}"
+                f"Checking whether to save/plot :\n{pformat(int_data['params'])}\n"
+                f"\tat location {pformat(int_data['pind'])}\n"
+                f"\tagainst spec: {pformat(plot_prefs.grid_params_match)}\n"
+                f"\twith allowed locations {pformat(full_m_inds)}"
             )
             if _grid_locator_match(
                 int_data["params"],
@@ -145,6 +149,7 @@ def run(
                 grid_data |= simulate_test_data(
                     grid_data["model"], grid_data["dt"], grid_data["x_test"]
                 )
+                logger.info("Found match, simulating and plotting")
                 plot_ode_panel(grid_data)
                 plot_data.append(int_data)
         if plot_prefs.rel_noise:
