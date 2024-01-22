@@ -102,12 +102,10 @@ def run(
     time_args = pde_setup[group]["time_args"]
     dimension = pde_setup[group]["rhsfunc"]["dimension"]
     coeff_true = pde_setup[group]["coeff_true"]
-    spatial_grid = pde_setup[group]["spatial_grid"]
     try:
         time_args = pde_setup[group]["time_args"]
     except KeyError:
         time_args = [0.01, 10]
-    nonnegative = False
     dt, t_train, x_train, x_test, x_dot_test, x_train_true = gen_pde_data(
         rhsfunc,
         initial_condition,
