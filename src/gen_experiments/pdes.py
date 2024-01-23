@@ -1,4 +1,3 @@
-import matplotlib.pyplot as plt
 import numpy as np
 from pysindy.differentiation import SpectralDerivative
 
@@ -14,7 +13,6 @@ from .utils import (
     integration_metrics,
     unionize_coeff_matrices,
     _make_model,
-    plot_test_trajectories,
     simulate_test_data
 )
 
@@ -170,7 +168,6 @@ pde_setup = {
 
 def run(
     seed: float,
-    /,
     group: str,
     diff_params: dict,
     feat_params: dict,
