@@ -32,7 +32,9 @@ metric_ordering = {
 }
 
 
-def nonlinear_pendulum(t, x, m=1, L=1, g=9.81, forcing=0, return_all=True):
+def nonlinear_pendulum(
+    t, x, m=1, L=1, g=9.81, forcing=0, return_all=True
+):  # type:ignore
     """Simple pendulum equation of motion
 
     Arguments:

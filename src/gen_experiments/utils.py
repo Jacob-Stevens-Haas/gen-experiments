@@ -6,6 +6,7 @@ from pathlib import Path
 from types import EllipsisType as ellipsis
 from typing import (
     Annotated,
+    Any,
     Callable,
     Collection,
     Literal,
@@ -26,9 +27,9 @@ import pysindy as ps
 import scipy
 import seaborn as sns
 import sklearn
+from matplotlib.axes._axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.gridspec import GridSpec, GridSpecFromSubplotSpec, SubplotSpec
-from matplotlib.pyplot import Axes
 from numpy.typing import DTypeLike, NDArray
 
 INTEGRATOR_KEYWORDS = {"rtol": 1e-12, "method": "LSODA", "atol": 1e-12}
@@ -491,8 +492,8 @@ def integration_metrics(model, x_test, t_train, x_dot_test):
 
 
 def unionize_coeff_matrices(
-    model: ps.SINDy, coeff_true: list[dict]
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    model: ps.SINDy, coeff_true: list[dict[str, float]]
+) -> tuple[NDArray[np.float64], NDArray[np.float64], list[str]]:
     """Reformat true coefficients and coefficient matrix compatibly
 
     In order to calculate accuracy metrics between true and estimated
@@ -1275,9 +1276,9 @@ def _index_in(base: tuple[int, ...], tgt: tuple[int | ellipsis | slice, ...]) ->
 
 
 def _grid_locator_match(
-    exp_params: dict,
+    exp_params: dict[str, Any],
     exp_ind: tuple[int, ...],
-    param_spec: Collection[dict],
+    param_spec: Collection[dict[str, Any]],
     ind_spec: Collection[tuple[int, ...]],
 ) -> bool:
     """Determine whether experimental parameters match a specification
