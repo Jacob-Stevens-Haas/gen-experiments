@@ -1318,6 +1318,36 @@ def _grid_locator_match(
     return found_match
 
 
+def _strict_find_grid_match(
+    results: GridsearchResultDetails,
+    *,
+    params: Optional[dict[str, Any]] = None,
+    ind_spec: Optional[tuple[int | slice, int] | ellipsis] = None,
+) -> TrialData:
+    if params is None:
+        params = {}
+    if ind_spec is None:
+        ind_spec = ...
+    matches = []
+    amax_arrays = [
+        [single_ser_and_axis[1] for single_ser_and_axis in single_series_all_axes]
+        for _, single_series_all_axes in results["series_data"].items()
+    ]
+    full_inds = _amax_to_full_inds((ind_spec,), amax_arrays)
+
+    for trajectory in results["plot_data"]:
+        if _grid_locator_match(
+            trajectory["params"], trajectory["pind"], (params,), full_inds
+        ):
+            matches.append(trajectory)
+
+    if len(matches) > 1:
+        raise ValueError("Specification is nonunique; matched multiple results")
+    if len(matches) == 0:
+        raise ValueError("Could not find a match")
+    return matches[0]["data"]
+
+
 _EqTester = TypeVar("_EqTester")
 
 
