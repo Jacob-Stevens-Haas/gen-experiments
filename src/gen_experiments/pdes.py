@@ -1,20 +1,34 @@
 import numpy as np
 from pysindy.differentiation import SpectralDerivative
 
+from . import config
 from .utils import (
+    FullTrialData,
+    TrialData,
     _make_model,
     coeff_metrics,
     compare_coefficient_plots,
     gen_pde_data,
     integration_metrics,
     plot_pde_training_data,
+    simulate_test_data,
     unionize_coeff_matrices,
 )
 
 name = "pdes"
+lookup_dict = vars(config)
+metric_ordering = {
+    "coeff_precision": "max",
+    "coeff_f1": "max",
+    "coeff_recall": "max",
+    "coeff_mae": "min",
+    "coeff_mse": "min",
+    "mse_plot": "min",
+    "mae_plot": "min",
+}
 
 
-def diffuse1D(t, u, dx, nx):
+def diffuse1D_dirichlet(t, u, dx, nx):
     u = np.reshape(u, nx)
     u[0] = 0
     u[-1] = 0
@@ -22,7 +36,13 @@ def diffuse1D(t, u, dx, nx):
     return np.reshape(uxx, nx)
 
 
-def burgers1D(t, u, dx, nx):
+def diffuse1D_periodic(t, u, dx, nx):
+    u = np.reshape(u, nx)
+    uxx = SpectralDerivative(d=2, axis=0)._differentiate(u, dx)
+    return np.reshape(uxx, nx)
+
+
+def burgers1D_dirichlet(t, u, dx, nx):
     u = np.reshape(u, nx)
     u[0] = 0
     u[-1] = 0
@@ -31,10 +51,25 @@ def burgers1D(t, u, dx, nx):
     return np.reshape((uxx - u * ux), nx)
 
 
-def ks(t, u, dx, nx):
+def burgers1D_periodic(t, u, dx, nx):
+    u = np.reshape(u, nx)
+    uxx = SpectralDerivative(d=2, axis=0)._differentiate(u, dx)
+    ux = SpectralDerivative(d=1, axis=0)._differentiate(u, dx)
+    return np.reshape((uxx - u * ux), nx)
+
+
+def ks_dirichlet(t, u, dx, nx):
     u = np.reshape(u, nx)
     u[0] = 0
     u[-1] = 0
+    ux = SpectralDerivative(d=1, axis=0)._differentiate(u, dx)
+    uxx = SpectralDerivative(d=2, axis=0)._differentiate(u, dx)
+    uxxxx = SpectralDerivative(d=4, axis=0)._differentiate(u, dx)
+    return np.reshape(-uxx - uxxxx - u * ux, nx)
+
+
+def ks_periodic(t, u, dx, nx):
+    u = np.reshape(u, nx)
     ux = SpectralDerivative(d=1, axis=0)._differentiate(u, dx)
     uxx = SpectralDerivative(d=2, axis=0)._differentiate(u, dx)
     uxxxx = SpectralDerivative(d=4, axis=0)._differentiate(u, dx)
@@ -51,8 +86,8 @@ def kdv(t, u, dx, nx):
 
 
 pde_setup = {
-    "diffuse1D": {
-        "rhsfunc": {"func": diffuse1D, "dimension": 1},
+    "diffuse1D_dirichlet": {
+        "rhsfunc": {"func": diffuse1D_dirichlet, "dimension": 1},
         "input_features": ["u"],
         "initial_condition": 10 * np.exp(-((np.arange(0, 10, 0.1) - 5) ** 2) / 2),
         "spatial_args": [0.1, 100],
@@ -60,8 +95,17 @@ pde_setup = {
         "coeff_true": [{"u_11": 1}],
         "spatial_grid": np.arange(0, 10, 0.1),
     },
-    "burgers1D": {
-        "rhsfunc": {"func": burgers1D, "dimension": 1},
+    "diffuse1D_periodic": {
+        "rhsfunc": {"func": diffuse1D_periodic, "dimension": 1},
+        "input_features": ["u"],
+        "initial_condition": np.exp(-((np.arange(0, 10, 0.1) - 5) ** 2) / 2),
+        "spatial_args": [0.1, 100],
+        "time_args": [0.1, 10],
+        "coeff_true": [{"u_11": 1}],
+        "spatial_grid": np.arange(0, 10, 0.1),
+    },
+    "burgers1D_dirichlet": {
+        "rhsfunc": {"func": burgers1D_dirichlet, "dimension": 1},
         "input_features": ["u"],
         "initial_condition": 10 * np.exp(-((np.arange(0, 10, 0.1) - 5) ** 2) / 2),
         "spatial_args": [0.1, 100],
@@ -69,11 +113,33 @@ pde_setup = {
         "coeff_true": [{"u_11": 1, "uu_1": 1}],
         "spatial_grid": np.arange(0, 10, 0.1),
     },
-    "ks": {
-        "rhsfunc": {"func": ks, "dimension": 1},
+    "burgers1D_periodic": {
+        "rhsfunc": {"func": burgers1D_periodic, "dimension": 1},
+        "input_features": ["u"],
+        "initial_condition": np.exp(-((np.arange(0, 10, 0.1) - 5) ** 2) / 2),
+        "spatial_args": [0.1, 100],
+        "time_args": [0.1, 10],
+        "coeff_true": [{"u_11": 1, "uu_1": -1}],
+        "spatial_grid": np.arange(0, 10, 0.1),
+    },
+    "ks_dirichlet": {
+        "rhsfunc": {"func": ks_dirichlet, "dimension": 1},
         "input_features": ["u"],
         "initial_condition": np.cos(np.arange(0, 10, 0.1)) * (
             1 + np.sin(np.arange(0, 10, 0.1))
+        ),
+        "spatial_args": [0.1, 100],
+        "time_args": [0.1, 10],
+        "coeff_true": [
+            {"u_11": -1, "u_1111": -1, "uu_1": -1},
+        ],
+        "spatial_grid": np.arange(0, 10, 0.1),
+    },
+    "ks_periodic": {
+        "rhsfunc": {"func": ks_periodic, "dimension": 1},
+        "input_features": ["u"],
+        "initial_condition": (np.cos(np.arange(0, 10, 0.1))) * (
+            1 + np.sin(np.arange(0, 10, 0.1) - 0.5)
         ),
         "spatial_args": [0.1, 100],
         "time_args": [0.1, 10],
@@ -87,14 +153,13 @@ pde_setup = {
 
 def run(
     seed: float,
-    /,
     group: str,
     diff_params: dict,
     feat_params: dict,
     opt_params: dict,
     display: bool = True,
     return_all: bool = False,
-) -> dict:
+) -> dict | tuple[dict, TrialData | FullTrialData]:
     rhsfunc = pde_setup[group]["rhsfunc"]["func"]
     input_features = pde_setup[group]["input_features"]
     initial_condition = pde_setup[group]["initial_condition"]
@@ -121,31 +186,38 @@ def run(
     model.fit(x_train, t=t_train)
     coeff_true, coefficients, feature_names = unionize_coeff_matrices(model, coeff_true)
 
-    # make the plots
+    sim_ind = -1
+    trial_data: TrialData = {
+        "dt": dt,
+        "coeff_true": coeff_true,
+        "coeff_fit": coefficients,
+        "feature_names": feature_names,
+        "input_features": input_features,
+        "t_train": t_train,
+        "x_true": x_train_true,
+        "x_train": x_train[sim_ind],
+        "smooth_train": model.differentiation_method.smoothed_x_,
+        "x_test": x_test[sim_ind],
+        "x_dot_test": x_dot_test[sim_ind],
+        "model": model,
+    }
     if display:
-        model.print()
-        compare_coefficient_plots(
-            coefficients,
-            coeff_true,
-            input_features=input_features,
-            feature_names=feature_names,
+        trial_data: FullTrialData = trial_data | simulate_test_data(
+            trial_data["model"], trial_data["dt"], trial_data["x_test"]
         )
-        smoothed_last_train = model.differentiation_method.smoothed_x_
-        plot_pde_training_data(x_train[-1], x_train_true, smoothed_last_train)
+        trial_data["model"].print()
+        plot_pde_training_data(
+            trial_data["x_train"], trial_data["x_true"], trial_data["smooth_train"]
+        )
+        compare_coefficient_plots(
+            trial_data["coeff_fit"],
+            trial_data["coeff_true"],
+            input_features=trial_data["input_features"],
+            feature_names=trial_data["feature_names"],
+        )
 
-    # calculate metrics
     metrics = coeff_metrics(coefficients, coeff_true)
     metrics.update(integration_metrics(model, x_test, t_train, x_dot_test))
     if return_all:
-        return (
-            metrics,
-            {
-                "t_train": t_train,
-                "x_train": x_train,
-                "x_test": x_test,
-                "x_dot_test": x_dot_test,
-                "x_train_true": x_train_true,
-                "model": model,
-            },
-        )
+        return (metrics, trial_data)
     return metrics
