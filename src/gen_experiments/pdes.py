@@ -153,6 +153,7 @@ def run(
 ) -> dict | tuple[dict, TrialData | FullTrialData]:
     rhsfunc = pde_setup[group]["rhsfunc"]["func"]
     input_features = pde_setup[group]["input_features"]
+    initial_condition = sim_params["init_cond"]
     spatial_args = pde_setup[group]["spatial_args"]
     time_args = pde_setup[group]["time_args"]
     dimension = pde_setup[group]["rhsfunc"]["dimension"]
@@ -163,7 +164,7 @@ def run(
         time_args = [0.01, 10]
     dt, t_train, x_train, x_test, x_dot_test, x_train_true = gen_pde_data(
         rhsfunc,
-        sim_params["init_cond"],
+        initial_condition,
         spatial_args,
         dimension,
         seed,
