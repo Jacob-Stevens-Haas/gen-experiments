@@ -89,7 +89,6 @@ pde_setup = {
     "diffuse1D_dirichlet": {
         "rhsfunc": {"func": diffuse1D_dirichlet, "dimension": 1},
         "input_features": ["u"],
-        "initial_condition": 10 * np.exp(-((np.arange(0, 10, 0.1) - 5) ** 2) / 2),
         "spatial_args": [0.1, 100],
         "time_args": [0.1, 10],
         "coeff_true": [{"u_11": 1}],
@@ -98,7 +97,6 @@ pde_setup = {
     "diffuse1D_periodic": {
         "rhsfunc": {"func": diffuse1D_periodic, "dimension": 1},
         "input_features": ["u"],
-        "initial_condition": np.exp(-((np.arange(0, 10, 0.1) - 5) ** 2) / 2),
         "spatial_args": [0.1, 100],
         "time_args": [0.1, 10],
         "coeff_true": [{"u_11": 1}],
@@ -107,7 +105,6 @@ pde_setup = {
     "burgers1D_dirichlet": {
         "rhsfunc": {"func": burgers1D_dirichlet, "dimension": 1},
         "input_features": ["u"],
-        "initial_condition": 10 * np.exp(-((np.arange(0, 10, 0.1) - 5) ** 2) / 2),
         "spatial_args": [0.1, 100],
         "time_args": [0.1, 10],
         "coeff_true": [{"u_11": 1, "uu_1": 1}],
@@ -116,7 +113,6 @@ pde_setup = {
     "burgers1D_periodic": {
         "rhsfunc": {"func": burgers1D_periodic, "dimension": 1},
         "input_features": ["u"],
-        "initial_condition": np.exp(-((np.arange(0, 10, 0.1) - 5) ** 2) / 2),
         "spatial_args": [0.1, 100],
         "time_args": [0.1, 10],
         "coeff_true": [{"u_11": 1, "uu_1": -1}],
@@ -125,9 +121,6 @@ pde_setup = {
     "ks_dirichlet": {
         "rhsfunc": {"func": ks_dirichlet, "dimension": 1},
         "input_features": ["u"],
-        "initial_condition": np.cos(np.arange(0, 10, 0.1)) * (
-            1 + np.sin(np.arange(0, 10, 0.1))
-        ),
         "spatial_args": [0.1, 100],
         "time_args": [0.1, 10],
         "coeff_true": [
@@ -138,9 +131,6 @@ pde_setup = {
     "ks_periodic": {
         "rhsfunc": {"func": ks_periodic, "dimension": 1},
         "input_features": ["u"],
-        "initial_condition": (np.cos(np.arange(0, 10, 0.1))) * (
-            1 + np.sin(np.arange(0, 10, 0.1) - 0.5)
-        ),
         "spatial_args": [0.1, 100],
         "time_args": [0.1, 10],
         "coeff_true": [
@@ -154,6 +144,7 @@ pde_setup = {
 def run(
     seed: float,
     group: str,
+    sim_params: dict,
     diff_params: dict,
     feat_params: dict,
     opt_params: dict,
@@ -162,7 +153,6 @@ def run(
 ) -> dict | tuple[dict, TrialData | FullTrialData]:
     rhsfunc = pde_setup[group]["rhsfunc"]["func"]
     input_features = pde_setup[group]["input_features"]
-    initial_condition = pde_setup[group]["initial_condition"]
     spatial_args = pde_setup[group]["spatial_args"]
     time_args = pde_setup[group]["time_args"]
     dimension = pde_setup[group]["rhsfunc"]["dimension"]
@@ -173,7 +163,7 @@ def run(
         time_args = [0.01, 10]
     dt, t_train, x_train, x_test, x_dot_test, x_train_true = gen_pde_data(
         rhsfunc,
-        initial_condition,
+        sim_params["init_cond"],
         spatial_args,
         dimension,
         seed,
