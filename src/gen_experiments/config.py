@@ -131,8 +131,7 @@ sim_params = {
     "med-noise-many": ND({"n_trajectories": 10, "noise_abs": 0.8}),
     "hi-noise": ND({"n_trajectories": 2, "noise_abs": 2}),
     "pde-ic1": ND({"init_cond": np.exp(-((np.arange(0, 10, 0.1) - 5) ** 2) / 2)}),
-    "pde-ic2": ND({"init_cond": np.exp(-((np.arange(0, 10, 0.1) - 5) ** 2) / 2)}),
-    "pde-ic3": ND({
+    "pde-ic2": ND({
         "init_cond": (np.cos(np.arange(0, 10, 0.1))) * (
             1 + np.sin(np.arange(0, 10, 0.1) - 0.5)
         )
