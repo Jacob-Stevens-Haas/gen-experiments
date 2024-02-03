@@ -130,7 +130,7 @@ sim_params = {
     "med-noise": ND({"n_trajectories": 2, "noise_abs": 0.8}),
     "med-noise-many": ND({"n_trajectories": 10, "noise_abs": 0.8}),
     "hi-noise": ND({"n_trajectories": 2, "noise_abs": 2}),
-    "pde-ic1": ND({"init_cond": np.exp(-((np.linspace(-8, 8, 256) - 5) ** 2) / 2)}),
+    "pde-ic1": ND({"init_cond": np.exp(-((np.linspace(-8, 8, 256) + 2) ** 2) / 2)}),
     "pde-ic2": ND({
         "init_cond": (np.cos(np.linspace(0, 100, 1024))) * (
             1 + np.sin(np.linspace(0, 100, 1024) - 0.5)
@@ -213,6 +213,18 @@ other_params = {
         "sim_params": sim_params["test"],
         "diff_params": diff_params["test"],
         "feat_params": feat_params["test"],
+        "opt_params": opt_params["test"],
+    }),
+    "test-pde1": ND({
+        "sim_params": sim_params["pde-ic1"],
+        "diff_params": diff_params["test_axis"],
+        "feat_params": feat_params["pde2"],
+        "opt_params": opt_params["test_low"],
+    }),
+    "test-pde2": ND({
+        "sim_params": sim_params["pde-ic2"],
+        "diff_params": diff_params["test_axis"],
+        "feat_params": feat_params["pde4"],
         "opt_params": opt_params["test"],
     }),
     "tv1": ND({
