@@ -196,7 +196,11 @@ def run(
         )
         trial_data["model"].print()
         plot_pde_training_data(
-            trial_data["x_train"], trial_data["x_true"], trial_data["smooth_train"]
+            spatial_grid,
+            trial_data["t_train"],
+            trial_data["x_train"],
+            trial_data["x_true"],
+            trial_data["smooth_train"],
         )
         compare_coefficient_plots(
             trial_data["coeff_fit"],

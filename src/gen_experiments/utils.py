@@ -649,18 +649,20 @@ def plot_training_data(x_train: np.ndarray, x_true: np.ndarray, x_smooth: np.nda
     return fig
 
 
-def plot_pde_training_data(last_train, last_train_true, smoothed_last_train):
+def plot_pde_training_data(
+    spatial_grid, t_train, last_train, last_train_true, smoothed_last_train
+):
     """Plot training data (and smoothed training data, if different)."""
     # 1D:
     if len(last_train.shape) == 3:
+        y = np.linspace(spatial_grid[0], spatial_grid[-1], len(spatial_grid) + 1)
+        x = np.linspace(t_train[0], t_train[-1], len(t_train) + 1)
         fig, axs = plt.subplots(1, 3, figsize=(18, 6))
-        axs[0].imshow(last_train_true, vmin=0, vmax=last_train_true.max())
+        axs[0].pcolormesh(x, y, last_train_true[:, :, 0])
         axs[0].set(title="True Data")
-        axs[1].imshow(last_train_true - last_train, vmin=0, vmax=last_train_true.max())
+        axs[1].pcolormesh(x, y, last_train_true[:, :, 0] - last_train[:, :, 0])
         axs[1].set(title="Noise")
-        axs[2].imshow(
-            last_train_true - smoothed_last_train, vmin=0, vmax=last_train_true.max()
-        )
+        axs[2].pcolormesh(x, y, smoothed_last_train[:, :, 0])
         axs[2].set(title="Smoothed Data")
         return plt.show()
 
