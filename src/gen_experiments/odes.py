@@ -5,16 +5,18 @@ import numpy as np
 import pysindy as ps
 
 from . import config
+from .data import gen_data
+from .plotting import (
+    compare_coefficient_plots,
+    plot_test_trajectories,
+    plot_training_data,
+)
 from .utils import (
     FullTrialData,
     TrialData,
     _make_model,
     coeff_metrics,
-    compare_coefficient_plots,
-    gen_data,
     integration_metrics,
-    plot_test_trajectories,
-    plot_training_data,
     simulate_test_data,
     unionize_coeff_matrices,
 )

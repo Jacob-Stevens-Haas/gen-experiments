@@ -12,6 +12,7 @@ from scipy.stats import kstest
 import gen_experiments
 from gen_experiments import config
 from gen_experiments.odes import plot_ode_panel
+from gen_experiments.plotting import _PlotPrefs
 from gen_experiments.utils import (
     GridsearchResult,
     GridsearchResultDetails,
@@ -23,7 +24,6 @@ from gen_experiments.utils import (
     _amax_to_full_inds,
     _argopt,
     _grid_locator_match,
-    _PlotPrefs,
     simulate_test_data,
 )
 
