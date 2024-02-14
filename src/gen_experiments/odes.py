@@ -222,8 +222,8 @@ def plot_ode_panel(trial_data: FullTrialData):
     compare_coefficient_plots(
         trial_data["coeff_fit"],
         trial_data["coeff_true"],
-        input_features=trial_data["input_features"],
-        feature_names=trial_data["feature_names"],
+        input_features=[_texify(feat) for feat in trial_data["input_features"]],
+        feature_names=[_texify(feat) for feat in trial_data["feature_names"]],
     )
     plot_test_trajectories(
         trial_data["x_test"],
@@ -232,3 +232,11 @@ def plot_ode_panel(trial_data: FullTrialData):
         trial_data["t_sim"],
     )
     plt.show()
+
+
+def _texify(input: str) -> str:
+    if input[0] != "$":
+        input = "$" + input
+    if input[-1] != "$":
+        input = input + "$"
+    return input
