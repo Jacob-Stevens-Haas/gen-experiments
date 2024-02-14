@@ -2,15 +2,14 @@ import numpy as np
 from pysindy.differentiation import SpectralDerivative
 
 from . import config
+from .data import gen_pde_data
+from .plotting import compare_coefficient_plots, plot_pde_training_data
 from .utils import (
     FullTrialData,
     TrialData,
     _make_model,
     coeff_metrics,
-    compare_coefficient_plots,
-    gen_pde_data,
     integration_metrics,
-    plot_pde_training_data,
     simulate_test_data,
     unionize_coeff_matrices,
 )

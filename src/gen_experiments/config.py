@@ -3,14 +3,9 @@ from typing import TypeVar
 import numpy as np
 import pysindy as ps
 
-from gen_experiments.utils import (
-    FullTrialData,
-    NestedDict,
-    SeriesDef,
-    SeriesList,
-    _PlotPrefs,
-    _signal_avg_power,
-)
+from gen_experiments.data import _signal_avg_power
+from gen_experiments.plotting import _PlotPrefs
+from gen_experiments.utils import FullTrialData, NestedDict, SeriesDef, SeriesList
 
 T = TypeVar("T")
 U = TypeVar("U")
