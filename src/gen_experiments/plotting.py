@@ -44,10 +44,17 @@ def plot_coefficients(
     ax: bool = None,
     **heatmap_kws,
 ):
+    def detex(input: str) -> str:
+        if input[0] == "$":
+            input = input[1:]
+        if input[-1] == "$":
+            input = input[:-1]
+        return input
+
     if input_features is None:
         input_features = [r"$\dot x_" + f"{k}$" for k in range(coefficients.shape[0])]
     else:
-        input_features = [r"$\dot " + f"{fi}$" for fi in input_features]
+        input_features = [r"$\dot " + f"{detex(fi)}$" for fi in input_features]
 
     if feature_names is None:
         feature_names = [f"f{k}" for k in range(coefficients.shape[1])]
