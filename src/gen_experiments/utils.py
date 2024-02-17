@@ -1,4 +1,5 @@
 from collections import defaultdict
+from collections.abc import Iterable
 from dataclasses import dataclass
 from itertools import chain
 from types import EllipsisType as ellipsis
@@ -450,7 +451,7 @@ def _amax_to_full_inds(
     """
 
     def np_to_primitive(tuple_like: np.void) -> tuple[int, ...]:
-        return tuple(int(el) for el in tuple_like)
+        return tuple(int(el) for el in cast(Iterable, tuple_like))
 
     if amax_inds is ...:  # grab each element from arrays in list of lists of arrays
         return {
@@ -478,7 +479,7 @@ def _amax_to_full_inds(
 
 def _argopt(
     arr: FloatND, axis: Optional[int | tuple[int, ...]] = None, opt: str = "max"
-) -> NDArray[tuple[int, ...]]:
+) -> NDArray[np.void]:
     """Calculate the argmax/min, but accept tuple axis.
 
     Ignores NaN values
@@ -494,6 +495,8 @@ def _argopt(
         tuples of length m
     """
     dtype: DTypeLike = [(f"f{axind}", "i") for axind in range(arr.ndim)]
+    if axis is None:
+        axis = ()
     axis = (axis,) if isinstance(axis, int) else axis
     keep_axes = tuple(sorted(set(range(arr.ndim)) - set(axis)))
     keep_shape = tuple(arr.shape[ax] for ax in keep_axes)

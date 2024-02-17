@@ -96,6 +96,8 @@ def test_argopt_empty_tuple_axis():
     result = utils._argopt(arr, ())
     expected = np.array([(0,), (1,), (2,), (3,)], dtype=[("f0", "i")])
     np.testing.assert_array_equal(result, expected)
+    result = utils._argopt(arr, None)
+    pass
 
 
 def test_argopt_int_axis():
