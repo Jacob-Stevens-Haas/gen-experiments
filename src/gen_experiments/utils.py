@@ -2,7 +2,16 @@ from collections import defaultdict
 from dataclasses import dataclass
 from itertools import chain
 from types import EllipsisType as ellipsis
-from typing import Annotated, Any, Collection, Optional, Sequence, TypedDict, TypeVar
+from typing import (
+    Annotated,
+    Any,
+    Collection,
+    Optional,
+    Sequence,
+    TypedDict,
+    TypeVar,
+    cast,
+)
 from warnings import warn
 
 import auto_ks as aks
@@ -10,16 +19,23 @@ import kalman
 import numpy as np
 import pysindy as ps
 import sklearn
-from numpy.typing import DTypeLike, NDArray
+import sklearn.metrics
+from numpy.typing import DTypeLike, NBitBase, NDArray
+
+NpFlt = np.dtype[np.floating[NBitBase]]
+Float1D = np.ndarray[tuple[int], NpFlt]
+Float2D = np.ndarray[tuple[int, int], NpFlt]
+Shape = TypeVar("Shape", bound=tuple[int, ...])
+FloatND = np.ndarray[Shape, np.dtype[np.floating[NBitBase]]]
 
 
-class TrialData(TypedDict):
+class SINDyTrialData(TypedDict):
     dt: float
-    coeff_true: Annotated[np.ndarray, "(n_coord, n_features)"]
-    coeff_fit: Annotated[np.ndarray, "(n_coord, n_features)"]
+    coeff_true: Annotated[Float2D, "(n_coord, n_features)"]
+    coeff_fit: Annotated[Float2D, "(n_coord, n_features)"]
     feature_names: Annotated[list[str], "length=n_features"]
     input_features: Annotated[list[str], "length=n_coord"]
-    t_train: np.ndarray
+    t_train: Float1D
     x_train: np.ndarray
     x_true: np.ndarray
     smooth_train: np.ndarray
@@ -28,20 +44,25 @@ class TrialData(TypedDict):
     model: ps.SINDy
 
 
-class FullTrialData(TrialData):
-    t_sim: np.ndarray
+class SINDyTrialUpdate(TypedDict):
+    t_sim: Float1D
+    t_test: Float1D
+    x_sim: FloatND
+
+
+class FullSINDyTrialData(SINDyTrialData):
+    t_sim: Float1D
     x_sim: np.ndarray
 
 
 class SavedData(TypedDict):
     params: dict
     pind: tuple[int]
-    data: TrialData | FullTrialData
+    data: SINDyTrialData | FullSINDyTrialData
 
 
 T = TypeVar("T", bound=np.generic)
 GridsearchResult = Annotated[NDArray[T], "(n_metrics, n_plot_axis)"]  # type: ignore
-
 SeriesData = Annotated[
     list[
         tuple[
@@ -215,28 +236,28 @@ def _make_model(
     return ps.SINDy(
         differentiation_method=diff,
         optimizer=opt,
-        t_default=dt,
+        t_default=dt,  # type: ignore
         feature_library=features,
         feature_names=input_features,
     )
 
 
-def simulate_test_data(model: ps.SINDy, dt: float, x_test: np.ndarray) -> TrialData:
+def simulate_test_data(model: ps.SINDy, dt: float, x_test: Float2D) -> SINDyTrialUpdate:
     """Add simulation data to grid_data
 
     This includes the t_sim and x_sim keys.  Does not mutate argument.
     Returns:
         Complete GridPointData
     """
-    t_test = np.arange(len(x_test) * dt, step=dt)
+    t_test = cast(Float1D, np.arange(0, len(x_test) * dt, step=dt))
     t_sim = t_test
     try:
-        x_sim = model.simulate(x_test[0], t_test)
+        x_sim = cast(Float2D, model.simulate(x_test[0], t_test))
     except ValueError:
         warn(message="Simulation blew up; returning zeros")
         x_sim = np.zeros_like(x_test)
     # truncate if integration returns wrong number of points
-    t_sim = t_test[: len(x_sim)]
+    t_sim = cast(Float1D, t_test[: len(x_sim)])
     return {"t_sim": t_sim, "x_sim": x_sim, "t_test": t_test}
 
 
@@ -350,7 +371,7 @@ class NestedDict(defaultdict):
         else:
             return super().__setitem__(key, value)
 
-    def update(self, other: dict):
+    def update(self, other: dict):  # type: ignore
         try:
             for k, v in other.items():
                 self.__setitem__(k, v)
@@ -414,9 +435,20 @@ def kalman_generalized_cv(
 
 
 def _amax_to_full_inds(
-    amax_inds: Collection[tuple[int | slice, int] | ellipsis],
-    amax_arrays: list[list[GridsearchResult]],
+    amax_inds: Collection[tuple[int | slice, int] | ellipsis] | ellipsis,
+    amax_arrays: list[list[GridsearchResult[np.void]]],
 ) -> set[tuple[int, ...]]:
+    """Find full indexers to selected elements of argmax arrays
+
+    Args:
+        amax_inds: selection statemtent of which argmaxes to return.
+        amax_arrays: arrays of indexes to full gridsearch that are responsible for
+            the computed max values.  First level of nesting reflects series(?), second
+            level reflects which grid grid axis.
+    Returns:
+        all indexers to full gridsearch that are requested by amax_inds
+    """
+
     def np_to_primitive(tuple_like: np.void) -> tuple[int, ...]:
         return tuple(int(el) for el in tuple_like)
 
@@ -438,15 +470,15 @@ def _amax_to_full_inds(
                     for el in arr.flatten()
                 }
             elif isinstance(ind[0], int):
-                all_inds |= {np_to_primitive(plot_axis_results[ind])}
+                all_inds |= {np_to_primitive(cast(np.void, plot_axis_results[ind]))}
             else:  # ind[0] is slice(None)
                 all_inds |= {np_to_primitive(el) for el in plot_axis_results[ind]}
     return all_inds
 
 
 def _argopt(
-    arr: np.ndarray, axis: int | tuple[int, ...] = None, opt: str = "max"
-) -> np.ndarray[tuple[int, ...]]:
+    arr: FloatND, axis: Optional[int | tuple[int, ...]] = None, opt: str = "max"
+) -> NDArray[tuple[int, ...]]:
     """Calculate the argmax/min, but accept tuple axis.
 
     Ignores NaN values
@@ -554,7 +586,7 @@ def strict_find_grid_match(
     *,
     params: Optional[dict[str, Any]] = None,
     ind_spec: Optional[tuple[int | slice, int] | ellipsis] = None,
-) -> TrialData:
+) -> SINDyTrialData:
     if params is None:
         params = {}
     if ind_spec is None:

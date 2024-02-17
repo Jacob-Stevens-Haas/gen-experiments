@@ -20,7 +20,7 @@ from gen_experiments.utils import (
     SavedData,
     SeriesDef,
     SeriesList,
-    TrialData,
+    SINDyTrialData,
     _amax_to_full_inds,
     _argopt,
     _grid_locator_match,
@@ -115,7 +115,7 @@ def run(
             curr_results, grid_data = base_ex.run(
                 new_seed, **curr_other_params, display=False, return_all=True
             )
-            grid_data: TrialData
+            grid_data: SINDyTrialData
             intermediate_data.append(
                 {"params": curr_other_params.flatten(), "pind": ind, "data": grid_data}
             )

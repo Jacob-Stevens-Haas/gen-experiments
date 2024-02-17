@@ -12,8 +12,8 @@ from .plotting import (
     plot_training_data,
 )
 from .utils import (
-    FullTrialData,
-    TrialData,
+    FullSINDyTrialData,
+    SINDyTrialData,
     _make_model,
     coeff_metrics,
     integration_metrics,
@@ -161,7 +161,7 @@ def run(
     opt_params: dict,
     display: bool = True,
     return_all: bool = False,
-) -> dict | tuple[dict, TrialData | FullTrialData]:
+) -> dict | tuple[dict, SINDyTrialData | FullSINDyTrialData]:
     rhsfunc = ode_setup[group]["rhsfunc"]
     input_features = ode_setup[group]["input_features"]
     coeff_true = ode_setup[group]["coeff_true"]
@@ -187,7 +187,7 @@ def run(
     coeff_true, coefficients, feature_names = unionize_coeff_matrices(model, coeff_true)
 
     sim_ind = -1
-    trial_data: TrialData = {
+    trial_data: SINDyTrialData = {
         "dt": dt,
         "coeff_true": coeff_true,
         "coeff_fit": coefficients,
@@ -202,7 +202,7 @@ def run(
         "model": model,
     }
     if display:
-        trial_data: FullTrialData = trial_data | simulate_test_data(
+        trial_data: FullSINDyTrialData = trial_data | simulate_test_data(
             trial_data["model"], trial_data["dt"], trial_data["x_test"]
         )
         plot_ode_panel(trial_data)
@@ -214,7 +214,7 @@ def run(
     return metrics
 
 
-def plot_ode_panel(trial_data: FullTrialData):
+def plot_ode_panel(trial_data: FullSINDyTrialData):
     trial_data["model"].print()
     plot_training_data(
         trial_data["x_train"], trial_data["x_true"], trial_data["smooth_train"]

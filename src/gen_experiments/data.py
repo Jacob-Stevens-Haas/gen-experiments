@@ -218,7 +218,7 @@ def gen_pde_data(
     return dt, t_train, x_train, x_test, x_dot_test, x_train_true
 
 
-def _max_amplitude(signal: np.ndarray):
+def _max_amplitude(signal: np.ndarray) -> float:
     return np.abs(scipy.fft.rfft(signal, axis=0)[1:]).max() / np.sqrt(len(signal))
 
 

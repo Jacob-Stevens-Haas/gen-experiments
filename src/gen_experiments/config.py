@@ -5,7 +5,7 @@ import pysindy as ps
 
 from gen_experiments.data import _signal_avg_power
 from gen_experiments.plotting import _PlotPrefs
-from gen_experiments.utils import FullTrialData, NestedDict, SeriesDef, SeriesList
+from gen_experiments.utils import FullSINDyTrialData, NestedDict, SeriesDef, SeriesList
 
 T = TypeVar("T")
 U = TypeVar("U")
@@ -16,7 +16,7 @@ def ND(d: dict[T, U]) -> NestedDict[T, U]:
 
 
 def _convert_abs_rel_noise(
-    grid_vals: list, grid_params: list, recent_results: FullTrialData
+    grid_vals: list, grid_params: list, recent_results: FullSINDyTrialData
 ):
     """Convert abs_noise grid_vals to rel_noise"""
     signal = np.stack(recent_results["x_true"], axis=-1)

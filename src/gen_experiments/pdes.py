@@ -5,8 +5,8 @@ from . import config
 from .data import gen_pde_data
 from .plotting import compare_coefficient_plots, plot_pde_training_data
 from .utils import (
-    FullTrialData,
-    TrialData,
+    FullSINDyTrialData,
+    SINDyTrialData,
     _make_model,
     coeff_metrics,
     integration_metrics,
@@ -149,7 +149,7 @@ def run(
     opt_params: dict,
     display: bool = True,
     return_all: bool = False,
-) -> dict | tuple[dict, TrialData | FullTrialData]:
+) -> dict | tuple[dict, SINDyTrialData | FullSINDyTrialData]:
     rhsfunc = pde_setup[group]["rhsfunc"]["func"]
     input_features = pde_setup[group]["input_features"]
     initial_condition = sim_params["init_cond"]
@@ -177,7 +177,7 @@ def run(
     coeff_true, coefficients, feature_names = unionize_coeff_matrices(model, coeff_true)
 
     sim_ind = -1
-    trial_data: TrialData = {
+    trial_data: SINDyTrialData = {
         "dt": dt,
         "coeff_true": coeff_true,
         "coeff_fit": coefficients,
@@ -192,7 +192,7 @@ def run(
         "model": model,
     }
     if display:
-        trial_data: FullTrialData = trial_data | simulate_test_data(
+        trial_data: FullSINDyTrialData = trial_data | simulate_test_data(
             trial_data["model"], trial_data["dt"], trial_data["x_test"]
         )
         trial_data["model"].print()
