@@ -63,12 +63,12 @@ class SavedData(TypedDict):
 
 
 T = TypeVar("T", bound=np.generic)
-GridsearchResult = Annotated[NDArray[T], "(n_metrics, n_plot_axis)"]  # type: ignore
+GridsearchResult = Annotated[NDArray[T], "(n_metrics, n_plot_axis)"]
 SeriesData = Annotated[
     list[
         tuple[
             Annotated[GridsearchResult, "metrics"],
-            Annotated[GridsearchResult, "arg_opts"],
+            Annotated[GridsearchResult[np.void], "arg_opts"],
         ]
     ],
     "len=n_grid_axes",

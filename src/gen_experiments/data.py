@@ -1,31 +1,31 @@
 from math import ceil
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Optional, cast
 from warnings import warn
 
 import mitosis
 import numpy as np
 import scipy
 
-from gen_experiments.utils import GridsearchResultDetails
+from gen_experiments.utils import Float1D, Float2D, GridsearchResultDetails
 
 INTEGRATOR_KEYWORDS = {"rtol": 1e-12, "method": "LSODA", "atol": 1e-12}
 TRIALS_FOLDER = Path(__file__).parent.absolute() / "trials"
 
 
 def gen_data(
-    rhs_func,
-    n_coord,
-    seed=None,
-    n_trajectories=1,
-    x0_center=None,
-    ic_stdev=3,
-    noise_abs=None,
-    noise_rel=None,
-    nonnegative=False,
-    dt=0.01,
-    t_end=10,
-):
+    rhs_func: Callable,
+    n_coord: int,
+    seed: Optional[int] = None,
+    n_trajectories: int = 1,
+    x0_center: Optional[Float1D] = None,
+    ic_stdev: float = 3,
+    noise_abs: Optional[float] = None,
+    noise_rel: Optional[float] = None,
+    nonnegative: bool = False,
+    dt: float = 0.01,
+    t_end: float = 10,
+) -> tuple[float, Float1D, Float2D, Float2D, Float2D, Float2D]:
     """Generate random training and test data
 
     Note that test data has no noise.
@@ -57,7 +57,7 @@ def gen_data(
     rng = np.random.default_rng(seed)
     if x0_center is None:
         x0_center = np.zeros((n_coord))
-    t_train = np.arange(0, t_end, dt)
+    t_train = np.arange(0, t_end, dt, dtype=np.float_)
     t_train_span = (t_train[0], t_train[-1])
     if nonnegative:
         shape = ((x0_center + 1) / ic_stdev) ** 2
@@ -123,10 +123,11 @@ def gen_data(
     x_train_true = np.copy(x_train)
     if noise_rel is not None:
         noise_abs = np.sqrt(_signal_avg_power(x_test) * noise_rel)
-    x_train = x_train + noise_abs * rng.standard_normal(x_train.shape)
+    x_train = x_train + cast(float, noise_abs) * rng.standard_normal(x_train.shape)
     x_train = list(x_train)
     x_test = list(x_test)
     x_dot_test = list(x_dot_test)
+    x_train_true = list(x_train_true)
     return dt, t_train, x_train, x_test, x_dot_test, x_train_true
 
 
@@ -211,7 +212,7 @@ def gen_pde_data(
     x_train_true = np.copy(x_train)
     if noise_rel is not None:
         noise_abs = _max_amplitude(x_test) * noise_rel
-    x_train = x_train + noise_abs * rng.standard_normal(x_train.shape)
+    x_train = x_train + cast(float, noise_abs) * rng.standard_normal(x_train.shape)
     x_train = [np.moveaxis(x_train, 0, -2)]
     x_train_true = np.moveaxis(x_train_true, 0, -2)
     x_test = [np.moveaxis(x_test, [0, 1], [-1, -2])]

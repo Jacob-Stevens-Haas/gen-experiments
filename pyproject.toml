@@ -109,3 +109,7 @@ ignore_missing_imports=true
 [[tool.mypy.overrides]]
 module="kalman.*"
 ignore_missing_imports=true
+
+[[tool.mypy.overrides]]
+module="scipy.*"
+ignore_missing_imports=true
