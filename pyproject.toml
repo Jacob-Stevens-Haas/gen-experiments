@@ -92,4 +92,24 @@ addopts = '-m "not slow"'
 markers = ["slow"]
 
 [tool.mypy]
-files = ["src/gen_experiments/__init__.py"]
+files = ["src/gen_experiments/__init__.py", "src/gen_experiments/utils.py"]
+
+[[tool.mypy.overrides]]
+module="auto_ks.*"
+ignore_missing_imports=true
+
+[[tool.mypy.overrides]]
+module="sklearn.*"
+ignore_missing_imports=true
+
+[[tool.mypy.overrides]]
+module="pysindy.*"
+ignore_missing_imports=true
+
+[[tool.mypy.overrides]]
+module="kalman.*"
+ignore_missing_imports=true
+
+[[tool.mypy.overrides]]
+module="scipy.*"
+ignore_missing_imports=true
