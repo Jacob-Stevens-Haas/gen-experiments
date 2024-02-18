@@ -11,7 +11,7 @@ from . import gridsearch, odes, pdes
 from .utils import SINDyTrialData
 
 this_module = importlib.import_module(__name__)
-BORING_ARRAY = np.ones((2, 2))
+BORING_ARRAY = np.ones((2, 2), dtype=float)
 
 Scores = Mapping[str, float]
 
@@ -51,7 +51,7 @@ class NoExperiment:
                 # "coefficients": boring_array,
                 "feature_names": ["1"],
                 "input_features": ["x", "y"],
-                "t_train": np.arange(0, 1, 1),
+                "t_train": np.arange(0, 1, 1, dtype=float),
                 "x_train": BORING_ARRAY,
                 "x_true": BORING_ARRAY,
                 "smooth_train": BORING_ARRAY,
