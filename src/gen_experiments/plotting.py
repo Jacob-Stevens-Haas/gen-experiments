@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy
 import seaborn as sns
+from matplotlib.axes import Axes
 
 PAL = sns.color_palette("Set1")
 PLOT_KWS = {"alpha": 0.7, "linewidth": 3}
@@ -128,7 +129,7 @@ def compare_coefficient_plots(
 
 
 def plot_training_trajectory(
-    ax: plt.Axes,
+    ax: Axes,
     x_train: np.ndarray,
     x_true: np.ndarray,
     x_smooth: np.ndarray,
@@ -156,6 +157,8 @@ def plot_training_trajectory(
             )
         if labels:
             ax.set(xlabel="$x_0$", ylabel="$x_1$")
+        else:
+            ax.set(xticks=[], yticks=[])
     elif x_train.shape[1] == 3:
         ax.plot(
             x_true[:, 0],
@@ -187,6 +190,8 @@ def plot_training_trajectory(
             )
         if labels:
             ax.set(xlabel="$x$", ylabel="$y$", zlabel="$z$")
+        else:
+            ax.set(xticks=[], yticks=[], zticks=[])
     else:
         raise ValueError("Can only plot 2d or 3d data.")
 
@@ -226,7 +231,7 @@ def plot_pde_training_data(last_train, last_train_true, smoothed_last_train):
 
 
 def plot_test_sim_data_1d_panel(
-    axs: Sequence[plt.Axes],
+    axs: Sequence[Axes],
     x_test: np.ndarray,
     x_sim: np.ndarray,
     t_test: np.ndarray,
@@ -240,31 +245,33 @@ def plot_test_sim_data_1d_panel(
 
 
 def _plot_test_sim_data_2d(
-    axs: Annotated[Sequence[plt.Axes], "len=2"],
+    axs: Annotated[Sequence[Axes], "len=2"],
     x_test: np.ndarray,
     x_sim: np.ndarray,
     labels: bool = True,
 ) -> None:
     axs[0].plot(x_test[:, 0], x_test[:, 1], "k", label="True Trajectory")
-    if labels:
-        axs[0].set(xlabel="$x_0$", ylabel="$x_1$")
     axs[1].plot(x_sim[:, 0], x_sim[:, 1], "r--", label="Simulation")
-    if labels:
-        axs[1].set(xlabel="$x_0$", ylabel="$x_1$")
+    for ax in axs:
+        if labels:
+            ax.set(xlabel="$x_0$", ylabel="$x_1$")
+        else:
+            ax.set(xticks=[], yticks=[])
 
 
 def _plot_test_sim_data_3d(
-    axs: Annotated[Sequence[plt.Axes], "len=3"],
+    axs: Annotated[Sequence[Axes], "len=3"],
     x_test: np.ndarray,
     x_sim: np.ndarray,
     labels: bool = True,
 ) -> None:
     axs[0].plot(x_test[:, 0], x_test[:, 1], x_test[:, 2], "k", label="True Trajectory")
-    if labels:
-        axs[0].set(xlabel="$x_0$", ylabel="$x_1$", zlabel="$x_2$")
     axs[1].plot(x_sim[:, 0], x_sim[:, 1], x_sim[:, 2], "r--", label="Simulation")
-    if labels:
-        axs[1].set(xlabel="$x_0$", ylabel="$x_1$", zlabel="$x_2$")
+    for ax in axs:
+        if labels:
+            ax.set(xlabel="$x_0$", ylabel="$x_1$", zlabel="$x_2$")
+        else:
+            ax.set(xticks=[], yticks=[], zticks=[])
 
 
 def plot_test_trajectories(
