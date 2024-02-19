@@ -122,6 +122,8 @@ def opt_lookup(kind):
         return ps.SR3
     elif normalized_kind == "miosr":
         return ps.MIOSR
+    elif normalized_kind == "trap":
+        return ps.TrappingSR3
     elif normalized_kind == "ensemble":
         return ps.EnsembleOptimizer
     else:
@@ -207,7 +209,7 @@ def unionize_coeff_matrices(
     return true_coeff_mat, new_est_coeff, model_features
 
 
-def _make_model(
+def make_model(
     input_features: list[str],
     dt: float,
     diff_params: dict,
