@@ -56,7 +56,7 @@ def nonlinear_pendulum(t, x, m=1, L=1, g=9.81, forcing=0, return_all=True):
 
 
 p_duff = [0.2, 0.05, 1]
-p_lotka = [5, 1]
+p_lotka = [1, 10]
 p_ross = [0.2, 0.2, 5.7]
 p_hopf = [-0.05, 1, 1]
 
