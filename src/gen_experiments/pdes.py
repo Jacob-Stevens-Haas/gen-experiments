@@ -7,9 +7,9 @@ from .plotting import compare_coefficient_plots, plot_pde_training_data
 from .utils import (
     FullSINDyTrialData,
     SINDyTrialData,
-    _make_model,
     coeff_metrics,
     integration_metrics,
+    make_model,
     simulate_test_data,
     unionize_coeff_matrices,
 )
@@ -171,7 +171,7 @@ def run(
         dt=time_args[0],
         t_end=time_args[1],
     )
-    model = _make_model(input_features, dt, diff_params, feat_params, opt_params)
+    model = make_model(input_features, dt, diff_params, feat_params, opt_params)
 
     model.fit(x_train, t=t_train)
     coeff_true, coefficients, feature_names = unionize_coeff_matrices(model, coeff_true)
