@@ -1,4 +1,3 @@
-from functools import partial
 from typing import Callable
 
 import matplotlib.pyplot as plt
@@ -70,7 +69,7 @@ ode_setup = {
         ],
     },
     "lv": {
-        "rhsfunc": partial(ps.utils.odes.lotka, p=p_lotka),
+        "rhsfunc": ps.utils.odes.lotka,
         "input_features": ["x", "y"],
         "coeff_true": [
             {"x": p_lotka[0], "x y": -p_lotka[1]},
