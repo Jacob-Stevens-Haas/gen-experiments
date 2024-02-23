@@ -421,6 +421,16 @@ series_params = {
             diff_series["sg2"],
         ],
     ),
+    "multikalman": SeriesList(
+        "diff_params",
+        "Differentiation Method",
+        [
+            diff_series["auto-kalman3"],
+            diff_series["kalman2"],
+            diff_series["tv2"],
+            diff_series["sg2"],
+        ],
+    ),
 }
 
 
