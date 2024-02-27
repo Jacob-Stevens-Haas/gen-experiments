@@ -333,19 +333,19 @@ diff_series = {
         [np.logspace(-4, 0, 5)],
     ),
     "auto-kalman": SeriesDef(
-        "Kalman",
+        "Auto Kalman",
         diff_params["kalman"],
         ["diff_params.alpha", "diff_params.meas_var"],
         [(None,), (0.1, 0.5, 1, 2, 4, 8)],
     ),
     "auto-kalman2": SeriesDef(
-        "Kalman",
+        "Auto Kalman",
         diff_params["kalman"],
         ["diff_params.alpha", "diff_params.meas_var"],
         [(None,), (0.01, 0.25, 1, 4, 16, 64)],
     ),
     "auto-kalman3": SeriesDef(
-        "Kalman",
+        "Auto Kalman",
         diff_params["kalman"],
         ["diff_params.alpha"],
         [(None,)],
