@@ -346,7 +346,7 @@ diff_series = {
     ),
     "auto-kalman3": SeriesDef(
         "Auto Kalman",
-        diff_params["kalman"],
+        diff_params["kalman-auto"],
         ["diff_params.alpha"],
         [(None,)],
     ),
