@@ -4,16 +4,7 @@ from functools import partial
 from logging import getLogger
 from pprint import pformat
 from types import EllipsisType as ellipsis
-from typing import (
-    Annotated,
-    Any,
-    Callable,
-    Collection,
-    Optional,
-    Sequence,
-    TypeVar,
-    cast,
-)
+from typing import Annotated, Any, Collection, Optional, Sequence, TypeVar, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -33,18 +24,17 @@ from .typing import (
     GridsearchResult,
     GridsearchResultDetails,
     NestedDict,
+    OtherSliceDef,
     SavedGridPoint,
     SeriesDef,
     SeriesList,
+    SkinnySpecs,
 )
 
 pformat = partial(pformat, indent=4, sort_dicts=True)
 logger = getLogger(__name__)
 name = "gridsearch"
 lookup_dict = vars(config)
-
-OtherSliceDef = tuple[int | Callable]
-SkinnySpecs = Optional[tuple[tuple[str, ...], tuple[OtherSliceDef, ...]]]
 
 
 def _amax_to_full_inds(
@@ -149,10 +139,10 @@ def run(
     grid_vals: list[Sequence],
     grid_decisions: list[str],
     other_params: dict,
+    skinny_specs: SkinnySpecs,
     series_params: Optional[SeriesList] = None,
     metrics: Sequence[str] = (),
     plot_prefs: _PlotPrefs = _PlotPrefs(True, False, ()),
-    skinny_specs: SkinnySpecs = None,
 ) -> GridsearchResultDetails:
     """Run a grid-search wrapper of an experiment.
 
@@ -471,7 +461,7 @@ def _ndindex_skinny(
     full_indexes = np.ndindex(shape)
     thin_slices = cast(Sequence[OtherSliceDef], thin_slices)
 
-    def ind_checker(multi_index):
+    def ind_checker(multi_index: tuple[int, ...]) -> bool:
         """Check if a multi_index meets thin index criteria"""
         matches = []
         # check whether multi_index matches criteria of any thin_axis
@@ -484,7 +474,7 @@ def _ndindex_skinny(
                 if callable(slice_ind):
                     slice_ind = slice_ind(multi_index[ax1])
                 # would check: "== slice_ind", but must allow slice_ind = -1
-                match *= multi_index[ax2] == range(shape[ax2])[slice_ind]
+                match &= multi_index[ax2] == range(shape[ax2])[slice_ind]
             matches.append(match)
         return any(matches)
 

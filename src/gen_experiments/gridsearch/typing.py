@@ -2,10 +2,24 @@ from collections import defaultdict
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from types import EllipsisType as ellipsis
-from typing import Annotated, Any, Collection, Optional, Sequence, TypedDict, TypeVar
+from typing import (
+    Annotated,
+    Any,
+    Callable,
+    Collection,
+    Optional,
+    Sequence,
+    TypedDict,
+    TypeVar,
+)
 
 import numpy as np
 from numpy.typing import NDArray
+
+OtherSliceDef = tuple[(int | Callable[[int], int]), ...]
+"""For a particular index of one gridsearch axis, which indexes of other axes
+should be included."""
+SkinnySpecs = tuple[tuple[str, ...], tuple[OtherSliceDef, ...]]
 
 
 @dataclass(frozen=True)

@@ -1,10 +1,16 @@
+from collections.abc import Iterable
 from typing import TypeVar
 
 import numpy as np
 import pysindy as ps
 
 from gen_experiments.data import _signal_avg_power
-from gen_experiments.gridsearch.typing import NestedDict, SeriesDef, SeriesList
+from gen_experiments.gridsearch.typing import (
+    NestedDict,
+    SeriesDef,
+    SeriesList,
+    SkinnySpecs,
+)
 from gen_experiments.plotting import _PlotPrefs
 from gen_experiments.utils import FullSINDyTrialData
 
@@ -302,7 +308,7 @@ grid_params = {
     "duration-absnoise": ["sim_params.t_end", "sim_params.noise_abs"],
     "rel_noise": ["sim_params.t_end", "sim_params.noise_rel"],
 }
-grid_vals = {
+grid_vals: dict[str, list[Iterable]] = {
     "test": [[5, 10, 15, 20]],
     "abs_noise": [[0.1, 0.5, 1, 2, 4, 8]],
     "abs_noise-kalman": [[0.1, 0.5, 1, 2, 4, 8], [0.1, 0.5, 1, 2, 4, 8]],
@@ -320,7 +326,7 @@ grid_decisions = {
     "lorenzk": ["plot", "plot", "max"],
     "plot2": ["plot", "plot"],
 }
-diff_series = {
+diff_series: dict[str, SeriesDef] = {
     "kalman1": SeriesDef(
         "Kalman",
         diff_params["kalman"],
@@ -376,7 +382,7 @@ diff_series = {
         [[5, 8, 12, 15]],
     ),
 }
-series_params = {
+series_params: dict[str, SeriesList] = {
     "test": SeriesList(
         "diff_params",
         "Differentiation Method",
@@ -435,7 +441,7 @@ series_params = {
 }
 
 
-skinny_specs = {
+skinny_specs: dict[str, SkinnySpecs] = {
     "exp3": (
         ("sim_params.noise_abs", "diff_params.meas_var"),
         ((identity,), (identity,)),
