@@ -4,8 +4,9 @@ import numpy as np
 import pysindy as ps
 
 from gen_experiments.data import _signal_avg_power
+from gen_experiments.gridsearch.typing import NestedDict, SeriesDef, SeriesList
 from gen_experiments.plotting import _PlotPrefs
-from gen_experiments.utils import FullSINDyTrialData, NestedDict, SeriesDef, SeriesList
+from gen_experiments.utils import FullSINDyTrialData
 
 T = TypeVar("T")
 U = TypeVar("U")
