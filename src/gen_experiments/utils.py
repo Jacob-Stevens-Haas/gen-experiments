@@ -446,7 +446,7 @@ def _amax_to_full_inds(
     Args:
         amax_inds: selection statemtent of which argmaxes to return.
         amax_arrays: arrays of indexes to full gridsearch that are responsible for
-            the computed max values.  First level of nesting reflects series(?), second
+            the computed max values.  First level of nesting reflects series, second
             level reflects which grid grid axis.
     Returns:
         all indexers to full gridsearch that are requested by amax_inds

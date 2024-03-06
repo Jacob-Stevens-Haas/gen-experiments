@@ -1,8 +1,19 @@
 from copy import copy
+from dataclasses import dataclass, field
 from functools import partial
 from logging import getLogger
 from pprint import pformat
-from typing import Annotated, Callable, Iterable, Optional, Sequence, TypeVar
+from types import EllipsisType as ellipsis
+from typing import (
+    Annotated,
+    Any,
+    Callable,
+    Collection,
+    Iterable,
+    Optional,
+    Sequence,
+    TypeVar,
+)
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -36,6 +47,32 @@ OtherSliceDef = tuple[int | Callable]
 SkinnySpecs = Optional[tuple[tuple[str, ...], tuple[OtherSliceDef, ...]]]
 
 
+@dataclass(frozen=True)
+class GridLocator:
+    """A specification of which points in a gridsearch to match.
+
+    Rather than specifying the exact point in the mega-grid of every
+    varied axis, specify by result, e.g "all of the points from the
+    Kalman series that had the best mean squared error as noise was
+    varied.
+
+    Args:
+        metric: The metric in which to find results.  An ellipsis means "any metrics"
+        keep_axis: The grid-varied parameter in which to find results, or a tuple of
+            that axis and position along that axis.  To search a particular value of
+            that parameter, use the param_match kwarg.  An ellipsis means "any axis"
+        param_match: A collection of dictionaries to match parameter values represented
+            by points in the gridsearch.  Dictionary equality is checked for every
+            non-callable value; for callable values, it is applied to the grid
+            parameters and must return a boolean.  Logical OR is applied across the
+            collection
+    """
+
+    metric: str | ellipsis = field(default=...)
+    keep_axis: str | tuple[str, int] | ellipsis = field(default=...)
+    param_match: Collection[dict[str, Any]] = field(default=())
+
+
 def run(
     seed: int,
     group: str,
@@ -44,7 +81,7 @@ def run(
     grid_decisions: Sequence[str],
     other_params: dict,
     series_params: Optional[SeriesList] = None,
-    metrics: Optional[Sequence[str]] = None,
+    metrics: Sequence[str] = (),
     plot_prefs: _PlotPrefs = _PlotPrefs(True, False, ()),
     skinny_specs: SkinnySpecs = None,
 ) -> GridsearchResultDetails:
