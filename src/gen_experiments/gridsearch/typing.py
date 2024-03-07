@@ -44,7 +44,7 @@ class GridLocator:
     """
 
     metric: str | ellipsis = field(default=...)
-    keep_axis: str | tuple[str, int] | ellipsis = field(default=...)
+    keep_axis: tuple[str, int | ellipsis] | ellipsis = field(default=...)
     param_match: Collection[dict[str, Any]] = field(default=())
 
 
@@ -64,6 +64,14 @@ ExpResult = dict[str, Any]
 
 
 class SavedGridPoint(TypedDict):
+    """The results at a point in the gridsearch.
+
+    Args:
+        params: the full list of parameters identifying this variant
+        pind: the full index in the series' grid
+        data: the results of the experiment
+    """
+
     params: dict
     pind: tuple[int]
     data: ExpResult
@@ -73,10 +81,10 @@ class GridsearchResultDetails(TypedDict):
     system: str
     plot_data: list[SavedGridPoint]
     series_data: dict[str, SeriesData]
-    metrics: list[str]
+    metrics: tuple[str, ...]
     grid_params: list[str]
+    plot_params: list[str]
     grid_vals: list[Sequence]
-    grid_axes: dict[str, Collection[float]]
     main: float
 
 

@@ -21,6 +21,7 @@ from gen_experiments.utils import simulate_test_data
 
 from .typing import (
     ExpResult,
+    GridLocator,
     GridsearchResult,
     GridsearchResultDetails,
     NestedDict,
@@ -141,7 +142,7 @@ def run(
     other_params: dict,
     skinny_specs: SkinnySpecs,
     series_params: Optional[SeriesList] = None,
-    metrics: Sequence[str] = (),
+    metrics: tuple[str, ...] = (),
     plot_prefs: _PlotPrefs = _PlotPrefs(True, False, ()),
 ) -> GridsearchResultDetails:
     """Run a grid-search wrapper of an experiment.
@@ -209,7 +210,6 @@ def run(
             curr_results, grid_data = base_ex.run(
                 new_seed, **curr_other_params, display=False, return_all=True
             )
-            grid_data: ExpResult
             intermediate_data.append(
                 {"params": curr_other_params.flatten(), "pind": ind, "data": grid_data}
             )
@@ -290,6 +290,7 @@ def run(
         },
         "metrics": metrics,
         "grid_params": grid_params,
+        "plot_params": [decide for decide in grid_decisions if decide == "plot"],
         "grid_vals": grid_vals,
         "main": max(
             grid[main_metric_ind].max()
@@ -571,3 +572,51 @@ def _index_in(base: tuple[int, ...], tgt: tuple[int | ellipsis | slice, ...]) ->
     if curr_ax == len(base):
         return True
     return False
+
+
+def find_gridpoints(
+    find: GridLocator, where: GridsearchResultDetails
+) -> list[SavedGridPoint]:
+    """Find results wrapped by gridsearch that match criteria
+
+    Args:
+        find: the criteria
+        where: The overall results of the gridsearch
+
+    Returns:
+        A list of the wrapped results, representing points in the gridsearch.
+    """
+    results: list[SavedGridPoint] = []
+    partial_match: list[tuple[int, ...]] = []
+    if find.metric is ...:
+        metric_sl = slice(None)
+    else:
+        ind = where["metrics"].index(find.metric)
+        metric_sl = slice(ind, ind + 1)
+    if find.keep_axis is ...:
+        keep_axis_sl = slice(None)
+        keep_el_sl = slice(None)
+    else:
+        ind = where["plot_params"].index(find.keep_axis[0])
+        keep_axis_sl = slice(ind, ind + 1)
+        if find.keep_axis[1] is ...:
+            keep_el_sl = slice(None)
+        else:
+            ind = find.keep_axis[1]
+            keep_el_sl = slice(ind, ind + 1)
+    for ser in where["series_data"].values():
+        ser = ser[keep_axis_sl]
+        for _, amax_arr in ser:
+            amax_want = amax_arr[metric_sl, keep_el_sl].flatten()
+            partial_match.extend(amax_want)
+
+    params_or = {
+        k: _param_normalize(v) for params in find.param_match for k, v in params.items()
+    }
+    for point in where["plot_data"]:
+        if point["pind"] in partial_match and all(
+            _param_normalize(point["params"][param]) == value
+            for param, value in params_or.items()
+        ):
+            results.append(point)
+    return results

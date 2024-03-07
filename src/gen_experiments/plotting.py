@@ -30,7 +30,7 @@ class _PlotPrefs:
     plot: bool = True
     rel_noise: Literal[False] | Callable = False
     grid_params_match: Collection[dict[str, Any]] = field(default_factory=lambda: ())
-    grid_ind_match: Collection[tuple[str | slice, int]] | ellipsis = field(
+    grid_ind_match: Collection[tuple[int | slice, int]] | ellipsis = field(
         default_factory=lambda: ...
     )
 
