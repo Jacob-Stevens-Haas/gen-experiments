@@ -1,4 +1,5 @@
 import numpy as np
+import pysindy as ps
 import pytest
 
 from gen_experiments import gridsearch
@@ -140,20 +141,15 @@ def test_amax_to_full_inds():
     return result == expected
 
 
-def test_find_gridpoints():
-    exact_locator = gridsearch.GridLocator(
-        "mse", ("sim_params.t_end", ...), [{"diff_params.alpha": 0.1}]
-    )
-    callable_locator = gridsearch.GridLocator(
-        ..., ..., [{"diff_params.alpha": lambda x: x < 0.2}]
-    )
+@pytest.fixture
+def gridsearch_results():
     want: SavedGridPoint = {
-        "params": {"diff_params.alpha": 0.1},
+        "params": {"diff_params.alpha": 0.1, "opt_params": ps.STLSQ()},
         "pind": (1,),
         "data": {},
     }
     dont_want: SavedGridPoint = {
-        "params": {"diff_params.alpha": 0.2},
+        "params": {"diff_params.alpha": 0.2, "opt_params": ps.SSR()},
         "pind": (0,),
         "data": {},
     }
@@ -171,13 +167,31 @@ def test_find_gridpoints():
         "grid_vals": [[1, 2, 3], [4, 5, 6]],
         "main": 1,
     }
-    results = gridsearch.find_gridpoints(exact_locator, full_details)
-    for result in results:
-        assert result is want
+    return want, full_details
 
-    results = gridsearch.find_gridpoints(callable_locator, full_details)
+
+@pytest.mark.parametrize(
+    "locator",
+    (
+        gridsearch.GridLocator(
+            "mse", ("sim_params.t_end", ...), [{"diff_params.alpha": 0.1}]
+        ),
+        gridsearch.GridLocator(
+            "mse", ("sim_params.t_end", ...), [{"opt_params": ps.STLSQ()}]
+        ),
+        gridsearch.GridLocator(..., ..., [{"diff_params.alpha": lambda x: x < 0.2}]),
+        gridsearch.GridLocator(
+            ..., ..., [{"diff_params.alpha": 0.1}, {"diff_params.alpha": 0.3}]
+        ),
+    ),
+    ids=("exact", "object", "callable", "or"),
+)
+def test_find_gridpoints(gridsearch_results, locator):
+    want, full_details = gridsearch_results
+    results = gridsearch.find_gridpoints(locator, full_details)
     for result in results:
         assert result is want
+    assert want in results
 
 
 def test_grid_locator_match():

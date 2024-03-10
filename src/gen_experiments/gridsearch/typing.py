@@ -30,6 +30,8 @@ class GridLocator:
     Kalman series that had the best mean squared error as noise was
     varied.
 
+    Logical AND is applied across the metric, keep_axis, AND param_match specifications.
+
     Args:
         metric: The metric in which to find results.  An ellipsis means "any metrics"
         keep_axis: The grid-varied parameter in which to find results, or a tuple of
@@ -38,8 +40,9 @@ class GridLocator:
         param_match: A collection of dictionaries to match parameter values represented
             by points in the gridsearch.  Dictionary equality is checked for every
             non-callable value; for callable values, it is applied to the grid
-            parameters and must return a boolean.  Logical OR is applied across the
-            collection
+            parameters and must return a boolean.  For values whose equality is object
+            equality (often, mutable objects), the repr is used.  Logical OR is applied
+            across the collection.
     """
 
     metric: str | ellipsis = field(default=...)
