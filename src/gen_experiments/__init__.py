@@ -7,8 +7,7 @@ import numpy as np
 from numpy.typing import NDArray
 from pysindy import BaseDifferentiation, FiniteDifference, SINDy
 
-from . import gridsearch  # type: ignore
-from . import odes, pdes
+from . import gridsearch, odes, pdes
 from .utils import SINDyTrialData, make_model  # noqa: F401
 
 this_module = importlib.import_module(__name__)
