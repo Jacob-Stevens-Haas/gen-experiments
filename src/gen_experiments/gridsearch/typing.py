@@ -73,7 +73,7 @@ class SavedGridPoint(TypedDict):
     """
 
     params: dict
-    pind: tuple[int]
+    pind: tuple[int, ...]
     data: ExpResult
 
 

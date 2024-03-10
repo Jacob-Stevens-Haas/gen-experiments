@@ -3,6 +3,11 @@ import pytest
 
 import gen_experiments.gridsearch.typing
 from gen_experiments import gridsearch
+from gen_experiments.gridsearch.typing import (
+    GridsearchResultDetails,
+    SavedGridPoint,
+    SeriesData,
+)
 
 
 def test_thin_indexing():
@@ -170,6 +175,46 @@ def test_grid_locator_match():
         assert not gridsearch._grid_locator_match(m_params, m_ind, param_spec, ind_spec)
 
 
+def test_find_gridpoints():
+    exact_locator = gridsearch.GridLocator(
+        "mse", ("sim_params.t_end", ...), [{"diff_params.alpha": 0.1}]
+    )
+    callable_locator = gridsearch.GridLocator(
+        ..., ..., [{"diff_params.alpha": lambda x: x < 0.2}]
+    )
+    want: SavedGridPoint = {
+        "params": {"diff_params.alpha": 0.1},
+        "pind": (1,),
+        "data": {},
+    }
+    dont_want: SavedGridPoint = {
+        "params": {"diff_params.alpha": 0.2},
+        "pind": (0,),
+        "data": {},
+    }
+    max_amax: SeriesData = [
+        (np.ones((2, 2)), np.array([[(1,), (1,)], [(0,), (0,)]])),
+        (np.ones((2, 2)), np.array([[(0,), (0,)], [(0,), (0,)]])),
+    ]
+    full_details: GridsearchResultDetails = {
+        "system": "sho",
+        "plot_data": [want, dont_want],
+        "series_data": {"foo": max_amax},
+        "metrics": ("mse", "mae"),
+        "grid_params": ["sim_params.t_end", "sim_params.noise"],
+        "plot_params": ["sim_params.t_end", "sim_params.noise"],
+        "grid_vals": [[1, 2, 3], [4, 5, 6]],
+        "main": 1,
+    }
+    results = gridsearch.find_gridpoints(exact_locator, full_details)
+    for result in results:
+        assert result is want
+
+    results = gridsearch.find_gridpoints(callable_locator, full_details)
+    for result in results:
+        assert result is want
+
+
 def test_amax_to_full_inds():
     amax_inds = ((1, 1), (slice(None), 0))
     arr = np.array([[(0, 0), (0, 1)], [(1, 0), (1, 1)]], dtype="i,i")
@@ -183,10 +228,10 @@ def test_amax_to_full_inds():
 
 
 def test_flatten_nested_bad_dict():
+    nested = {1: gen_experiments.gridsearch.typing.NestedDict(b=1)}
+    # Testing the very thing that causes a typing error, thus ignoring
     with pytest.raises(TypeError, match="keywords must be strings"):
-        gen_experiments.gridsearch.typing.NestedDict(
-            **{1: gen_experiments.gridsearch.typing.NestedDict(b=1)}
-        )
+        gen_experiments.gridsearch.typing.NestedDict(**nested)  # type: ignore
     with pytest.raises(TypeError, match="Only string keys allowed"):
         deep = gen_experiments.gridsearch.typing.NestedDict(a={1: 1})
         deep.flatten()
