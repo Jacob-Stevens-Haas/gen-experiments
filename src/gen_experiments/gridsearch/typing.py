@@ -1,4 +1,3 @@
-from collections import defaultdict
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from types import EllipsisType as ellipsis
@@ -167,57 +166,3 @@ class SeriesList:
     param_name: Optional[str]
     print_name: Optional[str]
     series_list: list[SeriesDef]
-
-
-class NestedDict(defaultdict):
-    """A dictionary that splits all keys by ".", creating a sub-dict.
-
-    Args: see superclass
-
-    Example:
-
-        >>> foo = NestedDict("a.b"=1)
-        >>> foo["a.c"] = 2
-        >>> foo["a"]["b"]
-        1
-    """
-
-    def __missing__(self, key):
-        try:
-            prefix, subkey = key.split(".", 1)
-        except ValueError:
-            raise KeyError(key)
-        return self[prefix][subkey]
-
-    def __setitem__(self, key, value):
-        if "." in key:
-            prefix, suffix = key.split(".", 1)
-            if self.get(prefix) is None:
-                self[prefix] = NestedDict()
-            return self[prefix].__setitem__(suffix, value)
-        else:
-            return super().__setitem__(key, value)
-
-    def update(self, other: dict):  # type: ignore
-        try:
-            for k, v in other.items():
-                self.__setitem__(k, v)
-        except:  # noqa: E722
-            super().update(other)
-
-    def flatten(self):
-        """Flattens a nested dictionary without mutating.  Returns new dict"""
-
-        def _flatten(nested_d: dict) -> dict:
-            new = {}
-            for key, value in nested_d.items():
-                if not isinstance(key, str):
-                    raise TypeError("Only string keys allowed in flattening")
-                if not isinstance(value, dict):
-                    new[key] = value
-                    continue
-                for sub_key, sub_value in _flatten(value).items():
-                    new[key + "." + sub_key] = sub_value
-            return new
-
-        return _flatten(self)

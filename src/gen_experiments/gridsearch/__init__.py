@@ -16,7 +16,7 @@ import gen_experiments
 from gen_experiments import config
 from gen_experiments.odes import plot_ode_panel
 from gen_experiments.plotting import _PlotPrefs
-from gen_experiments.typing import FloatND
+from gen_experiments.typing import FloatND, NestedDict
 from gen_experiments.utils import simulate_test_data
 
 from .typing import (
@@ -24,7 +24,6 @@ from .typing import (
     GridLocator,
     GridsearchResult,
     GridsearchResultDetails,
-    NestedDict,
     OtherSliceDef,
     SavedGridPoint,
     SeriesDef,
