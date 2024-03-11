@@ -4,7 +4,16 @@ from functools import partial
 from logging import getLogger
 from pprint import pformat
 from types import EllipsisType as ellipsis
-from typing import Annotated, Any, Collection, Optional, Sequence, TypeVar, cast
+from typing import (
+    Annotated,
+    Any,
+    Callable,
+    Collection,
+    Optional,
+    Sequence,
+    TypeVar,
+    cast,
+)
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -83,6 +92,7 @@ _EqTester = TypeVar("_EqTester")
 
 
 def _param_normalize(val: _EqTester) -> _EqTester | str:
+    """Allow equality testing of mutable objects with useful reprs"""
     if type(val).__eq__ == object.__eq__:
         return repr(val)
     else:
@@ -603,22 +613,35 @@ def find_gridpoints(
         else:
             ind = find.keep_axis[1]
             keep_el_sl = slice(ind, ind + 1)
+
     for ser in where["series_data"].values():
         ser = ser[keep_axis_sl]
         for _, amax_arr in ser:
             amax_want = amax_arr[metric_sl, keep_el_sl].flatten()
             partial_match.extend(amax_want)
+    logger.debug(
+        f"Found {len(partial_match)} gridpoints that match metric-plot_axis criteria"
+    )
 
     params_or = tuple(
-        {k: _param_normalize(v) for k, v in params_match.items()}
+        {k: v if callable(v) else _param_normalize(v) for k, v in params_match.items()}
         for params_match in find.params_or
     )
+
+    def check_values(criteria: Any | Callable[..., bool], candidate: Any) -> bool:
+        if callable(criteria):
+            return criteria(candidate)
+        else:
+            return _param_normalize(candidate) == criteria
+
     for point in where["plot_data"]:
         for params_match in params_or:
             if all(
-                _param_normalize(point["params"][param]) == value
+                check_values(value, point["params"][param])
                 for param, value in params_match.items()
             ):
                 results.append(point)
                 break
+
+    logger.debug(f"found {len(results)} points that match all GridLocator criteria")
     return results
