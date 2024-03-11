@@ -189,9 +189,7 @@ def gridsearch_results():
 def test_find_gridpoints(gridsearch_results, locator):
     want, full_details = gridsearch_results
     results = gridsearch.find_gridpoints(locator, full_details)
-    for result in results:
-        assert result is want
-    assert want in results
+    assert [want] == results
 
 
 def test_grid_locator_match():

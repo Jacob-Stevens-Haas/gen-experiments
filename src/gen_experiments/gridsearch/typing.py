@@ -47,7 +47,7 @@ class GridLocator:
 
     metric: str | ellipsis = field(default=...)
     keep_axis: tuple[str, int | ellipsis] | ellipsis = field(default=...)
-    param_match: Collection[dict[str, Any]] = field(default=())
+    params_or: Collection[dict[str, Any]] = field(default=())
 
 
 T = TypeVar("T", bound=np.generic)

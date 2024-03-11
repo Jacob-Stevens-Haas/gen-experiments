@@ -609,13 +609,16 @@ def find_gridpoints(
             amax_want = amax_arr[metric_sl, keep_el_sl].flatten()
             partial_match.extend(amax_want)
 
-    params_or = {
-        k: _param_normalize(v) for params in find.param_match for k, v in params.items()
-    }
+    params_or = tuple(
+        {k: _param_normalize(v) for k, v in params_match.items()}
+        for params_match in find.params_or
+    )
     for point in where["plot_data"]:
-        if point["pind"] in partial_match and all(
-            _param_normalize(point["params"][param]) == value
-            for param, value in params_or.items()
-        ):
-            results.append(point)
+        for params_match in params_or:
+            if all(
+                _param_normalize(point["params"][param]) == value
+                for param, value in params_match.items()
+            ):
+                results.append(point)
+                break
     return results
