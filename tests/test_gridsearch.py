@@ -221,3 +221,16 @@ def test_grid_locator_match():
     ]
     for param_spec, ind_spec in bad_specs:
         assert not gridsearch._grid_locator_match(m_params, m_ind, param_spec, ind_spec)
+
+
+def test_gridsearch_mock():
+    results = gridsearch.run(
+        1,
+        "none",
+        grid_params=["foo"],
+        grid_vals=[[0, 1]],
+        grid_decisions=["plot"],
+        other_params={"bar": False},
+        metrics=("mse", "mae"),
+    )
+    assert len(results["plot_data"]) == 0
