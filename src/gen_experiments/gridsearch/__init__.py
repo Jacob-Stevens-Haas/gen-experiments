@@ -15,6 +15,7 @@ from typing import (
     Union,
     cast,
 )
+from warnings import warn
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -118,6 +119,7 @@ def _grid_locator_match(
         param_spec: the criteria for matching exp_params
         ind_spec: the criteria for matching exp_ind
     """
+    warn("Use find_gridpoints() instead", DeprecationWarning)
     found_match = False
     for params_or in param_spec:
         params_or = {k: _param_normalize(v) for k, v in params_or.items()}
@@ -147,10 +149,10 @@ def run(
     grid_vals: list[Sequence],
     grid_decisions: list[str],
     other_params: dict,
-    skinny_specs: SkinnySpecs,
+    skinny_specs: Optional[SkinnySpecs] = None,
     series_params: Optional[SeriesList] = None,
     metrics: tuple[str, ...] = (),
-    plot_prefs: _PlotPrefs = _PlotPrefs(True, False, ()),
+    plot_prefs: _PlotPrefs = _PlotPrefs(),
 ) -> GridsearchResultDetails:
     """Run a grid-search wrapper of an experiment.
 
@@ -228,31 +230,41 @@ def run(
         )
         series_searches.append((grid_optima, grid_ind))
 
-    if plot_prefs:
-        full_m_inds = _amax_to_full_inds(
-            plot_prefs.grid_ind_match, [s[1] for s in series_searches]
-        )
-        for int_data in intermediate_data:
-            logger.debug(
-                f"Checking whether to save/plot :\n{pformat(int_data['params'])}\n"
-                f"\tat location {pformat(int_data['pind'])}\n"
-                f"\tagainst spec: {pformat(plot_prefs.grid_params_match)}\n"
-                f"\twith allowed locations {pformat(full_m_inds)}"
+    main_metric_ind = metrics.index("main") if "main" in metrics else 0
+    results: GridsearchResultDetails = {
+        "system": group,
+        "plot_data": [],
+        "series_data": {
+            name: data
+            for data, name in zip(
+                [list(zip(metrics, argopts)) for metrics, argopts in series_searches],
+                [ser.name for ser in series_params.series_list],
             )
-            if _grid_locator_match(
-                int_data["params"],
-                int_data["pind"],
-                plot_prefs.grid_params_match,
-                full_m_inds,
-            ) and int_data["params"] not in [saved["params"] for saved in plot_data]:
-                grid_data = int_data["data"]
-                print("Results for params: ", int_data["params"], flush=True)
-                grid_data |= simulate_test_data(
-                    grid_data["model"], grid_data["dt"], grid_data["x_test"]
-                )
-                logger.info("Found match, simulating and plotting")
-                plot_ode_panel(grid_data)
-                plot_data.append(int_data)
+        },
+        "metrics": metrics,
+        "grid_params": grid_params,
+        "plot_params": [
+            param
+            for decide, param in zip(grid_decisions, grid_params)
+            if decide == "plot"
+        ],
+        "grid_vals": grid_vals,
+        "main": max(
+            grid[main_metric_ind].max()
+            for metrics, _ in series_searches
+            for grid in metrics
+        ),
+    }
+    if plot_prefs:
+        plot_data = find_gridpoints(plot_prefs.plot_match, intermediate_data, results)
+        results["plot_data"] = plot_data
+        for gridpoint in plot_data:
+            grid_data = gridpoint["data"]
+            logger.info(f"Plotting: {gridpoint['params']}")
+            grid_data |= simulate_test_data(
+                grid_data["model"], grid_data["dt"], grid_data["x_test"]
+            )
+            plot_ode_panel(grid_data)  # type: ignore
         if plot_prefs.rel_noise:
             grid_vals, grid_params = plot_prefs.rel_noise(
                 grid_vals, grid_params, grid_data
@@ -284,27 +296,7 @@ def run(
         fig.suptitle(title)
         fig.tight_layout()
 
-    main_metric_ind = metrics.index("main") if "main" in metrics else 0
-    return {
-        "system": group,
-        "plot_data": plot_data,
-        "series_data": {
-            name: data
-            for data, name in zip(
-                [list(zip(metrics, argopts)) for metrics, argopts in series_searches],
-                [ser.name for ser in series_params.series_list],
-            )
-        },
-        "metrics": metrics,
-        "grid_params": grid_params,
-        "plot_params": [decide for decide in grid_decisions if decide == "plot"],
-        "grid_vals": grid_vals,
-        "main": max(
-            grid[main_metric_ind].max()
-            for metrics, _ in series_searches
-            for grid in metrics
-        ),
-    }
+    return results
 
 
 def plot(
@@ -582,29 +574,31 @@ def _index_in(base: tuple[int, ...], tgt: tuple[int | ellipsis | slice, ...]) ->
 
 
 def find_gridpoints(
-    find: GridLocator, where: GridsearchResultDetails
+    find: GridLocator, where: list[SavedGridPoint], context: GridsearchResultDetails
 ) -> list[SavedGridPoint]:
     """Find results wrapped by gridsearch that match criteria
 
     Args:
         find: the criteria
-        where: The overall results of the gridsearch
+        where: The list of saved gridpoints to search
+        context: The overall data for the gridsearch, describing metrics, grid
+            setup, and gridsearch results
 
     Returns:
-        A list of the wrapped results, representing points in the gridsearch.
+        A list of the matching points in the gridsearch.
     """
 
     results: list[SavedGridPoint] = []
     partial_match: set[tuple[int, ...]] = set()
     if find.metrics is ...:
-        inds_of_metrics = range(len(where["metrics"]))
+        inds_of_metrics = range(len(context["metrics"]))
     else:
         inds_of_metrics = tuple(
-            where["metrics"].index(metric) for metric in find.metrics
+            context["metrics"].index(metric) for metric in find.metrics
         )
     ax_sizes = {
-        plot_ax: len(where["grid_vals"][where["grid_params"].index(plot_ax)])
-        for plot_ax in where["plot_params"]
+        plot_ax: len(context["grid_vals"][context["grid_params"].index(plot_ax)])
+        for plot_ax in context["plot_params"]
     }
     if ... in find.keep_axes:
         keep_axes = _expand_ellipsis_axis(find.keep_axes, ax_sizes)  # type: ignore
@@ -612,15 +606,15 @@ def find_gridpoints(
         keep_axes = cast(Collection[tuple[str, tuple[int, ...]]], find.keep_axes)
     # No deduplication is done!
     keep_axes = tuple(
-        (where["grid_params"].index(keep_ax[0]), keep_ax[1]) for keep_ax in keep_axes
+        (context["grid_params"].index(keep_ax[0]), keep_ax[1]) for keep_ax in keep_axes
     )
 
-    for ser in where["series_data"].values():
+    for ser in context["series_data"].values():
         for index_of_ax, indexes_in_ax in keep_axes:
             amax_arr = ser[index_of_ax][1]
             amax_want = amax_arr[np.ix_(inds_of_metrics, indexes_in_ax)].flatten()
             partial_match |= {np_to_primitive(el) for el in amax_want}
-    logger.debug(
+    logger.info(
         f"Found {len(partial_match)} gridpoints that match metric-plot_axis criteria"
     )
 
@@ -635,7 +629,8 @@ def find_gridpoints(
         else:
             return _param_normalize(candidate) == criteria
 
-    for point in filter(lambda p: p["pind"] in partial_match, where["plot_data"]):
+    for point in filter(lambda p: p["pind"] in partial_match, where):
+        logger.debug(f"Checking whether {point['pind']} matches param query")
         for params_match in params_or:
             if all(
                 check_values(value, point["params"][param])
@@ -644,7 +639,7 @@ def find_gridpoints(
                 results.append(point)
                 break
 
-    logger.debug(f"found {len(results)} points that match all GridLocator criteria")
+    logger.info(f"found {len(results)} points that match all GridLocator criteria")
     return results
 
 

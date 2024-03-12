@@ -1,12 +1,13 @@
 from dataclasses import dataclass, field
-from types import EllipsisType as ellipsis
-from typing import Annotated, Any, Callable, Collection, Literal, Sequence
+from typing import Annotated, Callable, Literal, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy
 import seaborn as sns
 from matplotlib.axes import Axes
+
+from .gridsearch.typing import GridLocator
 
 PAL = sns.color_palette("Set1")
 PLOT_KWS = {"alpha": 0.7, "linewidth": 3}
@@ -29,10 +30,7 @@ class _PlotPrefs:
 
     plot: bool = True
     rel_noise: Literal[False] | Callable = False
-    grid_params_match: Collection[dict[str, Any]] = field(default_factory=lambda: ())
-    grid_ind_match: Collection[tuple[int | slice, int]] | ellipsis = field(
-        default_factory=lambda: ...
-    )
+    plot_match: GridLocator = field(default_factory=lambda: GridLocator())
 
     def __bool__(self):
         return self.plot
