@@ -10,6 +10,7 @@ from typing import (
     Sequence,
     TypedDict,
     TypeVar,
+    Union,
 )
 
 import numpy as np
@@ -21,6 +22,14 @@ should be included."""
 SkinnySpecs = tuple[tuple[str, ...], tuple[OtherSliceDef, ...]]
 
 
+KeepAxisSpec = Union[
+    tuple[ellipsis, ellipsis],  # all axes, all indices
+    tuple[ellipsis, tuple[int, ...]],  # all axes, specific indices
+    tuple[tuple[str, ...], ellipsis],  # specific axes, all indices
+    Collection[tuple[str, tuple[int, ...]]],  # specific axes, specific indices
+]
+
+
 @dataclass(frozen=True)
 class GridLocator:
     """A specification of which points in a gridsearch to match.
@@ -30,13 +39,23 @@ class GridLocator:
     Kalman series that had the best mean squared error as noise was
     varied.
 
-    Logical AND is applied across the metric, keep_axis, AND param_match specifications.
+    Logical AND is applied across the metric, keep_axis, AND param_match
+    specifications.
 
     Args:
-        metric: The metric in which to find results.  An ellipsis means "any metrics"
-        keep_axis: The grid-varied parameter in which to find results, or a tuple of
-            that axis and position along that axis.  To search a particular value of
-            that parameter, use the param_match kwarg.  An ellipsis means "any axis"
+        metric: The metric in which to find results.  An ellipsis means "any
+            metrics"
+        keep_axis: The grid-varied parameter in which to find results and which
+            index of values for that parameter.  To search a particular value of
+            that parameter, use the param_match kwarg.It can be specified in
+            several ways:
+            (a) a tuple of two ellipses, representing all axes, all indices
+            (b) a tuple of an ellipsis, representing all axes, and a tuple of
+                ints for specific indices
+            (c) a tuple of a tuple of strings for specific axes, and an ellipsis
+                for all indices
+            (d) a collection of tuples of a string (specific axis) and tuple of
+                ints (specific indices)
         param_match: A collection of dictionaries to match parameter values represented
             by points in the gridsearch.  Dictionary equality is checked for every
             non-callable value; for callable values, it is applied to the grid
@@ -45,8 +64,8 @@ class GridLocator:
             across the collection.
     """
 
-    metric: str | ellipsis = field(default=...)
-    keep_axis: tuple[str, int | ellipsis] | ellipsis = field(default=...)
+    metrics: Collection[str] | ellipsis = field(default=...)
+    keep_axes: KeepAxisSpec = field(default=(..., ...))
     params_or: Collection[dict[str, Any]] = field(default=())
 
 

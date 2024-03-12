@@ -12,6 +12,7 @@ from typing import (
     Optional,
     Sequence,
     TypeVar,
+    Union,
     cast,
 )
 
@@ -60,9 +61,6 @@ def _amax_to_full_inds(
     Returns:
         all indexers to full gridsearch that are requested by amax_inds
     """
-
-    def np_to_primitive(tuple_like: np.void) -> tuple[int, ...]:
-        return tuple(int(el) for el in cast(Iterable, tuple_like))
 
     if amax_inds is ...:  # grab each element from arrays in list of lists of arrays
         return {
@@ -595,30 +593,33 @@ def find_gridpoints(
     Returns:
         A list of the wrapped results, representing points in the gridsearch.
     """
+
     results: list[SavedGridPoint] = []
-    partial_match: list[tuple[int, ...]] = []
-    if find.metric is ...:
-        metric_sl = slice(None)
+    partial_match: set[tuple[int, ...]] = set()
+    if find.metrics is ...:
+        inds_of_metrics = range(len(where["metrics"]))
     else:
-        ind = where["metrics"].index(find.metric)
-        metric_sl = slice(ind, ind + 1)
-    if find.keep_axis is ...:
-        keep_axis_sl = slice(None)
-        keep_el_sl = slice(None)
+        inds_of_metrics = tuple(
+            where["metrics"].index(metric) for metric in find.metrics
+        )
+    ax_sizes = {
+        plot_ax: len(where["grid_vals"][where["grid_params"].index(plot_ax)])
+        for plot_ax in where["plot_params"]
+    }
+    if ... in find.keep_axes:
+        keep_axes = _expand_ellipsis_axis(find.keep_axes, ax_sizes)  # type: ignore
     else:
-        ind = where["plot_params"].index(find.keep_axis[0])
-        keep_axis_sl = slice(ind, ind + 1)
-        if find.keep_axis[1] is ...:
-            keep_el_sl = slice(None)
-        else:
-            ind = find.keep_axis[1]
-            keep_el_sl = slice(ind, ind + 1)
+        keep_axes = cast(Collection[tuple[str, tuple[int, ...]]], find.keep_axes)
+    # No deduplication is done!
+    keep_axes = tuple(
+        (where["grid_params"].index(keep_ax[0]), keep_ax[1]) for keep_ax in keep_axes
+    )
 
     for ser in where["series_data"].values():
-        ser = ser[keep_axis_sl]
-        for _, amax_arr in ser:
-            amax_want = amax_arr[metric_sl, keep_el_sl].flatten()
-            partial_match.extend(amax_want)
+        for index_of_ax, indexes_in_ax in keep_axes:
+            amax_arr = ser[index_of_ax][1]
+            amax_want = amax_arr[np.ix_(inds_of_metrics, indexes_in_ax)].flatten()
+            partial_match |= {np_to_primitive(el) for el in amax_want}
     logger.debug(
         f"Found {len(partial_match)} gridpoints that match metric-plot_axis criteria"
     )
@@ -634,7 +635,7 @@ def find_gridpoints(
         else:
             return _param_normalize(candidate) == criteria
 
-    for point in where["plot_data"]:
+    for point in filter(lambda p: p["pind"] in partial_match, where["plot_data"]):
         for params_match in params_or:
             if all(
                 check_values(value, point["params"][param])
@@ -645,3 +646,29 @@ def find_gridpoints(
 
     logger.debug(f"found {len(results)} points that match all GridLocator criteria")
     return results
+
+
+def _expand_ellipsis_axis(
+    keep_axis: Union[
+        tuple[ellipsis, ellipsis],
+        tuple[ellipsis, tuple[int, ...]],
+        tuple[tuple[str, ...], ellipsis],
+    ],
+    ax_sizes: dict[str, int],
+) -> Collection[tuple[str, tuple[int, ...]]]:
+    if keep_axis[0] is ... and keep_axis[1] is ...:
+        # form 1
+        return tuple((k, tuple(range(v))) for k, v in ax_sizes.items())
+    elif isinstance(keep_axis[1], tuple):
+        # form 2
+        return tuple((k, keep_axis[1]) for k in ax_sizes.keys())
+    elif isinstance(keep_axis[0], tuple):
+        # form 3
+        return tuple((k, tuple(range(ax_sizes[k]))) for k in keep_axis[0])
+    else:
+        raise TypeError("Keep_axis does not have an ellipsis or is not a 2-tuple")
+
+
+def np_to_primitive(tuple_like: np.void) -> tuple[int, ...]:
+    """Turn a void that represents a tuple of ints into a tuple of ints"""
+    return tuple(int(el) for el in cast(Iterable, tuple_like))

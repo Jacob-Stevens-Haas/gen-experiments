@@ -153,9 +153,10 @@ def gridsearch_results():
         "pind": (0,),
         "data": {},
     }
+    tup_dtype = np.dtype([("f0", "i")])
     max_amax: SeriesData = [
-        (np.ones((2, 2)), np.array([[(1,), (1,)], [(0,), (0,)]])),
-        (np.ones((2, 2)), np.array([[(0,), (0,)], [(0,), (0,)]])),
+        (np.ones((2, 2)), np.array([[(1,), (0)], [(0,), (0,)]], dtype=tup_dtype)),
+        (np.ones((2, 2)), np.array([[(0,), (0,)], [(0,), (0,)]], dtype=tup_dtype)),
     ]
     full_details: GridsearchResultDetails = {
         "system": "sho",
@@ -164,7 +165,7 @@ def gridsearch_results():
         "metrics": ("mse", "mae"),
         "grid_params": ["sim_params.t_end", "sim_params.noise"],
         "plot_params": ["sim_params.t_end", "sim_params.noise"],
-        "grid_vals": [[1, 2, 3], [4, 5, 6]],
+        "grid_vals": [[1, 2], [5, 6]],
         "main": 1,
     }
     return want, full_details
@@ -174,17 +175,20 @@ def gridsearch_results():
     "locator",
     (
         gridsearch.GridLocator(
-            "mse", ("sim_params.t_end", ...), [{"diff_params.alpha": 0.1}]
+            ("mse",), (("sim_params.t_end",), ...), [{"diff_params.alpha": 0.1}]
         ),
         gridsearch.GridLocator(
-            "mse", ("sim_params.t_end", ...), [{"opt_params": ps.STLSQ()}]
+            ("mse",), (("sim_params.t_end",), ...), [{"opt_params": ps.STLSQ()}]
         ),
-        gridsearch.GridLocator(..., ..., [{"diff_params.alpha": lambda x: x < 0.2}]),
         gridsearch.GridLocator(
-            ..., ..., [{"diff_params.alpha": 0.1}, {"diff_params.alpha": 0.3}]
+            ..., (..., ...), [{"diff_params.alpha": lambda x: x < 0.2}]
+        ),
+        gridsearch.GridLocator(("mse",), {("sim_params.t_end", (0,))}, [{}]),
+        gridsearch.GridLocator(
+            ..., (..., ...), [{"diff_params.alpha": 0.1}, {"diff_params.alpha": 0.3}]
         ),
     ),
-    ids=("exact", "object", "callable", "or"),
+    ids=("exact", "object", "callable", "by_axis", "or"),
 )
 def test_find_gridpoints(gridsearch_results, locator):
     want, full_details = gridsearch_results
@@ -196,7 +200,7 @@ def test_grid_locator_match():
     m_params = {"sim_params.t_end": 10, "foo": 1}
     m_ind = (0, 1)
     # Effectively testing the clause: (x OR y OR ...) AND (a OR b OR ...)
-    # Note: OR() with no args is falsy
+    # Note: OR() with no args is falsy, AND() with no args is thruthy
     # also note first index is stripped ind_spec
     good_specs = [
         (({"sim_params.t_end": 10},), ((1, 0, 1),)),
