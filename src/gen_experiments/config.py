@@ -1,11 +1,19 @@
+from collections.abc import Iterable
 from typing import TypeVar
 
 import numpy as np
 import pysindy as ps
 
 from gen_experiments.data import _signal_avg_power
+from gen_experiments.gridsearch.typing import (
+    GridLocator,
+    SeriesDef,
+    SeriesList,
+    SkinnySpecs,
+)
 from gen_experiments.plotting import _PlotPrefs
-from gen_experiments.utils import FullSINDyTrialData, NestedDict, SeriesDef, SeriesList
+from gen_experiments.typing import NestedDict
+from gen_experiments.utils import FullSINDyTrialData
 
 T = TypeVar("T")
 U = TypeVar("U")
@@ -41,76 +49,42 @@ def addn(x):
 
 
 plot_prefs = {
-    "test": _PlotPrefs(True, False, ({"sim_params.t_end": 10},)),
+    "test": _PlotPrefs(),
     "test-absrel": _PlotPrefs(
-        True, _convert_abs_rel_noise, ({"sim_params.noise_abs": 1},)
+        True, _convert_abs_rel_noise, GridLocator(..., {("sim_params.noise_abs", (1,))})
     ),
     "test-absrel2": _PlotPrefs(
         True,
         _convert_abs_rel_noise,
-        (
-            {"sim_params.noise_abs": 0.1},
-            {"sim_params.noise_abs": 0.5},
-            {"sim_params.noise_abs": 1},
-            {"sim_params.noise_abs": 2},
-            {"sim_params.noise_abs": 4},
-            {"sim_params.noise_abs": 8},
+        GridLocator(
+            ...,
+            (..., ...),
+            (
+                {"sim_params.noise_abs": 0.1},
+                {"sim_params.noise_abs": 0.5},
+                {"sim_params.noise_abs": 1},
+                {"sim_params.noise_abs": 2},
+                {"sim_params.noise_abs": 4},
+                {"sim_params.noise_abs": 8},
+            ),
         ),
     ),
-    "test-absrel3": _PlotPrefs(
+    "absrel-newloc": _PlotPrefs(
         True,
         _convert_abs_rel_noise,
-        (
-            {
-                "sim_params.noise_abs": 1,
-                "diff_params.smoother_kws.window_length": 15,
-            },
-            {"sim_params.noise_abs": 1, "diff_params.meas_var": 1},
-            {"sim_params.noise_abs": 1, "diff_params.alpha": 1e-2},
+        GridLocator(
+            ["coeff_mse", "coeff_f1"],
+            (..., (2, 3, 4)),
+            (
+                {"diff_params.kind": "kalman", "diff_params.alpha": None},
+                {
+                    "diff_params.kind": "kalman",
+                    "diff_params.alpha": lambda a: isinstance(a, int),
+                },
+                {"diff_params.kind": "trend_filtered"},
+                {"diff_params.diffcls": "SmoothedFiniteDifference"},
+            ),
         ),
-    ),
-    "test-absrel4": _PlotPrefs(
-        True,
-        _convert_abs_rel_noise,
-        (
-            {
-                "sim_params.noise_abs": 1,
-                "diff_params.smoother_kws.window_length": 15,
-            },
-            {"sim_params.noise_abs": 1, "diff_params.meas_var": 1},
-            {"sim_params.noise_abs": 1, "diff_params.alpha": 1e0},
-            {
-                "sim_params.noise_abs": 2,
-                "diff_params.smoother_kws.window_length": 15,
-            },
-            {"sim_params.noise_abs": 2, "diff_params.meas_var": 4},
-            {"sim_params.noise_abs": 2, "diff_params.alpha": 1e-1},
-        ),
-    ),
-    "test-absrel5": _PlotPrefs(
-        True,
-        _convert_abs_rel_noise,
-        (
-            {
-                "sim_params.noise_abs": 1,
-                "diff_params.diffcls": "SmoothedFiniteDifference",
-            },
-            {"sim_params.noise_abs": 1, "diff_params.kind": "kalman"},
-            {"sim_params.noise_abs": 1, "diff_params.kind": "trend_filtered"},
-            {
-                "sim_params.noise_abs": 2,
-                "diff_params.diffcls": "SmoothedFiniteDifference",
-            },
-            {"sim_params.noise_abs": 2, "diff_params.kind": "kalman"},
-            {"sim_params.noise_abs": 2, "diff_params.kind": "trend_filtered"},
-            {
-                "sim_params.noise_abs": 4,
-                "diff_params.diffcls": "SmoothedFiniteDifference",
-            },
-            {"sim_params.noise_abs": 4, "diff_params.kind": "kalman"},
-            {"sim_params.noise_abs": 4, "diff_params.kind": "trend_filtered"},
-        ),
-        {(0, 2), (3, 2), (0, 3), (3, 3), (0, 4), (3, 4)},
     ),
 }
 sim_params = {
@@ -301,7 +275,7 @@ grid_params = {
     "duration-absnoise": ["sim_params.t_end", "sim_params.noise_abs"],
     "rel_noise": ["sim_params.t_end", "sim_params.noise_rel"],
 }
-grid_vals = {
+grid_vals: dict[str, list[Iterable]] = {
     "test": [[5, 10, 15, 20]],
     "abs_noise": [[0.1, 0.5, 1, 2, 4, 8]],
     "abs_noise-kalman": [[0.1, 0.5, 1, 2, 4, 8], [0.1, 0.5, 1, 2, 4, 8]],
@@ -319,7 +293,7 @@ grid_decisions = {
     "lorenzk": ["plot", "plot", "max"],
     "plot2": ["plot", "plot"],
 }
-diff_series = {
+diff_series: dict[str, SeriesDef] = {
     "kalman1": SeriesDef(
         "Kalman",
         diff_params["kalman"],
@@ -375,7 +349,7 @@ diff_series = {
         [[5, 8, 12, 15]],
     ),
 }
-series_params = {
+series_params: dict[str, SeriesList] = {
     "test": SeriesList(
         "diff_params",
         "Differentiation Method",
@@ -434,7 +408,7 @@ series_params = {
 }
 
 
-skinny_specs = {
+skinny_specs: dict[str, SkinnySpecs] = {
     "exp3": (
         ("sim_params.noise_abs", "diff_params.meas_var"),
         ((identity,), (identity,)),
