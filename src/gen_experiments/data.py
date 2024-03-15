@@ -7,7 +7,8 @@ import mitosis
 import numpy as np
 import scipy
 
-from gen_experiments.utils import Float1D, Float2D, GridsearchResultDetails
+from gen_experiments.gridsearch.typing import GridsearchResultDetails
+from gen_experiments.utils import Float1D, Float2D
 
 INTEGRATOR_KEYWORDS = {"rtol": 1e-12, "method": "LSODA", "atol": 1e-12}
 TRIALS_FOLDER = Path(__file__).parent.absolute() / "trials"
@@ -56,7 +57,7 @@ def gen_data(
         noise_abs = 0.1
     rng = np.random.default_rng(seed)
     if x0_center is None:
-        x0_center = np.zeros((n_coord))
+        x0_center = np.zeros((n_coord), dtype=np.float_)
     t_train = np.arange(0, t_end, dt, dtype=np.float_)
     t_train_span = (t_train[0], t_train[-1])
     if nonnegative:

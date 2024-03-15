@@ -92,7 +92,13 @@ addopts = '-m "not slow"'
 markers = ["slow"]
 
 [tool.mypy]
-files = ["src/gen_experiments/__init__.py", "src/gen_experiments/utils.py"]
+files = [
+  "src/gen_experiments/__init__.py",
+  "src/gen_experiments/utils.py",
+  "src/gen_experiments/gridsearch/typing.py",
+  "tests/test_all.py",
+  "tests/test_gridsearch.py",
+]
 
 [[tool.mypy.overrides]]
 module="auto_ks.*"

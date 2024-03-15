@@ -1,12 +1,13 @@
 from dataclasses import dataclass, field
-from types import EllipsisType as ellipsis
-from typing import Annotated, Callable, Collection, Literal, Mapping, Sequence
+from typing import Annotated, Callable, Literal, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy
 import seaborn as sns
 from matplotlib.axes import Axes
+
+from .gridsearch.typing import GridLocator
 
 PAL = sns.color_palette("Set1")
 PLOT_KWS = {"alpha": 0.7, "linewidth": 3}
@@ -29,10 +30,7 @@ class _PlotPrefs:
 
     plot: bool = True
     rel_noise: Literal[False] | Callable = False
-    grid_params_match: Collection[dict] = field(default_factory=lambda: ())
-    grid_ind_match: Collection[tuple[int | slice, int]] | ellipsis = field(
-        default_factory=lambda: ...
-    )
+    plot_match: GridLocator = field(default_factory=lambda: GridLocator())
 
     def __bool__(self):
         return self.plot
@@ -40,9 +38,9 @@ class _PlotPrefs:
 
 def plot_coefficients(
     coefficients: Annotated[np.ndarray, "(n_coord, n_features)"],
-    input_features: Sequence[str] = None,
-    feature_names: Sequence[str] = None,
-    ax: bool = None,
+    input_features: Sequence[str],
+    feature_names: Sequence[str],
+    ax: Axes,
     **heatmap_kws,
 ):
     def detex(input: str) -> str:
@@ -61,9 +59,6 @@ def plot_coefficients(
         feature_names = [f"f{k}" for k in range(coefficients.shape[1])]
 
     with sns.axes_style(style="white", rc={"axes.facecolor": (0, 0, 0, 0)}):
-        if ax is None:
-            fig, ax = plt.subplots(1, 1)
-
         heatmap_args = {
             "xticklabels": input_features,
             "yticklabels": feature_names,
@@ -85,8 +80,8 @@ def plot_coefficients(
 def compare_coefficient_plots(
     coefficients_est: Annotated[np.ndarray, "(n_coord, n_feat)"],
     coefficients_true: Annotated[np.ndarray, "(n_coord, n_feat)"],
-    input_features: Sequence[str] = None,
-    feature_names: Sequence[str] = None,
+    input_features: Sequence[str],
+    feature_names: Sequence[str],
 ):
     """Create plots of true and estimated coefficients."""
     n_cols = len(coefficients_est)
@@ -203,6 +198,8 @@ def plot_training_data(x_train: np.ndarray, x_true: np.ndarray, x_smooth: np.nda
         ax0 = fig.add_subplot(1, 2, 1)
     elif x_train.shape[-1] == 3:
         ax0 = fig.add_subplot(1, 2, 1, projection="3d")
+    else:
+        raise ValueError("Too many or too few coordinates to plot")
     plot_training_trajectory(ax0, x_train, x_true, x_smooth)
     ax0.legend()
     ax0.set(title="Training data")
@@ -276,7 +273,7 @@ def _plot_test_sim_data_3d(
 
 def plot_test_trajectories(
     x_test: np.ndarray, x_sim: np.ndarray, t_test: np.ndarray, t_sim: np.ndarray
-) -> Mapping[str, np.ndarray]:
+) -> None:
     """Plot a test trajectory
 
     Args:
@@ -288,19 +285,17 @@ def plot_test_trajectories(
         A dict with two keys, "t_sim" (the simulation times) and
     "x_sim" (the simulated trajectory)
     """
-    fig, axs = plt.subplots(x_test.shape[1], 1, sharex=True, figsize=(7, 9))
+    _, axs = plt.subplots(x_test.shape[1], 1, sharex=True, figsize=(7, 9))
     plt.suptitle("Test Trajectories by Dimension")
     plot_test_sim_data_1d_panel(axs, x_test, x_sim, t_test, t_sim)
     axs[-1].legend()
 
     plt.suptitle("Full Test Trajectories")
     if x_test.shape[1] == 2:
-        fig, axs = plt.subplots(1, 2, figsize=(10, 4.5))
+        _, axs = plt.subplots(1, 2, figsize=(10, 4.5))
         _plot_test_sim_data_2d(axs, x_test, x_sim)
     elif x_test.shape[1] == 3:
-        fig, axs = plt.subplots(
-            1, 2, figsize=(10, 4.5), subplot_kw={"projection": "3d"}
-        )
+        _, axs = plt.subplots(1, 2, figsize=(10, 4.5), subplot_kw={"projection": "3d"})
         _plot_test_sim_data_3d(axs, x_test, x_sim)
     else:
         raise ValueError("Can only plot 2d or 3d data.")

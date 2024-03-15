@@ -5,7 +5,7 @@ from typing import Any
 
 import numpy as np
 from numpy.typing import NDArray
-from pysindy import BaseDifferentiation, FiniteDifference, SINDy  # type: ignore
+from pysindy import BaseDifferentiation, FiniteDifference, SINDy
 
 from . import gridsearch, odes, pdes
 from .utils import SINDyTrialData, make_model  # noqa: F401
