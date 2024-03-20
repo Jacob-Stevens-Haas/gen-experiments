@@ -187,8 +187,9 @@ def gridsearch_results():
         gridsearch.GridLocator(
             ..., (..., ...), [{"diff_params.alpha": 0.1}, {"diff_params.alpha": 0.3}]
         ),
+        gridsearch.GridLocator(params_or=[{"diff_params.alpha": 0.1}, {"foo": 0}]),
     ),
-    ids=("exact", "object", "callable", "by_axis", "or"),
+    ids=("exact", "object", "callable", "by_axis", "or", "missingkey"),
 )
 def test_find_gridpoints(gridsearch_results, locator):
     want, full_details = gridsearch_results

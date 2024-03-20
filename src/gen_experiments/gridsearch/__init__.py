@@ -628,7 +628,7 @@ def find_gridpoints(
         logger.debug(f"Checking whether {point['pind']} matches param query")
         for params_match in params_or:
             if all(
-                check_values(value, point["params"][param])
+                param in point["params"] and check_values(value, point["params"][param])
                 for param, value in params_match.items()
             ):
                 results.append(point)
