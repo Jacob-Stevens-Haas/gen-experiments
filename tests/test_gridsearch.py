@@ -78,10 +78,10 @@ def test_marginalize_grid_views():
     for result, expected in zip(res_val, expected_val):
         np.testing.assert_array_equal(result, expected)
 
-    ts = "i,i,i,i"
+    ts = "i,i,i"
     expected_ind = [
-        np.array([[(0, 0, 0, 0), (0, 1, 1, 1)], [(1, 0, 0, 0), (1, 1, 1, 0)]], ts),
-        np.array([[(0, 0, 0, 0), (0, 1, 1, 1)], [(1, 1, 1, 0), (1, 0, 0, 1)]], ts),
+        np.array([[(0, 0, 0), (1, 1, 1)], [(0, 0, 0), (1, 1, 0)]], ts),
+        np.array([[(0, 0, 0), (1, 1, 1)], [(1, 1, 0), (0, 0, 1)]], ts),
     ]
     for result, expected in zip(res_ind, expected_ind):
         np.testing.assert_array_equal(result, expected)

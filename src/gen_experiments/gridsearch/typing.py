@@ -78,7 +78,7 @@ SeriesData = Annotated[
             Annotated[GridsearchResult[np.void], "arg_opts"],
         ]
     ],
-    "len=n_grid_axes",
+    "len=n_plot_axes",
 ]
 
 ExpResult = dict[str, Any]
