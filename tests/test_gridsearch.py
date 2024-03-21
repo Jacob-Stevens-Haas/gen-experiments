@@ -78,10 +78,10 @@ def test_marginalize_grid_views():
     for result, expected in zip(res_val, expected_val):
         np.testing.assert_array_equal(result, expected)
 
-    ts = "i,i,i,i"
+    ts = "i,i,i"
     expected_ind = [
-        np.array([[(0, 0, 0, 0), (0, 1, 1, 1)], [(1, 0, 0, 0), (1, 1, 1, 0)]], ts),
-        np.array([[(0, 0, 0, 0), (0, 1, 1, 1)], [(1, 1, 1, 0), (1, 0, 0, 1)]], ts),
+        np.array([[(0, 0, 0), (1, 1, 1)], [(0, 0, 0), (1, 1, 0)]], ts),
+        np.array([[(0, 0, 0), (1, 1, 1)], [(1, 1, 0), (0, 0, 1)]], ts),
     ]
     for result, expected in zip(res_ind, expected_ind):
         np.testing.assert_array_equal(result, expected)
@@ -187,8 +187,9 @@ def gridsearch_results():
         gridsearch.GridLocator(
             ..., (..., ...), [{"diff_params.alpha": 0.1}, {"diff_params.alpha": 0.3}]
         ),
+        gridsearch.GridLocator(params_or=[{"diff_params.alpha": 0.1}, {"foo": 0}]),
     ),
-    ids=("exact", "object", "callable", "by_axis", "or"),
+    ids=("exact", "object", "callable", "by_axis", "or", "missingkey"),
 )
 def test_find_gridpoints(gridsearch_results, locator):
     want, full_details = gridsearch_results
