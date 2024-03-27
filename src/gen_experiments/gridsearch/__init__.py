@@ -232,7 +232,9 @@ def run(
         series_searches.append((grid_optima, grid_ind))
 
     main_metric_ind = metrics.index("main") if "main" in metrics else 0
-
+    scan_grid = {
+        p: v for p, d, v in zip(grid_params, grid_decisions, grid_vals) if d == "plot"
+    }
     results: GridsearchResultDetails = {
         "system": group,
         "plot_data": [],
@@ -245,8 +247,9 @@ def run(
         },
         "metrics": metrics,
         "grid_params": grid_params,
-        "plot_params": [],
         "grid_vals": grid_vals,
+        "scan_grid": scan_grid,
+        "plot_grid": {},
         "main": max(
             grid[main_metric_ind].max()
             for metrics, _ in series_searches
@@ -264,16 +267,9 @@ def run(
             )
             plot_ode_panel(grid_data)  # type: ignore
         if plot_prefs.rel_noise:
-            grid_vals, grid_params = plot_prefs.rel_noise(
-                grid_vals, grid_params, intermediate_data
-            )
-            results["grid_vals"] = grid_vals
-        plot_params = [
-            param
-            for decide, param in zip(grid_decisions, grid_params)
-            if decide == "plot"
-        ]
-        results["plot_params"] = plot_params
+            raise ValueError("_PlotPrefs.rel_noise is not correctly implemented.")
+        else:
+            results["plot_grid"] = scan_grid
 
         fig, subplots = plt.subplots(
             n_metrics,
@@ -289,8 +285,8 @@ def run(
             plot(
                 subplots,
                 metrics,
-                plot_params,
-                grid_vals,
+                cast(Sequence[str], results["plot_grid"].keys()),
+                cast(Sequence[Sequence], results["plot_grid"].values()),
                 series_search[0],
                 series_name,
                 legends,
@@ -598,12 +594,8 @@ def find_gridpoints(
         inds_of_metrics = tuple(
             context["metrics"].index(metric) for metric in find.metrics
         )
-    ax_sizes = {
-        plot_ax: len(context["grid_vals"][context["grid_params"].index(plot_ax)])
-        for plot_ax in context["plot_params"]
-    }
     # No deduplication is done!
-    keep_axes = _normalize_keep_axes(find.keep_axes, ax_sizes, context["plot_params"])
+    keep_axes = _normalize_keep_axes(find.keep_axes, context["scan_grid"])
 
     for ser in context["series_data"].values():
         for index_of_ax, indexes_in_ax in keep_axes:
@@ -640,13 +632,15 @@ def find_gridpoints(
 
 
 def _normalize_keep_axes(
-    keep_axes: KeepAxisSpec, ax_sizes: dict[str, int], plot_params: list[str]
+    keep_axes: KeepAxisSpec, scan_grid: dict[str, Sequence[Any]]
 ) -> tuple[tuple[int, tuple[int, ...]], ...]:
+    ax_sizes = {ax_name: len(vals) for ax_name, vals in scan_grid.items()}
     if ... in keep_axes:
         keep_axes = _expand_ellipsis_axis(keep_axes, ax_sizes)  # type: ignore
     else:
         keep_axes = cast(Collection[tuple[str, tuple[int, ...]]], keep_axes)
-    return tuple((plot_params.index(keep_ax[0]), keep_ax[1]) for keep_ax in keep_axes)
+    scan_axes = tuple(ax_sizes.keys())
+    return tuple((scan_axes.index(keep_ax[0]), keep_ax[1]) for keep_ax in keep_axes)
 
 
 def _expand_ellipsis_axis(

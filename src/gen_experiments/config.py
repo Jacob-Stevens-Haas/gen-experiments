@@ -1,5 +1,5 @@
-from collections.abc import Iterable
-from typing import TypeVar
+from collections.abc import Iterable, Sequence
+from typing import TypeVar, cast
 
 import numpy as np
 import pysindy as ps
@@ -16,7 +16,7 @@ from gen_experiments.plotting import _PlotPrefs
 from gen_experiments.typing import NestedDict
 from gen_experiments.utils import FullSINDyTrialData
 
-T = TypeVar("T")
+T = TypeVar("T", bound=str)
 U = TypeVar("U")
 
 
@@ -25,17 +25,17 @@ def ND(d: dict[T, U]) -> NestedDict[T, U]:
 
 
 def _convert_abs_rel_noise(
-    grid_vals: list[NDArray[np.floating]],
-    grid_params: list[str],
+    scan_grid: dict[str, NDArray[np.floating]],
     recent_results: FullSINDyTrialData,
-) -> tuple[list[NDArray[np.floating]], list[str]]:
+) -> dict[str, Sequence[np.floating]]:
     """Convert abs_noise grid_vals to rel_noise"""
     signal = np.stack(recent_results["x_true"], axis=-1)
     signal_power = _signal_avg_power(signal)
-    ind = grid_params.index("sim_params.noise_abs")
-    grid_vals[ind] = grid_vals[ind] / signal_power
-    grid_params[ind] = "sim_params.noise_rel"
-    return grid_vals, grid_params
+    plot_grid = scan_grid.copy()
+    new_vals = plot_grid["sim_params.noise_abs"] / signal_power
+    plot_grid["sim_params.noise_rel"] = new_vals
+    plot_grid.pop("sim_params.noise_abs")
+    return cast(dict[str, Sequence[np.floating]], plot_grid)
 
 
 # To allow pickling

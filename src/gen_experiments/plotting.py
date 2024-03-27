@@ -29,7 +29,7 @@ class _PlotPrefs:
     """
 
     plot: bool = True
-    rel_noise: Literal[False] | Callable[..., tuple[list[Any], list[str]]] = False
+    rel_noise: Literal[False] | Callable[..., dict[str, Sequence[Any]]] = False
     plot_match: GridLocator = field(default_factory=lambda: GridLocator())
 
     def __bool__(self):
