@@ -231,6 +231,7 @@ def run(
         series_searches.append((grid_optima, grid_ind))
 
     main_metric_ind = metrics.index("main") if "main" in metrics else 0
+
     results: GridsearchResultDetails = {
         "system": group,
         "plot_data": [],

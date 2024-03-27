@@ -3,6 +3,7 @@ from typing import TypeVar
 
 import numpy as np
 import pysindy as ps
+from numpy.typing import NDArray
 
 from gen_experiments.data import _signal_avg_power
 from gen_experiments.gridsearch.typing import (
@@ -24,8 +25,10 @@ def ND(d: dict[T, U]) -> NestedDict[T, U]:
 
 
 def _convert_abs_rel_noise(
-    grid_vals: list, grid_params: list, recent_results: FullSINDyTrialData
-):
+    grid_vals: list[NDArray[np.floating]],
+    grid_params: list[str],
+    recent_results: FullSINDyTrialData,
+) -> tuple[list[NDArray[np.floating]], list[str]]:
     """Convert abs_noise grid_vals to rel_noise"""
     signal = np.stack(recent_results["x_true"], axis=-1)
     signal_power = _signal_avg_power(signal)
