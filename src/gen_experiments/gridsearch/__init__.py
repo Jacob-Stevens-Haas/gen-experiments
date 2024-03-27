@@ -35,6 +35,7 @@ from .typing import (
     GridLocator,
     GridsearchResult,
     GridsearchResultDetails,
+    KeepAxisSpec,
     OtherSliceDef,
     SavedGridPoint,
     SeriesDef,
@@ -244,11 +245,7 @@ def run(
         },
         "metrics": metrics,
         "grid_params": grid_params,
-        "plot_params": [
-            param
-            for decide, param in zip(grid_decisions, grid_params)
-            if decide == "plot"
-        ],
+        "plot_params": [],
         "grid_vals": grid_vals,
         "main": max(
             grid[main_metric_ind].max()
@@ -268,8 +265,16 @@ def run(
             plot_ode_panel(grid_data)  # type: ignore
         if plot_prefs.rel_noise:
             grid_vals, grid_params = plot_prefs.rel_noise(
-                grid_vals, grid_params, grid_data
+                grid_vals, grid_params, intermediate_data
             )
+            results["grid_vals"] = grid_vals
+        plot_params = [
+            param
+            for decide, param in zip(grid_decisions, grid_params)
+            if decide == "plot"
+        ]
+        results["plot_params"] = plot_params
+
         fig, subplots = plt.subplots(
             n_metrics,
             n_plotparams,
@@ -278,15 +283,15 @@ def run(
             squeeze=False,
             figsize=(n_plotparams * 3, 0.5 + n_metrics * 2.25),
         )
-        for series_data, series_name in zip(
+        for series_search, series_name in zip(
             series_searches, (ser.name for ser in series_params.series_list)
         ):
             plot(
                 subplots,
                 metrics,
-                grid_params,
+                plot_params,
                 grid_vals,
-                series_data[0],
+                series_search[0],
                 series_name,
                 legends,
             )
@@ -303,7 +308,7 @@ def run(
 def plot(
     subplots: NDArray[Annotated[np.void, "Axes"]],
     metrics: Sequence[str],
-    grid_params: Sequence[str],
+    plot_params: Sequence[str],
     grid_vals: Sequence[Sequence[float] | np.ndarray],
     grid_searches: Sequence[GridsearchResult],
     name: str,
@@ -313,7 +318,7 @@ def plot(
         raise ValueError("Nothing to plot")
     for m_ind_row, m_name in enumerate(metrics):
         for col, (param_name, x_ticks, param_search) in enumerate(
-            zip(grid_params, grid_vals, grid_searches)
+            zip(plot_params, grid_vals, grid_searches)
         ):
             ax = cast(Axes, subplots[m_ind_row, col])
             ax.plot(x_ticks, param_search[m_ind_row], label=name)
@@ -586,6 +591,7 @@ def find_gridpoints(
 
     results: list[SavedGridPoint] = []
     partial_match: set[tuple[int, ...]] = set()
+    inds_of_metrics: Sequence[int]
     if find.metrics is ...:
         inds_of_metrics = range(len(context["metrics"]))
     else:
@@ -596,14 +602,8 @@ def find_gridpoints(
         plot_ax: len(context["grid_vals"][context["grid_params"].index(plot_ax)])
         for plot_ax in context["plot_params"]
     }
-    if ... in find.keep_axes:
-        keep_axes = _expand_ellipsis_axis(find.keep_axes, ax_sizes)  # type: ignore
-    else:
-        keep_axes = cast(Collection[tuple[str, tuple[int, ...]]], find.keep_axes)
     # No deduplication is done!
-    keep_axes = tuple(
-        (context["grid_params"].index(keep_ax[0]), keep_ax[1]) for keep_ax in keep_axes
-    )
+    keep_axes = _normalize_keep_axes(find.keep_axes, ax_sizes, context["plot_params"])
 
     for ser in context["series_data"].values():
         for index_of_ax, indexes_in_ax in keep_axes:
@@ -637,6 +637,16 @@ def find_gridpoints(
 
     logger.info(f"found {len(results)} points that match all GridLocator criteria")
     return results
+
+
+def _normalize_keep_axes(
+    keep_axes: KeepAxisSpec, ax_sizes: dict[str, int], plot_params: list[str]
+) -> tuple[tuple[int, tuple[int, ...]], ...]:
+    if ... in keep_axes:
+        keep_axes = _expand_ellipsis_axis(keep_axes, ax_sizes)  # type: ignore
+    else:
+        keep_axes = cast(Collection[tuple[str, tuple[int, ...]]], keep_axes)
+    return tuple((plot_params.index(keep_ax[0]), keep_ax[1]) for keep_ax in keep_axes)
 
 
 def _expand_ellipsis_axis(
