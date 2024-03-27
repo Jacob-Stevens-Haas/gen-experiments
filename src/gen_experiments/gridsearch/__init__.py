@@ -211,14 +211,12 @@ def run(
         gridpoint_selector = _ndindex_skinny(
             full_results_shape[1:], ind_skinny, where_others
         )
-        rng = np.random.default_rng(seed)
         for ind_counter, ind in enumerate(gridpoint_selector):
             print(f"Calculating series {s_counter}, gridpoint{ind_counter}", end="\r")
-            new_seed = rng.integers(1000)
             for axis_ind, key, val_list in zip(ind, new_grid_params, new_grid_vals):
                 curr_other_params[key] = val_list[axis_ind]
             curr_results, grid_data = base_ex.run(
-                new_seed, **curr_other_params, display=False, return_all=True
+                seed, **curr_other_params, display=False, return_all=True
             )
             intermediate_data.append(
                 {"params": curr_other_params.flatten(), "pind": ind, "data": grid_data}
