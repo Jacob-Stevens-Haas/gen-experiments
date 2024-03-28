@@ -163,9 +163,10 @@ def gridsearch_results():
         "plot_data": [want, dont_want],
         "series_data": {"foo": max_amax},
         "metrics": ("mse", "mae"),
-        "grid_params": ["sim_params.t_end", "sim_params.noise"],
-        "plot_params": ["sim_params.t_end", "sim_params.noise"],
-        "grid_vals": [[1, 2], [5, 6]],
+        "scan_grid": {"sim_params.t_end": [1, 2], "sim_params.noise": [5, 6]},
+        "plot_grid": {},
+        "grid_params": ["sim_params.t_end", "bar", "sim_params.noise"],
+        "grid_vals": [[1, 2], [7, 8], [5, 6]],
         "main": 1,
     }
     return want, full_details
