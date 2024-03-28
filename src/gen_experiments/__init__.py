@@ -4,7 +4,6 @@ from collections.abc import Mapping
 from typing import Any
 
 import numpy as np
-from mitosis import Experiment
 from numpy.typing import NDArray
 from pysindy import BaseDifferentiation, FiniteDifference, SINDy
 
@@ -68,7 +67,7 @@ class NoExperiment:
         return metrics
 
 
-experiments: dict[str, tuple[Experiment, str | None]] = {
+experiments: dict[str, tuple[Any, str | None]] = {
     "sho": (odes, "sho"),
     "lorenz": (odes, "lorenz"),
     "lorenz_2d": (odes, "lorenz_2d"),

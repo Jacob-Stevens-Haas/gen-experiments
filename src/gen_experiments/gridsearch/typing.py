@@ -6,7 +6,6 @@ from typing import (
     Any,
     Callable,
     Collection,
-    Generic,
     Optional,
     Sequence,
     TypedDict,
@@ -83,10 +82,9 @@ SeriesData = Annotated[
 ]
 
 ExpResult = dict[str, Any]
-ExpResultVar = TypeVar("ExpResultVar", bound=ExpResult)
 
 
-class SavedGridPoint(TypedDict, Generic[ExpResultVar]):
+class SavedGridPoint(TypedDict):
     """The results at a point in the gridsearch.
 
     Args:
@@ -97,7 +95,7 @@ class SavedGridPoint(TypedDict, Generic[ExpResultVar]):
 
     params: dict
     pind: tuple[int, ...]
-    data: ExpResultVar
+    data: ExpResult
 
 
 class GridsearchResultDetails(TypedDict):
