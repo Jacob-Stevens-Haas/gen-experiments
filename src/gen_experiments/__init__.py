@@ -67,7 +67,7 @@ class NoExperiment:
         return metrics
 
 
-experiments = {
+experiments: dict[str, tuple[Any, str | None]] = {
     "sho": (odes, "sho"),
     "lorenz": (odes, "lorenz"),
     "lorenz_2d": (odes, "lorenz_2d"),

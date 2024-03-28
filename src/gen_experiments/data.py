@@ -26,7 +26,7 @@ def gen_data(
     nonnegative: bool = False,
     dt: float = 0.01,
     t_end: float = 10,
-) -> tuple[float, Float1D, Float2D, Float2D, Float2D, Float2D]:
+) -> tuple[float, Float1D, list[Float2D], list[Float2D], list[Float2D], list[Float2D]]:
     """Generate random training and test data
 
     Note that test data has no noise.
