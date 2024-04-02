@@ -154,7 +154,7 @@ ode_setup = {
 
 
 def run(
-    seed: float,
+    seed: int,
     group: str,
     sim_params: dict,
     diff_params: dict,

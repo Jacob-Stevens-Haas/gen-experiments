@@ -78,7 +78,7 @@ SeriesData = Annotated[
             Annotated[GridsearchResult[np.void], "arg_opts"],
         ]
     ],
-    "len=n_grid_axes",
+    "len=n_plot_axes",
 ]
 
 ExpResult = dict[str, Any]
@@ -104,8 +104,9 @@ class GridsearchResultDetails(TypedDict):
     series_data: dict[str, SeriesData]
     metrics: tuple[str, ...]
     grid_params: list[str]
-    plot_params: list[str]
-    grid_vals: list[Sequence]
+    grid_vals: list[Sequence[Any]]
+    scan_grid: dict[str, Sequence[Any]]
+    plot_grid: dict[str, Sequence[Any]]
     main: float
 
 

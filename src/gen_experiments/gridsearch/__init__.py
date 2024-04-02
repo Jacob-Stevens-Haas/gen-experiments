@@ -35,6 +35,7 @@ from .typing import (
     GridLocator,
     GridsearchResult,
     GridsearchResultDetails,
+    KeepAxisSpec,
     OtherSliceDef,
     SavedGridPoint,
     SeriesDef,
@@ -65,7 +66,7 @@ def _amax_to_full_inds(
 
     if amax_inds is ...:  # grab each element from arrays in list of lists of arrays
         return {
-            np_to_primitive(el)
+            void_to_tuple(el)
             for ar_list in amax_arrays
             for arr in ar_list
             for el in arr.flatten()
@@ -75,15 +76,15 @@ def _amax_to_full_inds(
         for ind in amax_inds:
             if ind is ...:  # grab each element from arrays in list of lists of arrays
                 all_inds |= {
-                    np_to_primitive(el)
+                    void_to_tuple(el)
                     for ar_list in amax_arrays
                     for arr in ar_list
                     for el in arr.flatten()
                 }
             elif isinstance(ind[0], int):
-                all_inds |= {np_to_primitive(cast(np.void, plot_axis_results[ind]))}
+                all_inds |= {void_to_tuple(cast(np.void, plot_axis_results[ind]))}
             else:  # ind[0] is slice(None)
-                all_inds |= {np_to_primitive(el) for el in plot_axis_results[ind]}
+                all_inds |= {void_to_tuple(el) for el in plot_axis_results[ind]}
     return all_inds
 
 
@@ -210,14 +211,12 @@ def run(
         gridpoint_selector = _ndindex_skinny(
             full_results_shape[1:], ind_skinny, where_others
         )
-        rng = np.random.default_rng(seed)
         for ind_counter, ind in enumerate(gridpoint_selector):
             print(f"Calculating series {s_counter}, gridpoint{ind_counter}", end="\r")
-            new_seed = rng.integers(1000)
             for axis_ind, key, val_list in zip(ind, new_grid_params, new_grid_vals):
                 curr_other_params[key] = val_list[axis_ind]
             curr_results, grid_data = base_ex.run(
-                new_seed, **curr_other_params, display=False, return_all=True
+                seed, **curr_other_params, display=False, return_all=True
             )
             intermediate_data.append(
                 {"params": curr_other_params.flatten(), "pind": ind, "data": grid_data}
@@ -231,6 +230,9 @@ def run(
         series_searches.append((grid_optima, grid_ind))
 
     main_metric_ind = metrics.index("main") if "main" in metrics else 0
+    scan_grid = {
+        p: v for p, d, v in zip(grid_params, grid_decisions, grid_vals) if d == "plot"
+    }
     results: GridsearchResultDetails = {
         "system": group,
         "plot_data": [],
@@ -243,12 +245,9 @@ def run(
         },
         "metrics": metrics,
         "grid_params": grid_params,
-        "plot_params": [
-            param
-            for decide, param in zip(grid_decisions, grid_params)
-            if decide == "plot"
-        ],
         "grid_vals": grid_vals,
+        "scan_grid": scan_grid,
+        "plot_grid": {},
         "main": max(
             grid[main_metric_ind].max()
             for metrics, _ in series_searches
@@ -266,9 +265,10 @@ def run(
             )
             plot_ode_panel(grid_data)  # type: ignore
         if plot_prefs.rel_noise:
-            grid_vals, grid_params = plot_prefs.rel_noise(
-                grid_vals, grid_params, grid_data
-            )
+            raise ValueError("_PlotPrefs.rel_noise is not correctly implemented.")
+        else:
+            results["plot_grid"] = scan_grid
+
         fig, subplots = plt.subplots(
             n_metrics,
             n_plotparams,
@@ -277,15 +277,15 @@ def run(
             squeeze=False,
             figsize=(n_plotparams * 3, 0.5 + n_metrics * 2.25),
         )
-        for series_data, series_name in zip(
+        for series_search, series_name in zip(
             series_searches, (ser.name for ser in series_params.series_list)
         ):
             plot(
                 subplots,
                 metrics,
-                grid_params,
-                grid_vals,
-                series_data[0],
+                cast(Sequence[str], results["plot_grid"].keys()),
+                cast(Sequence[Sequence], results["plot_grid"].values()),
+                series_search[0],
                 series_name,
                 legends,
             )
@@ -302,7 +302,7 @@ def run(
 def plot(
     subplots: NDArray[Annotated[np.void, "Axes"]],
     metrics: Sequence[str],
-    grid_params: Sequence[str],
+    plot_params: Sequence[str],
     grid_vals: Sequence[Sequence[float] | np.ndarray],
     grid_searches: Sequence[GridsearchResult],
     name: str,
@@ -312,7 +312,7 @@ def plot(
         raise ValueError("Nothing to plot")
     for m_ind_row, m_name in enumerate(metrics):
         for col, (param_name, x_ticks, param_search) in enumerate(
-            zip(grid_params, grid_vals, grid_searches)
+            zip(plot_params, grid_vals, grid_searches)
         ):
             ax = cast(Axes, subplots[m_ind_row, col])
             ax.plot(x_ticks, param_search[m_ind_row], label=name)
@@ -383,10 +383,11 @@ def _marginalize_grid_views(
     grid_decisions: Iterable[str],
     results: Annotated[NDArray[T], "shape (n_metrics, *n_gridsearch_values)"],
     max_or_min: Sequence[str],
-) -> tuple[list[GridsearchResult[T]], list[GridsearchResult]]:
-    """Marginalize unnecessary dimensions by taking max across axes.
+) -> tuple[list[GridsearchResult[T]], list[GridsearchResult[np.void]]]:
+    """Marginalize unnecessary dimensions by taking max or min across axes.
 
-    Ignores NaN values
+    Ignores NaN values and strips the metric index from the argoptima.
+
     Args:
         grid_decisions: list of how to treat each non-metric gridsearch
             axis.  An array of metrics for each "plot" grid decision
@@ -396,9 +397,8 @@ def _marginalize_grid_views(
         max_or_min: either "max" or "min" for each row of results
     Returns:
         a list of the metric optima for each plottable grid decision, and
-        a list of the flattened argoptima.
+        a list of the flattened argoptima, with metric removed
     """
-    arg_dtype = np.dtype(",".join(results.ndim * "i"))
     plot_param_inds = [ind for ind, val in enumerate(grid_decisions) if val == "plot"]
     grid_searches = []
     args_maxes = []
@@ -409,13 +409,8 @@ def _marginalize_grid_views(
             [opt(result, axis=reduce_axes) for opt, result in zip(optfuns, results)]
         )
         sub_arrs = []
-        for m_ind, (result, opt) in enumerate(zip(results, max_or_min)):
-
-            def _metric_pad(tp: tuple[int, ...]) -> np.void:
-                return np.void((m_ind, *tp), dtype=arg_dtype)
-
-            pad_m_ind = np.vectorize(_metric_pad)
-            arg_max = pad_m_ind(_argopt(result, reduce_axes, opt))
+        for result, opt in zip(results, max_or_min):
+            arg_max = _argopt(result, reduce_axes, opt)
             sub_arrs.append(arg_max)
 
         args_max = np.stack(sub_arrs)
@@ -590,30 +585,21 @@ def find_gridpoints(
 
     results: list[SavedGridPoint] = []
     partial_match: set[tuple[int, ...]] = set()
+    inds_of_metrics: Sequence[int]
     if find.metrics is ...:
         inds_of_metrics = range(len(context["metrics"]))
     else:
         inds_of_metrics = tuple(
             context["metrics"].index(metric) for metric in find.metrics
         )
-    ax_sizes = {
-        plot_ax: len(context["grid_vals"][context["grid_params"].index(plot_ax)])
-        for plot_ax in context["plot_params"]
-    }
-    if ... in find.keep_axes:
-        keep_axes = _expand_ellipsis_axis(find.keep_axes, ax_sizes)  # type: ignore
-    else:
-        keep_axes = cast(Collection[tuple[str, tuple[int, ...]]], find.keep_axes)
     # No deduplication is done!
-    keep_axes = tuple(
-        (context["grid_params"].index(keep_ax[0]), keep_ax[1]) for keep_ax in keep_axes
-    )
+    keep_axes = _normalize_keep_axes(find.keep_axes, context["scan_grid"])
 
     for ser in context["series_data"].values():
         for index_of_ax, indexes_in_ax in keep_axes:
             amax_arr = ser[index_of_ax][1]
             amax_want = amax_arr[np.ix_(inds_of_metrics, indexes_in_ax)].flatten()
-            partial_match |= {np_to_primitive(el) for el in amax_want}
+            partial_match |= {void_to_tuple(el) for el in amax_want}
     logger.info(
         f"Found {len(partial_match)} gridpoints that match metric-plot_axis criteria"
     )
@@ -633,7 +619,7 @@ def find_gridpoints(
         logger.debug(f"Checking whether {point['pind']} matches param query")
         for params_match in params_or:
             if all(
-                check_values(value, point["params"][param])
+                param in point["params"] and check_values(value, point["params"][param])
                 for param, value in params_match.items()
             ):
                 results.append(point)
@@ -641,6 +627,18 @@ def find_gridpoints(
 
     logger.info(f"found {len(results)} points that match all GridLocator criteria")
     return results
+
+
+def _normalize_keep_axes(
+    keep_axes: KeepAxisSpec, scan_grid: dict[str, Sequence[Any]]
+) -> tuple[tuple[int, tuple[int, ...]], ...]:
+    ax_sizes = {ax_name: len(vals) for ax_name, vals in scan_grid.items()}
+    if ... in keep_axes:
+        keep_axes = _expand_ellipsis_axis(keep_axes, ax_sizes)  # type: ignore
+    else:
+        keep_axes = cast(Collection[tuple[str, tuple[int, ...]]], keep_axes)
+    scan_axes = tuple(ax_sizes.keys())
+    return tuple((scan_axes.index(keep_ax[0]), keep_ax[1]) for keep_ax in keep_axes)
 
 
 def _expand_ellipsis_axis(
@@ -664,6 +662,6 @@ def _expand_ellipsis_axis(
         raise TypeError("Keep_axis does not have an ellipsis or is not a 2-tuple")
 
 
-def np_to_primitive(tuple_like: np.void) -> tuple[int, ...]:
+def void_to_tuple(tuple_like: np.void) -> tuple[int, ...]:
     """Turn a void that represents a tuple of ints into a tuple of ints"""
     return tuple(int(el) for el in cast(Iterable, tuple_like))
