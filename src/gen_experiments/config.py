@@ -54,11 +54,11 @@ def addn(x):
 plot_prefs = {
     "test": _PlotPrefs(),
     "test-absrel": _PlotPrefs(
-        True, _convert_abs_rel_noise, GridLocator(..., {("sim_params.noise_abs", (1,))})
+        True, False, GridLocator(..., {("sim_params.noise_abs", (1,))})
     ),
     "test-absrel2": _PlotPrefs(
         True,
-        _convert_abs_rel_noise,
+        False,
         GridLocator(
             ...,
             (..., ...),
@@ -74,7 +74,7 @@ plot_prefs = {
     ),
     "absrel-newloc": _PlotPrefs(
         True,
-        _convert_abs_rel_noise,
+        False,
         GridLocator(
             ["coeff_mse", "coeff_f1"],
             (..., (2, 3, 4)),
@@ -288,7 +288,7 @@ grid_vals: dict[str, list[Iterable]] = {
     "lorenzk": [[1, 9, 27], [0.1, 0.8], np.logspace(-6, -1, 4)],
     "lorenz1": [[1, 3, 9, 27], [0.01, 0.1, 1]],
     "duration-absnoise": [[0.5, 1, 2, 4, 8, 16], [0.1, 0.5, 1, 2, 4, 8]],
-    "rel_noise": [[0.25, 1, 4, 16], [0.05, 0.1, 0.15, 0.2, 0.25, 0.3]],
+    "rel_noise": [[0.5, 1, 2, 4, 8, 16], [0.05, 0.1, 0.15, 0.2, 0.25, 0.3]],
 }
 grid_decisions = {
     "test": ["plot"],
@@ -424,5 +424,5 @@ skinny_specs: dict[str, SkinnySpecs] = {
         ("sim_params.t_end", "sim_params.noise_abs", "diff_params.meas_var"),
         ((1, 1), (-1, identity), (-1, identity)),
     ),
-    "duration-noise": (("sim_params.t_end", "sim_params.noise_abs"), ((1,), (-1,))),
+    "duration-noise": (("sim_params.t_end", "sim_params.noise_rel"), ((1,), (-1,))),
 }
