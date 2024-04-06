@@ -160,29 +160,29 @@ feat_params = {
 }
 opt_params = {
     "test": ND({"optcls": "STLSQ"}),
-    "miosr": ND({"optcls": "MIOSR"}),
+    "miosr": ND({"optcls": "MIOSR", "unbias": True}),
     "enslsq": ND(
         {"optcls": "ensemble", "opt": ps.STLSQ(), "bagging": True, "n_models": 20}
     ),
     "ensmio-ho-vdp-lv-duff": ND({
         "optcls": "ensemble",
-        "opt": ps.MIOSR(target_sparsity=4),
+        "opt": ps.MIOSR(target_sparsity=4, unbias=True),
         "bagging": True,
         "n_models": 20,
     }),
     "ensmio-hopf": ND({
         "optcls": "ensemble",
-        "opt": ps.MIOSR(target_sparsity=8),
+        "opt": ps.MIOSR(target_sparsity=8, unbias=True),
         "bagging": True,
         "n_models": 20,
     }),
     "ensmio-lorenz-ross": ND({
         "optcls": "ensemble",
-        "opt": ps.MIOSR(target_sparsity=7),
+        "opt": ps.MIOSR(target_sparsity=7, unbias=True),
         "bagging": True,
         "n_models": 20,
     }),
-    "mio-lorenz-ross": ND({"optcls": "MIOSR", "target_sparsity": 7}),
+    "mio-lorenz-ross": ND({"optcls": "MIOSR", "target_sparsity": 7, "unbias": True}),
 }
 
 # Grid search parameters
@@ -323,7 +323,7 @@ diff_series: dict[str, SeriesDef] = {
     ),
     "auto-kalman3": SeriesDef(
         "Auto Kalman",
-        diff_params["kalman-auto"],
+        diff_params["kalman"],
         ["diff_params.alpha"],
         [(None,)],
     ),
