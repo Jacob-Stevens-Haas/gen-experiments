@@ -1,4 +1,4 @@
-from collections.abc import Iterable
+from collections.abc import Collection, Iterable
 from copy import copy
 from functools import partial
 from logging import getLogger
@@ -24,11 +24,11 @@ from numpy.typing import DTypeLike, NDArray
 from scipy.stats import kstest
 
 import gen_experiments
-from gen_experiments import config
-from gen_experiments.odes import plot_ode_panel
-from gen_experiments.plotting import _PlotPrefs
-from gen_experiments.typing import FloatND, NestedDict
-from gen_experiments.utils import simulate_test_data
+from .. import config
+from ..odes import plot_ode_panel
+from ..plotting import _PlotPrefs
+from ..typing import FloatND, NestedDict
+from ..utils import simulate_test_data
 
 from .typing import (
     ExpResult,
@@ -38,6 +38,7 @@ from .typing import (
     KeepAxisSpec,
     OtherSliceDef,
     SavedGridPoint,
+    SeriesData,
     SeriesDef,
     SeriesList,
     SkinnySpecs,
@@ -255,7 +256,13 @@ def run(
         ),
     }
     if plot_prefs:
-        plot_data = find_gridpoints(plot_prefs.plot_match, intermediate_data, results)
+        plot_data = find_gridpoints(
+            plot_prefs.plot_match,
+            intermediate_data,
+            results["series_data"].values(),
+            results["metrics"],
+            results["scan_grid"]
+        )
         results["plot_data"] = plot_data
         for gridpoint in plot_data:
             grid_data = gridpoint["data"]
@@ -569,7 +576,11 @@ def _index_in(base: tuple[int, ...], tgt: tuple[int | ellipsis | slice, ...]) ->
 
 
 def find_gridpoints(
-    find: GridLocator, where: list[SavedGridPoint], context: GridsearchResultDetails
+    find: GridLocator,
+    where: list[SavedGridPoint],
+    argopt_arrs: Collection[SeriesData],
+    argopt_metrics: Sequence[str],
+    argopt_axes: dict[str, Sequence[object]],
 ) -> list[SavedGridPoint]:
     """Find results wrapped by gridsearch that match criteria
 
@@ -582,20 +593,20 @@ def find_gridpoints(
     Returns:
         A list of the matching points in the gridsearch.
     """
-
     results: list[SavedGridPoint] = []
     partial_match: set[tuple[int, ...]] = set()
     inds_of_metrics: Sequence[int]
     if find.metrics is ...:
-        inds_of_metrics = range(len(context["metrics"]))
+        inds_of_metrics = range(len(argopt_metrics))
     else:
         inds_of_metrics = tuple(
-            context["metrics"].index(metric) for metric in find.metrics
+            argopt_metrics.index(metric) for metric in find.metrics
         )
     # No deduplication is done!
-    keep_axes = _normalize_keep_axes(find.keep_axes, context["scan_grid"])
+    keep_axes = _normalize_keep_axes(find.keep_axes, argopt_axes)
 
-    for ser in context["series_data"].values():
+    ser: list[tuple[GridsearchResult[np.floating], GridsearchResult[np.void]]]
+    for ser in argopt_arrs:
         for index_of_ax, indexes_in_ax in keep_axes:
             amax_arr = ser[index_of_ax][1]
             amax_want = amax_arr[np.ix_(inds_of_metrics, indexes_in_ax)].flatten()

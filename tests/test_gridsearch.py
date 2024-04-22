@@ -195,7 +195,11 @@ def gridsearch_results():
 def test_find_gridpoints(gridsearch_results, locator):
     want, full_details = gridsearch_results
     results = gridsearch.find_gridpoints(
-        locator, full_details["plot_data"], full_details
+        locator,
+        full_details["plot_data"],
+        full_details["series_data"].values(),
+        full_details["metrics"],
+        full_details["scan_grid"]
     )
     assert [want] == results
 
