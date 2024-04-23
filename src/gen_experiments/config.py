@@ -82,7 +82,7 @@ plot_prefs = {
                 {"diff_params.kind": "kalman", "diff_params.alpha": None},
                 {
                     "diff_params.kind": "kalman",
-                    "diff_params.alpha": lambda a: isinstance(a, int),
+                    "diff_params.alpha": lambda a: isinstance(a, float | int),
                 },
                 {"diff_params.kind": "trend_filtered"},
                 {"diff_params.diffcls": "SmoothedFiniteDifference"},
