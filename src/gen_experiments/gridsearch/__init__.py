@@ -3,6 +3,7 @@ from copy import copy
 from functools import partial
 from logging import getLogger
 from pprint import pformat
+from time import process_time
 from types import EllipsisType as ellipsis
 from typing import Annotated, Any, Callable, Optional, Sequence, TypeVar, Union, cast
 from warnings import warn
@@ -208,6 +209,7 @@ def run(
                 f"Calculating series {s_counter} ({series_data.name}), "
                 f"gridpoint {ind_counter} ({ind})"
             )
+            start = process_time()
             for axis_ind, key, val_list in zip(ind, new_grid_params, new_grid_vals):
                 curr_other_params[key] = val_list[axis_ind]
             curr_results, grid_data = base_ex.run(
@@ -219,6 +221,7 @@ def run(
             full_results[(slice(None), *ind)] = [
                 curr_results[metric] for metric in metrics
             ]
+            logger.info(f"Last calculation: {process_time() - start:.2f} sec.")
         grid_optima, grid_ind = _marginalize_grid_views(
             new_grid_decisions, full_results, metric_ordering
         )
@@ -260,6 +263,7 @@ def run(
         ):
             key = series_data.name
             logger.info(f"Searching for matching points in series: {key}")
+            start = process_time()
             locator = GridLocator(
                 plot_prefs.plot_match.metrics, plot_prefs.plot_match.keep_axes, [params]
             )
@@ -270,14 +274,17 @@ def run(
                 results["metrics"],
                 results["scan_grid"],
             )
+            logger.info(f"Searching took {process_time() - start:.2f} sec")
         results["plot_data"] = plot_data
         for gridpoint in plot_data:
             grid_data = gridpoint["data"]
             logger.info(f"Plotting: {gridpoint['params']}")
+            start = process_time()
             grid_data |= simulate_test_data(
                 grid_data["model"], grid_data["dt"], grid_data["x_test"]
             )
             plot_ode_panel(grid_data)  # type: ignore
+            logger.info(f"Sim/Plot took {process_time() - start:.2f} sec")
         if plot_prefs.rel_noise:
             raise ValueError("_PlotPrefs.rel_noise is not correctly implemented.")
         else:

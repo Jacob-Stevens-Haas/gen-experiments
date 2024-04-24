@@ -28,7 +28,7 @@ dependencies = [
   "mitosis >=0.4.0rc2",
   "derivative @ git+https://github.com/Jacob-Stevens-Haas/derivative@hyperparams",
   "pysindy[cvxpy,miosr] @ git+https://github.com/dynamicslab/pysindy@master",
-  "kalman @ git+https://github.com/Jacob-Stevens-Haas/kalman@0.1.0",
+  "kalman @ git+https://github.com/Jacob-Stevens-Haas/kalman",
   "auto_ks @ git+https://github.com/cvxgrp/auto_ks.git@e60bcc6",
   "pytest >= 6.0.0",
   "pytest-cov",
