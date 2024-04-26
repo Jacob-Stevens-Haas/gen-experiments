@@ -256,10 +256,18 @@ def run(
         plot_data = []
         # todo - improve how plot_prefs.plot_match interacts with series
         # This is a horrible hack, assuming a params_or for each series, ino
+        if len(series_params.series_list) != len(plot_prefs.plot_match.params_or):
+            msg = (
+                "Trying to plot a subset of points tends to require the same"
+                "number of matchable parameter lists as series, lined up 1:1."
+                "You have a different number of each."
+            )
+            # TODO: write a warn_external function in mitosis for this:
+            warn(msg)
+            logger.warning(msg)
         for series_data, params in zip(
             series_params.series_list,
             list(plot_prefs.plot_match.params_or),
-            strict=True,
         ):
             key = series_data.name
             logger.info(f"Searching for matching points in series: {key}")
