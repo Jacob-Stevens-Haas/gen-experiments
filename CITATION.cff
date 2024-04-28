@@ -1,0 +1,33 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: pysindy-experiments
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Jacob
+    family-names: Stevens-Haas
+    email: jacob.stevens.haas@gmail.com
+    affiliation: University of Washington
+    orcid: 'https://orcid.org/0000-0003-4142-5550'
+  - given-names: Yash
+    family-names: Bhangale
+    email: yash6599@uw.edu
+    affiliation: University of Washington
+repository-code: 'https://github.com/Jacob-Stevens-Haas/gen-experiments'
+abstract: >-
+  A package for forming pysindy experiments to be run in
+  mitosis.
+keywords:
+  - reproducibility
+  - experiments
+  - pysindy
+  - SINDy
+  - dynamical systems
+license: MIT
+commit: 31383318ae86fe3c662d683e0d4a9caf9a2def51
+version: 0.1.1
+date-released: '2024-04-28'
