@@ -4,6 +4,7 @@ gen_experiments/trials/
 scratch/
 *.png
 debugme*.py
+trials/*
 
 # IDE files
 .vscode

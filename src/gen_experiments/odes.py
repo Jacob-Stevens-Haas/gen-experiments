@@ -1,3 +1,4 @@
+from functools import partial
 from typing import Callable
 
 import matplotlib.pyplot as plt
@@ -5,16 +6,18 @@ import numpy as np
 import pysindy as ps
 
 from . import config
-from .utils import (
-    FullTrialData,
-    TrialData,
-    _make_model,
-    coeff_metrics,
+from .data import gen_data
+from .plotting import (
     compare_coefficient_plots,
-    gen_data,
-    integration_metrics,
     plot_test_trajectories,
     plot_training_data,
+)
+from .utils import (
+    FullSINDyTrialData,
+    SINDyTrialData,
+    coeff_metrics,
+    integration_metrics,
+    make_model,
     simulate_test_data,
     unionize_coeff_matrices,
 )
@@ -32,7 +35,9 @@ metric_ordering = {
 }
 
 
-def nonlinear_pendulum(t, x, m=1, L=1, g=9.81, forcing=0, return_all=True):
+def nonlinear_pendulum(
+    t, x, m=1, L=1, g=9.81, forcing=0, return_all=True
+):  # type:ignore
     """Simple pendulum equation of motion
 
     Arguments:
@@ -55,7 +60,7 @@ def nonlinear_pendulum(t, x, m=1, L=1, g=9.81, forcing=0, return_all=True):
 
 
 p_duff = [0.2, 0.05, 1]
-p_lotka = [1, 10]
+p_lotka = [5, 1]
 p_ross = [0.2, 0.2, 5.7]
 p_hopf = [-0.05, 1, 1]
 
@@ -69,7 +74,7 @@ ode_setup = {
         ],
     },
     "lv": {
-        "rhsfunc": ps.utils.odes.lotka,
+        "rhsfunc": partial(ps.utils.odes.lotka, p=p_lotka),
         "input_features": ["x", "y"],
         "coeff_true": [
             {"x": p_lotka[0], "x y": -p_lotka[1]},
@@ -149,7 +154,7 @@ ode_setup = {
 
 
 def run(
-    seed: float,
+    seed: int,
     group: str,
     sim_params: dict,
     diff_params: dict,
@@ -157,7 +162,7 @@ def run(
     opt_params: dict,
     display: bool = True,
     return_all: bool = False,
-) -> dict | tuple[dict, TrialData | FullTrialData]:
+) -> dict | tuple[dict, SINDyTrialData | FullSINDyTrialData]:
     rhsfunc = ode_setup[group]["rhsfunc"]
     input_features = ode_setup[group]["input_features"]
     coeff_true = ode_setup[group]["coeff_true"]
@@ -177,13 +182,13 @@ def run(
         nonnegative=nonnegative,
         **sim_params,
     )
-    model = _make_model(input_features, dt, diff_params, feat_params, opt_params)
+    model = make_model(input_features, dt, diff_params, feat_params, opt_params)
 
     model.fit(x_train)
     coeff_true, coefficients, feature_names = unionize_coeff_matrices(model, coeff_true)
 
     sim_ind = -1
-    trial_data: TrialData = {
+    trial_data: SINDyTrialData = {
         "dt": dt,
         "coeff_true": coeff_true,
         "coeff_fit": coefficients,
@@ -198,7 +203,7 @@ def run(
         "model": model,
     }
     if display:
-        trial_data: FullTrialData = trial_data | simulate_test_data(
+        trial_data: FullSINDyTrialData = trial_data | simulate_test_data(
             trial_data["model"], trial_data["dt"], trial_data["x_test"]
         )
         plot_ode_panel(trial_data)
@@ -210,7 +215,7 @@ def run(
     return metrics
 
 
-def plot_ode_panel(trial_data: FullTrialData):
+def plot_ode_panel(trial_data: FullSINDyTrialData):
     trial_data["model"].print()
     plot_training_data(
         trial_data["x_train"], trial_data["x_true"], trial_data["smooth_train"]
@@ -218,8 +223,8 @@ def plot_ode_panel(trial_data: FullTrialData):
     compare_coefficient_plots(
         trial_data["coeff_fit"],
         trial_data["coeff_true"],
-        input_features=trial_data["input_features"],
-        feature_names=trial_data["feature_names"],
+        input_features=[_texify(feat) for feat in trial_data["input_features"]],
+        feature_names=[_texify(feat) for feat in trial_data["feature_names"]],
     )
     plot_test_trajectories(
         trial_data["x_test"],
@@ -228,3 +233,11 @@ def plot_ode_panel(trial_data: FullTrialData):
         trial_data["t_sim"],
     )
     plt.show()
+
+
+def _texify(input: str) -> str:
+    if input[0] != "$":
+        input = "$" + input
+    if input[-1] != "$":
+        input = input + "$"
+    return input

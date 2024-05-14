@@ -5,13 +5,13 @@ from typing import Any
 
 import numpy as np
 from numpy.typing import NDArray
-from pysindy import BaseDifferentiation, FiniteDifference, SINDy  # type: ignore
+from pysindy import BaseDifferentiation, FiniteDifference, SINDy
 
 from . import gridsearch, odes, pdes
-from .utils import TrialData
+from .utils import SINDyTrialData, make_model  # noqa: F401
 
 this_module = importlib.import_module(__name__)
-BORING_ARRAY = np.ones((2, 2))
+BORING_ARRAY = np.ones((2, 2), dtype=float)
 
 Scores = Mapping[str, float]
 
@@ -38,20 +38,20 @@ class NoExperiment:
     @staticmethod
     def run(
         *args: Any, return_all: bool = True, **kwargs: Any
-    ) -> Scores | tuple[Scores, TrialData]:
+    ) -> Scores | tuple[Scores, SINDyTrialData]:
         metrics = defaultdict(
             lambda: 1,
             main=1,
         )
         if return_all:
-            trial_data: TrialData = {
+            trial_data: SINDyTrialData = {
                 "dt": 1,
                 "coeff_true": BORING_ARRAY[:1],
                 "coeff_fit": BORING_ARRAY[:1],
                 # "coefficients": boring_array,
                 "feature_names": ["1"],
                 "input_features": ["x", "y"],
-                "t_train": np.arange(0, 1, 1),
+                "t_train": np.arange(0, 1, 1, dtype=float),
                 "x_train": BORING_ARRAY,
                 "x_true": BORING_ARRAY,
                 "smooth_train": BORING_ARRAY,
@@ -67,7 +67,7 @@ class NoExperiment:
         return metrics
 
 
-experiments = {
+experiments: dict[str, tuple[Any, str | None]] = {
     "sho": (odes, "sho"),
     "lorenz": (odes, "lorenz"),
     "lorenz_2d": (odes, "lorenz_2d"),

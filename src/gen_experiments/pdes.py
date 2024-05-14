@@ -2,15 +2,14 @@ import numpy as np
 from pysindy.differentiation import SpectralDerivative
 
 from . import config
+from .data import gen_pde_data
+from .plotting import compare_coefficient_plots, plot_pde_training_data
 from .utils import (
-    FullTrialData,
-    TrialData,
-    _make_model,
+    FullSINDyTrialData,
+    SINDyTrialData,
     coeff_metrics,
-    compare_coefficient_plots,
-    gen_pde_data,
     integration_metrics,
-    plot_pde_training_data,
+    make_model,
     simulate_test_data,
     unionize_coeff_matrices,
 )
@@ -144,7 +143,7 @@ def run(
     opt_params: dict,
     display: bool = True,
     return_all: bool = False,
-) -> dict | tuple[dict, TrialData | FullTrialData]:
+) -> dict | tuple[dict, SINDyTrialData | FullSINDyTrialData]:
     rhsfunc = pde_setup[group]["rhsfunc"]["func"]
     input_features = pde_setup[group]["input_features"]
     initial_condition = sim_params["init_cond"]
@@ -170,13 +169,13 @@ def run(
         dt=time_args[0],
         t_end=time_args[1],
     )
-    model = _make_model(input_features, dt, diff_params, feat_params, opt_params)
+    model = make_model(input_features, dt, diff_params, feat_params, opt_params)
 
     model.fit(x_train, t=t_train)
     coeff_true, coefficients, feature_names = unionize_coeff_matrices(model, coeff_true)
 
     sim_ind = -1
-    trial_data: TrialData = {
+    trial_data: SINDyTrialData = {
         "dt": dt,
         "coeff_true": coeff_true,
         "coeff_fit": coefficients,
@@ -191,7 +190,7 @@ def run(
         "model": model,
     }
     if display:
-        trial_data: FullTrialData = trial_data | simulate_test_data(
+        trial_data: FullSINDyTrialData = trial_data | simulate_test_data(
             trial_data["model"], trial_data["dt"], trial_data["x_test"]
         )
         trial_data["model"].print()
