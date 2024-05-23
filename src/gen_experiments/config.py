@@ -102,10 +102,10 @@ sim_params = {
     "med-noise": ND({"n_trajectories": 2, "noise_abs": 0.8}),
     "med-noise-many": ND({"n_trajectories": 10, "noise_abs": 0.8}),
     "hi-noise": ND({"n_trajectories": 2, "noise_abs": 2}),
-    "pde-ic1": ND({"init_cond": np.exp(-((np.arange(0, 10, 0.1) - 5) ** 2) / 2)}),
+    "pde-ic1": ND({"init_cond": np.exp(-((np.linspace(-8, 8, 256) + 2) ** 2) / 2)}),
     "pde-ic2": ND({
-        "init_cond": (np.cos(np.arange(0, 10, 0.1))) * (
-            1 + np.sin(np.arange(0, 10, 0.1) - 0.5)
+        "init_cond": (np.cos(np.linspace(0, 100, 1024))) * (
+            1 + np.sin(np.linspace(0, 100, 1024) - 0.5)
         )
     }),
 }
@@ -131,36 +131,23 @@ feat_params = {
     "testweak": ND({"featcls": "WeakPDELibrary"}),  # needs work
     "pde2": ND({
         "featcls": "pde",
-        "library_functions": [identity, quadratic],
-        "function_names": [identity, addn],
+        "function_library": ps.PolynomialLibrary(degree=2, include_bias=False),
         "derivative_order": 2,
-        "spatial_grid": np.arange(0, 10, 0.1),
+        "spatial_grid": np.linspace(-8, 8, 256),
         "include_interaction": True,
-    }),
-    "pde3": ND({
-        "featcls": "pde",
-        "library_functions": [identity, quadratic],
-        "function_names": [identity, addn],
-        "derivative_order": 3,
-        "spatial_grid": np.arange(0, 10, 0.1),
-        "include_interaction": True,
-        "is_uniform": True,
     }),
     "pde4": ND({
         "featcls": "pde",
-        "library_functions": [identity, quadratic],
-        "function_names": [identity, addn],
+        "function_library": ps.PolynomialLibrary(degree=2, include_bias=False),
         "derivative_order": 4,
-        "spatial_grid": np.arange(0, 10, 0.1),
+        "spatial_grid": np.linspace(0, 100, 1024),
         "include_interaction": True,
-        "is_uniform": True,
-        "periodic": True,
-        "include_bias": True,
     }),
 }
 opt_params = {
     "test": ND({"optcls": "STLSQ"}),
-    "miosr": ND({"optcls": "MIOSR", "unbias": True}),
+    "test_low": ND({"optcls": "STLSQ", "threshold": 0.09}),
+    "miosr": ND({"optcls": "MIOSR"}),
     "enslsq": ND(
         {"optcls": "ensemble", "opt": ps.STLSQ(), "bagging": True, "n_models": 20}
     ),
@@ -198,6 +185,18 @@ other_params = {
         "sim_params": sim_params["test"],
         "diff_params": diff_params["test"],
         "feat_params": feat_params["test"],
+        "opt_params": opt_params["test"],
+    }),
+    "test-pde1": ND({
+        "sim_params": sim_params["pde-ic1"],
+        "diff_params": diff_params["test_axis"],
+        "feat_params": feat_params["pde2"],
+        "opt_params": opt_params["test_low"],
+    }),
+    "test-pde2": ND({
+        "sim_params": sim_params["pde-ic2"],
+        "diff_params": diff_params["test_axis"],
+        "feat_params": feat_params["pde4"],
         "opt_params": opt_params["test"],
     }),
     "tv1": ND({
