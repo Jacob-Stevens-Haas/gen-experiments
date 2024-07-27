@@ -1,3 +1,4 @@
+import logging
 from itertools import chain
 from typing import Annotated, TypedDict, cast
 from warnings import warn
@@ -11,6 +12,8 @@ import sklearn.metrics
 from numpy.typing import NDArray
 
 from .typing import Float1D, Float2D, FloatND
+
+logger = logging.getLogger(__name__)
 
 
 class SINDyTrialData(TypedDict):
@@ -252,10 +255,15 @@ def kalman_generalized_cv(
     params, info = aks.tune(params0, proj, measurements, K=mask, lam=0.1, verbose=False)
     est_Q = np.linalg.inv(params.W_neg_sqrt @ params.W_neg_sqrt.T)
     est_alpha = 1 / (est_Q / Qi).mean()
-    if est_alpha < 1/alpha_max:
-        return 1/alpha_max
+    if est_alpha < 1 / alpha_max:
+        logger.warn(
+            f"Kalman GCV estimated alpha escaped bounds, assigning {1/alpha_max}"
+        )
+        return 1 / alpha_max
     elif est_alpha > alpha_max:
+        logger.warn(f"Kalman GCV estimated alpha escaped bounds, assigning {alpha_max}")
         return alpha_max
     elif np.isnan(est_alpha):
         raise ValueError("GCV Failed")
-    return alpha_max
+    logger.info(f"Identified best alpha for Kalman GCV: {est_alpha}")
+    return est_alpha
