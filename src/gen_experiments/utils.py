@@ -218,7 +218,7 @@ def simulate_test_data(model: ps.SINDy, dt: float, x_test: Float2D) -> SINDyTria
 
 
 def kalman_generalized_cv(
-    times: np.ndarray, measurements: np.ndarray, alpha0: float = 1, detail=False
+    times: np.ndarray, measurements: np.ndarray, alpha0: float = 1, alpha_max=1e12
 ):
     """Find kalman parameter alpha using GCV error
 
@@ -252,4 +252,10 @@ def kalman_generalized_cv(
     params, info = aks.tune(params0, proj, measurements, K=mask, lam=0.1, verbose=False)
     est_Q = np.linalg.inv(params.W_neg_sqrt @ params.W_neg_sqrt.T)
     est_alpha = 1 / (est_Q / Qi).mean()
-    return est_alpha
+    if est_alpha < 1/alpha_max:
+        return 1/alpha_max
+    elif est_alpha > alpha_max:
+        return alpha_max
+    elif np.isnan(est_alpha):
+        raise ValueError("GCV Failed")
+    return alpha_max
