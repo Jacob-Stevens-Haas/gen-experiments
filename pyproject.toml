@@ -26,8 +26,8 @@ classifiers = [
 # dependencies
 dependencies = [
   "mitosis >=0.5.2",
-  "derivative @ git+https://github.com/andgoldschmidt/derivative@f0d566d",
-  "pysindy[cvxpy,miosr] @ git+https://github.com/dynamicslab/pysindy@a43e217",
+  "derivative @ git+https://github.com/andgoldschmidt/derivative",
+  "pysindy[cvxpy,miosr] @ git+https://github.com/dynamicslab/pysindy",
   "kalman @ git+https://github.com/Jacob-Stevens-Haas/kalman@0.1.1",
   "auto_ks @ git+https://github.com/cvxgrp/auto_ks.git@e60bcc6",
   "pytest >= 6.0.0",
