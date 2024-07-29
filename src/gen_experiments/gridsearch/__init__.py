@@ -18,6 +18,7 @@ import gen_experiments
 
 from .. import config
 from ..odes import plot_ode_panel
+from ..pdes import plot_pde_panel
 from ..plotting import _PlotPrefs
 from ..typing import FloatND, NestedDict
 from ..utils import simulate_test_data
@@ -172,6 +173,10 @@ def run(
     logger.info(f"Beginning gridsearch of system: {group}")
     other_params = NestedDict(**other_params)
     base_ex, base_group = gen_experiments.experiments[group]
+    if base_ex.__name__ == "gen_experiments.odes":
+        plot_panel = plot_ode_panel
+    elif base_ex.__name__ == "gen_experiments.pdes":
+        plot_panel = plot_pde_panel
     if series_params is None:
         series_params = SeriesList(None, None, [SeriesDef(group, {}, [], [])])
         legends = False
@@ -291,7 +296,7 @@ def run(
             grid_data |= simulate_test_data(
                 grid_data["model"], grid_data["dt"], grid_data["x_test"]
             )
-            plot_ode_panel(grid_data)  # type: ignore
+            plot_panel(grid_data)  # type: ignore
             logger.info(f"Sim/Plot took {process_time() - start:.2f} sec")
         if plot_prefs.rel_noise:
             raise ValueError("_PlotPrefs.rel_noise is not correctly implemented.")
