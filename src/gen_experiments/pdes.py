@@ -1,5 +1,6 @@
+import matplotlib.pyplot as plt
 import numpy as np
-from pysindy.differentiation import SpectralDerivative
+import pysindy as ps
 
 from . import config
 from .data import gen_pde_data
@@ -31,13 +32,13 @@ def diffuse1D_dirichlet(t, u, dx, nx):
     u = np.reshape(u, nx)
     u[0] = 0
     u[-1] = 0
-    uxx = SpectralDerivative(d=2, axis=0)._differentiate(u, dx)
+    uxx = ps.differentiation.SpectralDerivative(d=2, axis=0)._differentiate(u, dx)
     return np.reshape(uxx, nx)
 
 
 def diffuse1D_periodic(t, u, dx, nx):
     u = np.reshape(u, nx)
-    uxx = SpectralDerivative(d=2, axis=0)._differentiate(u, dx)
+    uxx = ps.differentiation.SpectralDerivative(d=2, axis=0)._differentiate(u, dx)
     return np.reshape(uxx, nx)
 
 
@@ -45,15 +46,15 @@ def burgers1D_dirichlet(t, u, dx, nx):
     u = np.reshape(u, nx)
     u[0] = 0
     u[-1] = 0
-    uxx = SpectralDerivative(d=2, axis=0)._differentiate(u, dx)
-    ux = SpectralDerivative(d=1, axis=0)._differentiate(u, dx)
+    uxx = ps.differentiation.SpectralDerivative(d=2, axis=0)._differentiate(u, dx)
+    ux = ps.differentiation.SpectralDerivative(d=1, axis=0)._differentiate(u, dx)
     return np.reshape((uxx - u * ux), nx)
 
 
 def burgers1D_periodic(t, u, dx, nx):
     u = np.reshape(u, nx)
-    uxx = SpectralDerivative(d=2, axis=0)._differentiate(u, dx)
-    ux = SpectralDerivative(d=1, axis=0)._differentiate(u, dx)
+    uxx = ps.differentiation.SpectralDerivative(d=2, axis=0)._differentiate(u, dx)
+    ux = ps.differentiation.SpectralDerivative(d=1, axis=0)._differentiate(u, dx)
     return np.reshape((0.1 * uxx - u * ux), nx)
 
 
@@ -61,17 +62,17 @@ def ks_dirichlet(t, u, dx, nx):
     u = np.reshape(u, nx)
     u[0] = 0
     u[-1] = 0
-    ux = SpectralDerivative(d=1, axis=0)._differentiate(u, dx)
-    uxx = SpectralDerivative(d=2, axis=0)._differentiate(u, dx)
-    uxxxx = SpectralDerivative(d=4, axis=0)._differentiate(u, dx)
+    ux = ps.differentiation.SpectralDerivative(d=1, axis=0)._differentiate(u, dx)
+    uxx = ps.differentiation.SpectralDerivative(d=2, axis=0)._differentiate(u, dx)
+    uxxxx = ps.differentiation.SpectralDerivative(d=4, axis=0)._differentiate(u, dx)
     return np.reshape(-uxx - uxxxx - u * ux, nx)
 
 
 def ks_periodic(t, u, dx, nx):
     u = np.reshape(u, nx)
-    ux = SpectralDerivative(d=1, axis=0)._differentiate(u, dx)
-    uxx = SpectralDerivative(d=2, axis=0)._differentiate(u, dx)
-    uxxxx = SpectralDerivative(d=4, axis=0)._differentiate(u, dx)
+    ux = ps.differentiation.SpectralDerivative(d=1, axis=0)._differentiate(u, dx)
+    uxx = ps.differentiation.SpectralDerivative(d=2, axis=0)._differentiate(u, dx)
+    uxxxx = ps.differentiation.SpectralDerivative(d=4, axis=0)._differentiate(u, dx)
     return np.reshape(-uxx - uxxxx - u * ux, nx)
 
 
@@ -79,8 +80,8 @@ def kdv(t, u, dx, nx):
     u = np.reshape(u, nx)
     u[0] = 0
     u[-1] = 0
-    ux = SpectralDerivative(d=1, axis=0)._differentiate(u, dx)
-    uxxx = SpectralDerivative(d=3, axis=0)._differentiate(u, dx)
+    ux = ps.differentiation.SpectralDerivative(d=1, axis=0)._differentiate(u, dx)
+    uxxx = ps.differentiation.SpectralDerivative(d=3, axis=0)._differentiate(u, dx)
     return np.reshape(6 * u * ux - uxxx, nx)
 
 
@@ -147,6 +148,10 @@ def run(
     rhsfunc = pde_setup[group]["rhsfunc"]["func"]
     input_features = pde_setup[group]["input_features"]
     initial_condition = sim_params["init_cond"]
+    try:
+        rel_noise = sim_params["rel_noise"]
+    except KeyError:
+        rel_noise = 0.1
     spatial_grid = pde_setup[group]["spatial_grid"]
     spatial_args = [
         (spatial_grid[-1] - spatial_grid[0]) / len(spatial_grid),
@@ -165,7 +170,8 @@ def run(
         spatial_args,
         dimension,
         seed,
-        noise_abs=0,
+        noise_abs=None,
+        noise_rel=rel_noise,
         dt=time_args[0],
         t_end=time_args[1],
     )
@@ -193,23 +199,26 @@ def run(
         trial_data: FullSINDyTrialData = trial_data | simulate_test_data(
             trial_data["model"], trial_data["dt"], trial_data["x_test"]
         )
-        trial_data["model"].print()
-        plot_pde_training_data(
-            spatial_grid,
-            trial_data["t_train"],
-            trial_data["x_train"],
-            trial_data["x_true"],
-            trial_data["smooth_train"],
-        )
-        compare_coefficient_plots(
-            trial_data["coeff_fit"],
-            trial_data["coeff_true"],
-            input_features=trial_data["input_features"],
-            feature_names=trial_data["feature_names"],
-        )
+        plot_pde_panel(trial_data)
 
     metrics = coeff_metrics(coefficients, coeff_true)
     metrics.update(integration_metrics(model, x_test, t_train, x_dot_test))
     if return_all:
         return (metrics, trial_data)
     return metrics
+
+
+def plot_pde_panel(trial_data: FullSINDyTrialData):
+    trial_data["model"].print()
+    plot_pde_training_data(
+        trial_data["x_train"],
+        trial_data["x_true"],
+        trial_data["smooth_train"],
+    )
+    compare_coefficient_plots(
+        trial_data["coeff_fit"],
+        trial_data["coeff_true"],
+        input_features=trial_data["input_features"],
+        feature_names=trial_data["feature_names"],
+    )
+    plt.show()

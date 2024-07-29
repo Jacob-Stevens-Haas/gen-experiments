@@ -234,6 +234,7 @@ def plot_ode_panel(trial_data: FullSINDyTrialData):
     )
     plt.show()
 
+plot_panel = plot_ode_panel
 
 def _texify(input: str) -> str:
     if input[0] != "$":
