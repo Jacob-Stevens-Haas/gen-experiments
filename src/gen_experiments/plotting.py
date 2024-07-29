@@ -218,10 +218,10 @@ def plot_pde_training_data(last_train, last_train_true, smoothed_last_train):
         fig, axs = plt.subplots(1, 3, figsize=(18, 6))
         axs[0].imshow(last_train_true, vmin=0, vmax=last_train_true.max())
         axs[0].set(title="True Data")
-        axs[1].imshow(last_train_true - last_train, vmin=0, vmax=last_train_true.max())
-        axs[1].set(title="Noise")
+        axs[1].imshow(last_train, vmin=0, vmax=last_train_true.max())
+        axs[1].set(title="Noisy Data")
         axs[2].imshow(
-            last_train_true - smoothed_last_train, vmin=0, vmax=last_train_true.max()
+            smoothed_last_train, vmin=0, vmax=last_train_true.max()
         )
         axs[2].set(title="Smoothed Data")
         return plt.show()
