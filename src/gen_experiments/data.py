@@ -212,7 +212,7 @@ def gen_pde_data(
         x_dot_test = [np.moveaxis(x_dot_test, 0, -2)]
     x_train_true = np.copy(x_train)
     if noise_rel is not None:
-        noise_abs = np.sqrt(_signal_avg_power(x_test) * noise_rel)
+        noise_abs = np.sqrt(_max_amplitude(x_test, axis=-2) * noise_rel)
     x_train = x_train + cast(float, noise_abs) * rng.standard_normal(x_train.shape)
     x_train = [np.moveaxis(x_train, 0, -2)]
     x_train_true = np.moveaxis(x_train_true, 0, -2)
@@ -220,8 +220,8 @@ def gen_pde_data(
     return dt, t_train, x_train, x_test, x_dot_test, x_train_true
 
 
-def _max_amplitude(signal: np.ndarray) -> float:
-    return np.abs(scipy.fft.rfft(signal, axis=0)[1:]).max() / np.sqrt(len(signal))
+def _max_amplitude(signal: np.ndarray, axis: int) -> float:
+    return np.abs(scipy.fft.rfft(signal, axis=axis)[1:]).max() / np.sqrt(signal.shape[axis])
 
 
 def _signal_avg_power(signal: np.ndarray) -> float:
