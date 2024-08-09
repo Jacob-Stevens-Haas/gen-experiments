@@ -193,6 +193,8 @@ def run(
         "x_test": x_test[sim_ind],
         "x_dot_test": x_dot_test[sim_ind],
         "model": model,
+        "rel_noise": rel_noise
+        
     }
     if display:
         plot_pde_panel(trial_data)
@@ -210,6 +212,7 @@ def plot_pde_panel(trial_data: FullSINDyTrialData):
         trial_data["x_train"],
         trial_data["x_true"],
         trial_data["smooth_train"],
+        trial_data["rel_noise"]
     )
     compare_coefficient_plots(
         trial_data["coeff_fit"],
