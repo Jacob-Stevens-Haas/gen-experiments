@@ -211,21 +211,29 @@ def plot_training_data(x_train: np.ndarray, x_true: np.ndarray, x_smooth: np.nda
     return fig
 
 
-def plot_pde_training_data(last_train, last_train_true, smoothed_last_train, rel_noise):
-    """Plot training data (and smoothed training data, if different)."""
+def plot_pde_training_data(x_train, x_true, x_smooth, rel_noise):
+    """Plot and compare true data, training data and smoothed data for PDEs."""
     # 1D:
-    if len(last_train.shape) == 3:
+    if x_train.shape[-1] == 1:
         fig, axs = plt.subplots(1, 3, figsize=(18, 6))
-        im0 = axs[0].imshow(last_train_true, vmin=0, vmax=last_train_true.max())
+        im0 = axs[0].imshow(x_true, vmin=0, vmax=x_true.max())
         axs[0].set(title="True Data")
         fig.colorbar(im0, ax=axs[0])
-        im1 = axs[1].imshow(last_train, vmin=0, vmax=last_train_true.max())
+        im1 = axs[1].imshow(x_train, vmin=0, vmax=x_true.max())
         axs[1].set(title=f"Noisy Data with {rel_noise} % Relative Noise")
         fig.colorbar(im1, ax=axs[1])
-        im2 = axs[2].imshow(smoothed_last_train, vmin=0, vmax=last_train_true.max())
+        im2 = axs[2].imshow(x_smooth, vmin=0, vmax=x_smooth.max())
         axs[2].set(title="Smoothed Data")
         fig.colorbar(im2, ax=axs[2])
-        return plt.show()
+        plt.tight_layout()
+        plt.show()
+        noise_spectrum = plt.figure(figsize=(10, 6))
+        fft_values = np.abs(scipy.fft.rfft(x_train-x_true, axis=-2)) / np.sqrt(x_train.shape[-2])
+        plt.loglog(fft_values.mean(axis=0))
+        plt.title("Measurement Noise Spectrum")
+        plt.xlabel("Wavenumber")
+        plt.ylabel("Magnitude")
+        plt.show()
 
 
 def plot_test_sim_data_1d_panel(

@@ -151,7 +151,7 @@ feat_params = {
 }
 opt_params = {
     "test": ND({"optcls": "STLSQ"}),
-    "test_low": ND({"optcls": "STLSQ", "threshold": 0.09}),
+    "test_low": ND({"optcls": "STLSQ", "threshold": 0.05}),
     "miosr": ND({"optcls": "MIOSR"}),
     "enslsq": ND(
         {"optcls": "ensemble", "opt": ps.STLSQ(), "bagging": True, "n_models": 20}
