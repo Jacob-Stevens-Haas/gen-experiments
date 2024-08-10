@@ -227,7 +227,7 @@ def plot_pde_training_data(x_train, x_true, x_smooth, rel_noise):
         fig.colorbar(im2, ax=axs[2])
         plt.tight_layout()
         plt.show()
-        noise_spectrum = plt.figure(figsize=(10, 6))
+        plt.figure(figsize=(10, 6))
         fft_values = np.abs(scipy.fft.rfft(x_train-x_true, axis=-2)) / np.sqrt(x_train.shape[-2])
         plt.loglog(fft_values.mean(axis=0))
         plt.title("Measurement Noise Spectrum")

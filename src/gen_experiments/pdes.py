@@ -1,3 +1,5 @@
+from logging import getLogger
+from time import process_time
 import matplotlib.pyplot as plt
 import numpy as np
 import pysindy as ps
@@ -14,6 +16,7 @@ from .utils import (
     unionize_coeff_matrices,
 )
 
+logger = getLogger(__name__)
 name = "pdes"
 lookup_dict = vars(config)
 metric_ordering = {
@@ -163,6 +166,7 @@ def run(
         time_args = pde_setup[group]["time_args"]
     except KeyError:
         time_args = [0.01, 10]
+    start = process_time()
     dt, t_train, x_train, x_test, x_dot_test, x_train_true = gen_pde_data(
         rhsfunc,
         initial_condition,
@@ -174,6 +178,7 @@ def run(
         dt=time_args[0],
         t_end=time_args[1],
     )
+    logger.info(f"Data Generation took {process_time() - start:.2f} sec.")
     model = make_model(input_features, dt, diff_params, feat_params, opt_params)
 
     model.fit(x_train, t=t_train)
