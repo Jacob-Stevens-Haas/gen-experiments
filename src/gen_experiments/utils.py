@@ -257,7 +257,7 @@ def kalman_generalized_cv(
     est_alpha = 1 / (est_Q / Qi).mean()
     if est_alpha < 1 / alpha_max:
         logger.warn(
-            f"Kalman GCV estimated alpha escaped bounds, assigning {1/alpha_max}"
+            f"Kalman GCV estimated alpha escaped bounds, assigning {1 / alpha_max}"
         )
         return 1 / alpha_max
     elif est_alpha > alpha_max:
