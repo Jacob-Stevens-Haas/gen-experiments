@@ -1,6 +1,7 @@
 from logging import getLogger
 from time import process_time
 
+import itertools
 import matplotlib.pyplot as plt
 import numpy as np
 import pysindy as ps
@@ -10,6 +11,7 @@ from .data import gen_pde_data
 from .plotting import compare_coefficient_plots, plot_pde_training_data
 from .utils import (
     FullSINDyTrialData,
+    PDEData,
     SINDyTrialData,
     coeff_metrics,
     integration_metrics,
@@ -99,7 +101,6 @@ pde_setup = {
     "diffuse1D_periodic": {
         "rhsfunc": {"func": diffuse1D_periodic, "dimension": 1},
         "input_features": ["u"],
-        "time_args": [0.1, 10],
         "coeff_true": [{"u_11": 1}],
         "spatial_grid": np.linspace(-8, 8, 256),
     },
@@ -113,7 +114,6 @@ pde_setup = {
     "burgers1D_periodic": {
         "rhsfunc": {"func": burgers1D_periodic, "dimension": 1},
         "input_features": ["u"],
-        "time_args": [0.1, 10],
         "coeff_true": [{"u_11": 0.1, "uu_1": -1}],
         "spatial_grid": np.linspace(-8, 8, 256),
     },
@@ -129,7 +129,6 @@ pde_setup = {
     "ks_periodic": {
         "rhsfunc": {"func": ks_periodic, "dimension": 1},
         "input_features": ["u"],
-        "time_args": [0.4, 100],
         "coeff_true": [
             {"u_11": -1, "u_1111": -1, "uu_1": -1},
         ],
@@ -137,6 +136,56 @@ pde_setup = {
     },
 }
 
+def data_prep(
+        seed,
+        group,
+        sim_params,
+        grid_params = None,
+        grid_vals = None,
+):
+    rhsfunc = pde_setup[group]["rhsfunc"]["func"]
+    dimension = pde_setup[group]["rhsfunc"]["dimension"]
+    spatial_grid = pde_setup[group]["spatial_grid"]
+    initial_condition = sim_params["init_cond"]
+    dt = sim_params["dt"]
+    spatial_args = [
+        (spatial_grid[-1] - spatial_grid[0]) / len(spatial_grid),
+        len(spatial_grid),
+    ]
+    if grid_vals is not None:
+        full_data = {}
+        for ind, combo in enumerate(itertools.product(*grid_vals)):
+            t_end = combo[0]
+            rel_noise = combo[1]
+            key = f"data_{ind+1}_{combo}"
+            full_data[key] = gen_pde_data(
+                rhsfunc,
+                initial_condition,
+                spatial_args,
+                dimension,
+                seed,
+                noise_abs=None,
+                noise_rel=rel_noise,
+                dt=dt,
+                t_end=t_end,
+                )
+        sim_params["data"] = full_data
+    else:
+        rel_noise = sim_params["rel_noise"]
+        t_end = sim_params["t_end"]
+        data = gen_pde_data(
+            rhsfunc,
+            initial_condition,
+            spatial_args,
+            dimension,
+            seed,
+            noise_abs=None,
+            noise_rel=rel_noise,
+            dt=dt,
+            t_end=t_end,
+            )
+        sim_params["data"] = data
+    return sim_params
 
 def run(
     seed: float,
@@ -148,40 +197,18 @@ def run(
     display: bool = True,
     return_all: bool = False,
 ) -> dict | tuple[dict, SINDyTrialData | FullSINDyTrialData]:
-    rhsfunc = pde_setup[group]["rhsfunc"]["func"]
     input_features = pde_setup[group]["input_features"]
-    initial_condition = sim_params["init_cond"]
-    try:
-        rel_noise = sim_params["rel_noise"]
-    except KeyError:
-        rel_noise = 0.1
-    spatial_grid = pde_setup[group]["spatial_grid"]
-    spatial_args = [
-        (spatial_grid[-1] - spatial_grid[0]) / len(spatial_grid),
-        len(spatial_grid),
-    ]
-    time_args = pde_setup[group]["time_args"]
-    dimension = pde_setup[group]["rhsfunc"]["dimension"]
     coeff_true = pde_setup[group]["coeff_true"]
-    try:
-        time_args = pde_setup[group]["time_args"]
-    except KeyError:
-        time_args = [0.01, 10]
-    start = process_time()
-    dt, t_train, x_train, x_test, x_dot_test, x_train_true = gen_pde_data(
-        rhsfunc,
-        initial_condition,
-        spatial_args,
-        dimension,
-        seed,
-        noise_abs=None,
-        noise_rel=rel_noise,
-        dt=time_args[0],
-        t_end=time_args[1],
-    )
-    logger.info(f"Data Generation took {process_time() - start:.2f} sec.")
+    data = sim_params["data"]
+    dt = data["dt"]
+    t_train = data["t_train"]
+    x_train = data["x_train"]
+    x_test = data["x_test"]
+    x_dot_test = data["x_dot_test"]
+    x_train_true = data["x_train_true"]
+    rel_noise = data["rel_noise"]
     model = make_model(input_features, dt, diff_params, feat_params, opt_params)
-
+    
     model.fit(x_train, t=t_train)
     coeff_true, coefficients, feature_names = unionize_coeff_matrices(model, coeff_true)
 

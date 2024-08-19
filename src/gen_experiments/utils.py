@@ -16,6 +16,16 @@ from .typing import Float1D, Float2D, FloatND
 logger = logging.getLogger(__name__)
 
 
+class PDEData(dict):
+    dt: float
+    t_train: np.ndarray
+    x_train: np.ndarray
+    x_test: np.ndarray
+    x_dot_test: np.ndarray
+    x_train_true: np.ndarray
+    rel_noise: float
+
+
 class SINDyTrialData(TypedDict):
     dt: float
     coeff_true: Annotated[Float2D, "(n_coord, n_features)"]

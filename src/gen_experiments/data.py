@@ -8,7 +8,7 @@ import numpy as np
 import scipy
 
 from gen_experiments.gridsearch.typing import GridsearchResultDetails
-from gen_experiments.utils import Float1D, Float2D
+from gen_experiments.utils import Float1D, Float2D, PDEData
 
 INTEGRATOR_KEYWORDS = {"rtol": 1e-12, "method": "LSODA", "atol": 1e-12}
 TRIALS_FOLDER = Path(__file__).parent.absolute() / "trials"
@@ -220,7 +220,16 @@ def gen_pde_data(
     x_train = [np.moveaxis(x_train, 0, -2)]
     x_train_true = np.moveaxis(x_train_true, 0, -2)
     x_test = [np.moveaxis(x_test, [0, 1], [-1, -2])]
-    return dt, t_train, x_train, x_test, x_dot_test, x_train_true
+    pde_data: PDEData = {
+        "dt": dt,
+        "t_train": t_train,
+        "x_train": x_train,
+        "x_test": x_test,
+        "x_dot_test": x_dot_test,
+        "x_train_true": x_train_true,
+        "rel_noise": noise_rel,
+    }
+    return pde_data
 
 
 def _max_amplitude(signal: np.ndarray, axis: int) -> float:

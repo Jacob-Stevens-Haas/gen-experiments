@@ -102,7 +102,12 @@ sim_params = {
     "med-noise": ND({"n_trajectories": 2, "noise_abs": 0.8}),
     "med-noise-many": ND({"n_trajectories": 10, "noise_abs": 0.8}),
     "hi-noise": ND({"n_trajectories": 2, "noise_abs": 2}),
-    "pde-ic1": ND({"init_cond": np.exp(-((np.linspace(-8, 8, 256) + 2) ** 2) / 2)}),
+    "pde-ic1": ND({
+        "spatial_grid": np.linspace(-8, 8, 256),
+        "init_cond": np.exp(-((np.linspace(-8, 8, 256) + 2) ** 2) / 2),
+        "rel_noise": 1e-4,
+        "t_end": 10,
+        "dt": 0.1}),
     "pde-ic2": ND(
         {
             "init_cond": (np.cos(np.linspace(0, 100, 1024)))
