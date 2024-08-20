@@ -105,15 +105,18 @@ sim_params = {
     "pde-ic1": ND({
         "spatial_grid": np.linspace(-8, 8, 256),
         "init_cond": np.exp(-((np.linspace(-8, 8, 256) + 2) ** 2) / 2),
-        "rel_noise": 1e-4,
-        "t_end": 10,
+        "rel_noise": 0.001,
+        "t_end": 32,
         "dt": 0.1}),
-    "pde-ic2": ND(
-        {
-            "init_cond": (np.cos(np.linspace(0, 100, 1024)))
-            * (1 + np.sin(np.linspace(0, 100, 1024) - 0.5))
-        }
-    ),
+    "pde-ic2": ND({
+        "spatial_grid": np.linspace(0, 100, 1024),
+        "init_cond": (np.cos(np.linspace(0, 100, 1024))) * (
+            1 + np.sin(np.linspace(0, 100, 1024) - 0.5)
+        ),
+        "rel_noise": 0.1,
+        "t_end": 100,
+        "dt": 0.4
+    }),
 }
 diff_params = {
     "test": ND({"diffcls": "FiniteDifference"}),

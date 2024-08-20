@@ -152,12 +152,12 @@ def data_prep(
         (spatial_grid[-1] - spatial_grid[0]) / len(spatial_grid),
         len(spatial_grid),
     ]
-    if grid_vals is not None:
+    if grid_params is not None:
         full_data = {}
-        for ind, combo in enumerate(itertools.product(*grid_vals)):
+        for combo in itertools.product(*grid_vals):
             t_end = combo[0]
             rel_noise = combo[1]
-            key = f"data_{ind+1}_{combo}"
+            key = f"data_{combo}"
             full_data[key] = gen_pde_data(
                 rhsfunc,
                 initial_condition,
@@ -185,7 +185,7 @@ def data_prep(
             t_end=t_end,
             )
         sim_params["data"] = data
-    return sim_params
+    return np.save("sim_params.npy", sim_params)
 
 def run(
     seed: float,
@@ -199,16 +199,23 @@ def run(
 ) -> dict | tuple[dict, SINDyTrialData | FullSINDyTrialData]:
     input_features = pde_setup[group]["input_features"]
     coeff_true = pde_setup[group]["coeff_true"]
+    rel_noise = sim_params["rel_noise"]
+    t_end = sim_params["t_end"]
+    search_key = f"data_{t_end, rel_noise}"
     data = sim_params["data"]
-    dt = data["dt"]
-    t_train = data["t_train"]
-    x_train = data["x_train"]
-    x_test = data["x_test"]
-    x_dot_test = data["x_dot_test"]
-    x_train_true = data["x_train_true"]
-    rel_noise = data["rel_noise"]
+    if search_key in data:
+        dt = data[search_key]["dt"]
+        t_train = data[search_key]["t_train"]
+        x_train = data[search_key]["x_train"]
+        x_test = data[search_key]["x_test"]
+        x_dot_test = data[search_key]["x_dot_test"]
+        x_train_true = data[search_key]["x_train_true"]
+        rel_noise = data[search_key]["rel_noise"]
+    else:
+        raise KeyError(f"{search_key} not found in data")
+
     model = make_model(input_features, dt, diff_params, feat_params, opt_params)
-    
+
     model.fit(x_train, t=t_train)
     coeff_true, coefficients, feature_names = unionize_coeff_matrices(model, coeff_true)
 
