@@ -102,11 +102,20 @@ sim_params = {
     "med-noise": ND({"n_trajectories": 2, "noise_abs": 0.8}),
     "med-noise-many": ND({"n_trajectories": 10, "noise_abs": 0.8}),
     "hi-noise": ND({"n_trajectories": 2, "noise_abs": 2}),
-    "pde-ic1": ND({"init_cond": np.exp(-((np.linspace(-8, 8, 256) + 2) ** 2) / 2)}),
+    "pde-ic1": ND({
+        "spatial_grid": np.linspace(-8, 8, 256),
+        "init_cond": np.exp(-((np.linspace(-8, 8, 256) + 2) ** 2) / 2),
+        "rel_noise": 0.001,
+        "t_end": 32,
+        "dt": 0.1}),
     "pde-ic2": ND({
+        "spatial_grid": np.linspace(0, 100, 1024),
         "init_cond": (np.cos(np.linspace(0, 100, 1024))) * (
             1 + np.sin(np.linspace(0, 100, 1024) - 0.5)
-        )
+        ),
+        "rel_noise": 0.1,
+        "t_end": 100,
+        "dt": 0.4
     }),
 }
 diff_params = {
@@ -129,46 +138,56 @@ feat_params = {
     "test2": ND({"featcls": "Fourier"}),
     "cubic": ND({"featcls": "Polynomial", "degree": 3}),
     "testweak": ND({"featcls": "WeakPDELibrary"}),  # needs work
-    "pde2": ND({
-        "featcls": "pde",
-        "function_library": ps.PolynomialLibrary(degree=2, include_bias=False),
-        "derivative_order": 2,
-        "spatial_grid": np.linspace(-8, 8, 256),
-        "include_interaction": True,
-    }),
-    "pde4": ND({
-        "featcls": "pde",
-        "function_library": ps.PolynomialLibrary(degree=2, include_bias=False),
-        "derivative_order": 4,
-        "spatial_grid": np.linspace(0, 100, 1024),
-        "include_interaction": True,
-    }),
+    "pde2": ND(
+        {
+            "featcls": "pde",
+            "function_library": ps.PolynomialLibrary(degree=2, include_bias=False),
+            "derivative_order": 2,
+            "spatial_grid": np.linspace(-8, 8, 256),
+            "include_interaction": True,
+        }
+    ),
+    "pde4": ND(
+        {
+            "featcls": "pde",
+            "function_library": ps.PolynomialLibrary(degree=2, include_bias=False),
+            "derivative_order": 4,
+            "spatial_grid": np.linspace(0, 100, 1024),
+            "include_interaction": True,
+        }
+    ),
 }
 opt_params = {
     "test": ND({"optcls": "STLSQ"}),
-    "test_low": ND({"optcls": "STLSQ", "threshold": 0.09}),
+    "test_low": ND({"optcls": "STLSQ", "threshold": 0.05}),
     "miosr": ND({"optcls": "MIOSR"}),
     "enslsq": ND(
         {"optcls": "ensemble", "opt": ps.STLSQ(), "bagging": True, "n_models": 20}
     ),
-    "ensmio-ho-vdp-lv-duff": ND({
-        "optcls": "ensemble",
-        "opt": ps.MIOSR(target_sparsity=4, unbias=True),
-        "bagging": True,
-        "n_models": 20,
-    }),
-    "ensmio-hopf": ND({
-        "optcls": "ensemble",
-        "opt": ps.MIOSR(target_sparsity=8, unbias=True),
-        "bagging": True,
-        "n_models": 20,
-    }),
-    "ensmio-lorenz-ross": ND({
-        "optcls": "ensemble",
-        "opt": ps.MIOSR(target_sparsity=7, unbias=True),
-        "bagging": True,
-        "n_models": 20,
-    }),
+    "ensmio-ho-vdp-lv-duff": ND(
+        {
+            "optcls": "ensemble",
+            "opt": ps.MIOSR(target_sparsity=4, unbias=True),
+            "bagging": True,
+            "n_models": 20,
+        }
+    ),
+    "ensmio-hopf": ND(
+        {
+            "optcls": "ensemble",
+            "opt": ps.MIOSR(target_sparsity=8, unbias=True),
+            "bagging": True,
+            "n_models": 20,
+        }
+    ),
+    "ensmio-lorenz-ross": ND(
+        {
+            "optcls": "ensemble",
+            "opt": ps.MIOSR(target_sparsity=7, unbias=True),
+            "bagging": True,
+            "n_models": 20,
+        }
+    ),
     "mio-lorenz-ross": ND({"optcls": "MIOSR", "target_sparsity": 7, "unbias": True}),
 }
 
@@ -181,92 +200,124 @@ metrics = {
     "1": ["coeff_f1", "coeff_precision", "coeff_mse", "coeff_mae"],
 }
 other_params = {
-    "test": ND({
-        "sim_params": sim_params["test"],
-        "diff_params": diff_params["test"],
-        "feat_params": feat_params["test"],
-        "opt_params": opt_params["test"],
-    }),
-    "test-pde1": ND({
-        "sim_params": sim_params["pde-ic1"],
-        "diff_params": diff_params["test_axis"],
-        "feat_params": feat_params["pde2"],
-        "opt_params": opt_params["test_low"],
-    }),
-    "test-pde2": ND({
-        "sim_params": sim_params["pde-ic2"],
-        "diff_params": diff_params["test_axis"],
-        "feat_params": feat_params["pde4"],
-        "opt_params": opt_params["test"],
-    }),
-    "tv1": ND({
-        "sim_params": sim_params["test"],
-        "diff_params": diff_params["tv"],
-        "feat_params": feat_params["test"],
-        "opt_params": opt_params["test"],
-    }),
-    "test2": ND({
-        "sim_params": sim_params["test"],
-        "feat_params": feat_params["test"],
-        "opt_params": opt_params["test"],
-    }),
-    "test-kalman-heuristic2": ND({
-        "sim_params": sim_params["test"],
-        "diff_params": diff_params["kalman-empty2"],
-        "feat_params": feat_params["test"],
-        "opt_params": opt_params["test"],
-    }),
-    "lorenzk": ND({
-        "sim_params": sim_params["test"],
-        "diff_params": diff_params["kalman"],
-        "feat_params": feat_params["test"],
-        "opt_params": opt_params["test"],
-    }),
-    "exp1": ND({
-        "sim_params": sim_params["10x"],
-        "feat_params": feat_params["test"],
-        "opt_params": opt_params["enslsq"],
-    }),
-    "cubic": ND({
-        "sim_params": sim_params["test"],
-        "feat_params": feat_params["cubic"],
-        "opt_params": opt_params["test"],
-    }),
-    "exp2": ND({
-        "sim_params": sim_params["10x"],
-        "feat_params": feat_params["cubic"],
-        "opt_params": opt_params["enslsq"],
-    }),
-    "abs-exp3": ND({
-        "sim_params": sim_params["med-noise-many"],
-        "feat_params": feat_params["cubic"],
-        "opt_params": opt_params["ensmio-lorenz-ross"],
-    }),
-    "rel-exp3-lorenz": ND({
-        "sim_params": sim_params["10x"],
-        "feat_params": feat_params["cubic"],
-        "opt_params": opt_params["ensmio-lorenz-ross"],
-    }),
-    "lor-ross-cubic": ND({
-        "sim_params": sim_params["10x"],
-        "feat_params": feat_params["cubic"],
-        "opt_params": opt_params["ensmio-lorenz-ross"],
-    }),
-    "lor-ross-cubic-fast": ND({
-        "sim_params": sim_params["test"],
-        "feat_params": feat_params["cubic"],
-        "opt_params": opt_params["mio-lorenz-ross"],
-    }),
-    "4nonzero-cubic": ND({
-        "sim_params": sim_params["10x"],
-        "feat_params": feat_params["cubic"],
-        "opt_params": opt_params["ensmio-ho-vdp-lv-duff"],
-    }),
-    "hopf-cubic": ND({
-        "sim_params": sim_params["10x"],
-        "feat_params": feat_params["cubic"],
-        "opt_params": opt_params["ensmio-hopf"],
-    }),
+    "test": ND(
+        {
+            "sim_params": sim_params["test"],
+            "diff_params": diff_params["test"],
+            "feat_params": feat_params["test"],
+            "opt_params": opt_params["test"],
+        }
+    ),
+    "test-pde1": ND(
+        {
+            "sim_params": sim_params["pde-ic1"],
+            "diff_params": diff_params["test_axis"],
+            "feat_params": feat_params["pde2"],
+            "opt_params": opt_params["test_low"],
+        }
+    ),
+    "test-pde2": ND(
+        {
+            "sim_params": sim_params["pde-ic2"],
+            "diff_params": diff_params["test_axis"],
+            "feat_params": feat_params["pde4"],
+            "opt_params": opt_params["test"],
+        }
+    ),
+    "tv1": ND(
+        {
+            "sim_params": sim_params["test"],
+            "diff_params": diff_params["tv"],
+            "feat_params": feat_params["test"],
+            "opt_params": opt_params["test"],
+        }
+    ),
+    "test2": ND(
+        {
+            "sim_params": sim_params["test"],
+            "feat_params": feat_params["test"],
+            "opt_params": opt_params["test"],
+        }
+    ),
+    "test-kalman-heuristic2": ND(
+        {
+            "sim_params": sim_params["test"],
+            "diff_params": diff_params["kalman-empty2"],
+            "feat_params": feat_params["test"],
+            "opt_params": opt_params["test"],
+        }
+    ),
+    "lorenzk": ND(
+        {
+            "sim_params": sim_params["test"],
+            "diff_params": diff_params["kalman"],
+            "feat_params": feat_params["test"],
+            "opt_params": opt_params["test"],
+        }
+    ),
+    "exp1": ND(
+        {
+            "sim_params": sim_params["10x"],
+            "feat_params": feat_params["test"],
+            "opt_params": opt_params["enslsq"],
+        }
+    ),
+    "cubic": ND(
+        {
+            "sim_params": sim_params["test"],
+            "feat_params": feat_params["cubic"],
+            "opt_params": opt_params["test"],
+        }
+    ),
+    "exp2": ND(
+        {
+            "sim_params": sim_params["10x"],
+            "feat_params": feat_params["cubic"],
+            "opt_params": opt_params["enslsq"],
+        }
+    ),
+    "abs-exp3": ND(
+        {
+            "sim_params": sim_params["med-noise-many"],
+            "feat_params": feat_params["cubic"],
+            "opt_params": opt_params["ensmio-lorenz-ross"],
+        }
+    ),
+    "rel-exp3-lorenz": ND(
+        {
+            "sim_params": sim_params["10x"],
+            "feat_params": feat_params["cubic"],
+            "opt_params": opt_params["ensmio-lorenz-ross"],
+        }
+    ),
+    "lor-ross-cubic": ND(
+        {
+            "sim_params": sim_params["10x"],
+            "feat_params": feat_params["cubic"],
+            "opt_params": opt_params["ensmio-lorenz-ross"],
+        }
+    ),
+    "lor-ross-cubic-fast": ND(
+        {
+            "sim_params": sim_params["test"],
+            "feat_params": feat_params["cubic"],
+            "opt_params": opt_params["mio-lorenz-ross"],
+        }
+    ),
+    "4nonzero-cubic": ND(
+        {
+            "sim_params": sim_params["10x"],
+            "feat_params": feat_params["cubic"],
+            "opt_params": opt_params["ensmio-ho-vdp-lv-duff"],
+        }
+    ),
+    "hopf-cubic": ND(
+        {
+            "sim_params": sim_params["10x"],
+            "feat_params": feat_params["cubic"],
+            "opt_params": opt_params["ensmio-hopf"],
+        }
+    ),
 }
 grid_params = {
     "test": ["sim_params.t_end"],

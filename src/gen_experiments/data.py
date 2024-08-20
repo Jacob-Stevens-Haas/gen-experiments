@@ -8,7 +8,7 @@ import numpy as np
 import scipy
 
 from gen_experiments.gridsearch.typing import GridsearchResultDetails
-from gen_experiments.utils import Float1D, Float2D
+from gen_experiments.utils import Float1D, Float2D, PDEData
 
 INTEGRATOR_KEYWORDS = {"rtol": 1e-12, "method": "LSODA", "atol": 1e-12}
 TRIALS_FOLDER = Path(__file__).parent.absolute() / "trials"
@@ -66,10 +66,12 @@ def gen_data(
         x0_train = np.array(
             [rng.gamma(k, theta, n_trajectories) for k, theta in zip(shape, scale)]
         ).T
-        x0_test = np.array([
-            rng.gamma(k, theta, ceil(n_trajectories / 2))
-            for k, theta in zip(shape, scale)
-        ]).T
+        x0_test = np.array(
+            [
+                rng.gamma(k, theta, ceil(n_trajectories / 2))
+                for k, theta in zip(shape, scale)
+            ]
+        ).T
     else:
         x0_train = ic_stdev * rng.standard_normal((n_trajectories, n_coord)) + x0_center
         x0_test = (
@@ -195,6 +197,7 @@ def gen_pde_data(
             x_train, (t, int(np.cbrt(x)), int(np.cbrt(x)), int(np.cbrt(x)), 1)
         )
     x_test = x_train
+    signal = x_test
     x_test = np.moveaxis(x_test, -1, 0)
     x_dot_test = np.array(
         [[rhs_func(0, xij, args[0], args[1]) for xij in xi] for xi in x_test]
@@ -212,16 +215,27 @@ def gen_pde_data(
         x_dot_test = [np.moveaxis(x_dot_test, 0, -2)]
     x_train_true = np.copy(x_train)
     if noise_rel is not None:
-        noise_abs = np.sqrt(_max_amplitude(x_test, axis=-2) * noise_rel)
+        noise_abs = np.sqrt(_max_amplitude(signal, axis=-2) * noise_rel)
     x_train = x_train + cast(float, noise_abs) * rng.standard_normal(x_train.shape)
     x_train = [np.moveaxis(x_train, 0, -2)]
     x_train_true = np.moveaxis(x_train_true, 0, -2)
     x_test = [np.moveaxis(x_test, [0, 1], [-1, -2])]
-    return dt, t_train, x_train, x_test, x_dot_test, x_train_true
+    pde_data: PDEData = {
+        "dt": dt,
+        "t_train": t_train,
+        "x_train": x_train,
+        "x_test": x_test,
+        "x_dot_test": x_dot_test,
+        "x_train_true": x_train_true,
+        "rel_noise": noise_rel,
+    }
+    return pde_data
 
 
 def _max_amplitude(signal: np.ndarray, axis: int) -> float:
-    return np.abs(scipy.fft.rfft(signal, axis=axis)[1:]).max() / np.sqrt(signal.shape[axis])
+    return np.abs(scipy.fft.rfft(signal, axis=axis)[1:]).max() / np.sqrt(
+        signal.shape[axis]
+    )
 
 
 def _signal_avg_power(signal: np.ndarray) -> float:

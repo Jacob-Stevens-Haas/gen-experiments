@@ -16,6 +16,16 @@ from .typing import Float1D, Float2D, FloatND
 logger = logging.getLogger(__name__)
 
 
+class PDEData(dict):
+    dt: float
+    t_train: np.ndarray
+    x_train: np.ndarray
+    x_test: np.ndarray
+    x_dot_test: np.ndarray
+    x_train_true: np.ndarray
+    rel_noise: float
+
+
 class SINDyTrialData(TypedDict):
     dt: float
     coeff_true: Annotated[Float2D, "(n_coord, n_features)"]
@@ -257,7 +267,7 @@ def kalman_generalized_cv(
     est_alpha = 1 / (est_Q / Qi).mean()
     if est_alpha < 1 / alpha_max:
         logger.warn(
-            f"Kalman GCV estimated alpha escaped bounds, assigning {1/alpha_max}"
+            f"Kalman GCV estimated alpha escaped bounds, assigning {1 / alpha_max}"
         )
         return 1 / alpha_max
     elif est_alpha > alpha_max:
