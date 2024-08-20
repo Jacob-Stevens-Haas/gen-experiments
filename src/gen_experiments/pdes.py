@@ -185,7 +185,7 @@ def data_prep(
             t_end=t_end,
             )
         sim_params["data"] = data
-    return np.save("sim_params.npy", sim_params)
+    return np.save(f"sim_params_{group}.npy", sim_params)
 
 def run(
     seed: float,
