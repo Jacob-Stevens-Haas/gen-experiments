@@ -66,10 +66,12 @@ def gen_data(
         x0_train = np.array(
             [rng.gamma(k, theta, n_trajectories) for k, theta in zip(shape, scale)]
         ).T
-        x0_test = np.array([
-            rng.gamma(k, theta, ceil(n_trajectories / 2))
-            for k, theta in zip(shape, scale)
-        ]).T
+        x0_test = np.array(
+            [
+                rng.gamma(k, theta, ceil(n_trajectories / 2))
+                for k, theta in zip(shape, scale)
+            ]
+        ).T
     else:
         x0_train = ic_stdev * rng.standard_normal((n_trajectories, n_coord)) + x0_center
         x0_test = (
@@ -221,7 +223,9 @@ def gen_pde_data(
 
 
 def _max_amplitude(signal: np.ndarray, axis: int) -> float:
-    return np.abs(scipy.fft.rfft(signal, axis=axis)[1:]).max() / np.sqrt(signal.shape[axis])
+    return np.abs(scipy.fft.rfft(signal, axis=axis)[1:]).max() / np.sqrt(
+        signal.shape[axis]
+    )
 
 
 def _signal_avg_power(signal: np.ndarray) -> float:
