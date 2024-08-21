@@ -102,28 +102,39 @@ sim_params = {
     "med-noise": ND({"n_trajectories": 2, "noise_abs": 0.8}),
     "med-noise-many": ND({"n_trajectories": 10, "noise_abs": 0.8}),
     "hi-noise": ND({"n_trajectories": 2, "noise_abs": 2}),
-    "pde-ic1": ND({
-        "spatial_grid": np.linspace(-8, 8, 256),
-        "init_cond": np.exp(-((np.linspace(-8, 8, 256) + 2) ** 2) / 2),
-        "rel_noise": 0.001,
-        "t_end": 32,
-        "dt": 0.1}),
-    "pde-ic2": ND({
-        "spatial_grid": np.linspace(0, 100, 1024),
-        "init_cond": (np.cos(np.linspace(0, 100, 1024))) * (
-            1 + np.sin(np.linspace(0, 100, 1024) - 0.5)
-        ),
-        "rel_noise": 0.1,
-        "t_end": 100,
-        "dt": 0.4
-    }),
+    "pde-ic1": ND(
+        {
+            "spatial_grid": np.linspace(-8, 8, 256),
+            "init_cond": np.exp(-((np.linspace(-8, 8, 256) + 2) ** 2) / 2),
+            "rel_noise": 0.001,
+            "t_end": 32,
+            "dt": 0.1,
+        }
+    ),
+    "pde-ic2": ND(
+        {
+            "spatial_grid": np.linspace(0, 100, 1024),
+            "init_cond": (np.cos(np.linspace(0, 100, 1024)))
+            * (1 + np.sin(np.linspace(0, 100, 1024) - 0.5)),
+            "rel_noise": 0.1,
+            "t_end": 100,
+            "dt": 0.4,
+        }
+    ),
 }
 diff_params = {
     "test": ND({"diffcls": "FiniteDifference"}),
     "autoks": ND({"diffcls": "sindy", "kind": "kalman", "alpha": "gcv"}),
     "test_axis": ND({"diffcls": "FiniteDifference", "axis": -2}),
     "test2": ND({"diffcls": "SmoothedFiniteDifference"}),
-    "tv": ND({"diffcls": "sindy", "kind": "trend_filtered", "order": 0, "alpha": 1}),
+    "tv": ND(
+        {
+            "diffcls": "sindy",
+            "kind": "trend_filtered",
+            "order": 0,
+            "alpha": 1,
+        }
+    ),
     "savgol": ND({"diffcls": "sindy", "kind": "savitzky_golay"}),
     "sfd-nox": ND({"diffcls": "SmoothedFiniteDifference", "save_smooth": False}),
     "sfd-ps": ND({"diffcls": "SmoothedFiniteDifference"}),

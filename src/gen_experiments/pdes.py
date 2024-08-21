@@ -1,7 +1,6 @@
-from logging import getLogger
-from time import process_time
-
 import itertools
+from logging import getLogger
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pysindy as ps
@@ -11,7 +10,6 @@ from .data import gen_pde_data
 from .plotting import compare_coefficient_plots, plot_pde_training_data
 from .utils import (
     FullSINDyTrialData,
-    PDEData,
     SINDyTrialData,
     coeff_metrics,
     integration_metrics,
@@ -136,12 +134,13 @@ pde_setup = {
     },
 }
 
+
 def data_prep(
-        seed,
-        group,
-        sim_params,
-        grid_params = None,
-        grid_vals = None,
+    seed,
+    group,
+    sim_params,
+    grid_params=None,
+    grid_vals=None,
 ):
     rhsfunc = pde_setup[group]["rhsfunc"]["func"]
     dimension = pde_setup[group]["rhsfunc"]["dimension"]
@@ -168,8 +167,8 @@ def data_prep(
                 noise_rel=rel_noise,
                 dt=dt,
                 t_end=t_end,
-                )
-        sim_params["data"] = full_data
+            )
+        return {"main": None, "data": full_data}
     else:
         rel_noise = sim_params["rel_noise"]
         t_end = sim_params["t_end"]
@@ -183,12 +182,13 @@ def data_prep(
             noise_rel=rel_noise,
             dt=dt,
             t_end=t_end,
-            )
-        sim_params["data"] = data
-    return np.save(f"sim_params_{group}.npy", sim_params)
+        )
+        return {"main": None, "data": data}
+
 
 def run(
     seed: float,
+    data: dict,
     group: str,
     sim_params: dict,
     diff_params: dict,
@@ -202,7 +202,6 @@ def run(
     rel_noise = sim_params["rel_noise"]
     t_end = sim_params["t_end"]
     search_key = f"data_{t_end, rel_noise}"
-    data = sim_params["data"]
     if search_key in data:
         dt = data[search_key]["dt"]
         t_train = data[search_key]["t_train"]
