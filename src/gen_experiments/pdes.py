@@ -1,5 +1,6 @@
 import itertools
 from logging import getLogger
+from typing import Any, Dict
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -10,6 +11,7 @@ from .data import gen_pde_data
 from .plotting import compare_coefficient_plots, plot_pde_training_data
 from .utils import (
     FullSINDyTrialData,
+    PDEData,
     SINDyTrialData,
     coeff_metrics,
     integration_metrics,
@@ -152,7 +154,7 @@ def data_prep(
         len(spatial_grid),
     ]
     if grid_params is not None:
-        full_data = {}
+        full_data: Dict[Any, PDEData] = {}
         for combo in itertools.product(*grid_vals):
             t_end = combo[0]
             rel_noise = combo[1]
@@ -172,7 +174,7 @@ def data_prep(
     else:
         rel_noise = sim_params["rel_noise"]
         t_end = sim_params["t_end"]
-        data = gen_pde_data(
+        data: PDEData = gen_pde_data(
             rhsfunc,
             initial_condition,
             spatial_args,
@@ -187,7 +189,6 @@ def data_prep(
 
 
 def run(
-    seed: float,
     data: dict,
     group: str,
     sim_params: dict,
@@ -209,7 +210,6 @@ def run(
         x_test = data[search_key]["x_test"]
         x_dot_test = data[search_key]["x_dot_test"]
         x_train_true = data[search_key]["x_train_true"]
-        rel_noise = data[search_key]["rel_noise"]
     else:
         raise KeyError(f"{search_key} not found in data")
 

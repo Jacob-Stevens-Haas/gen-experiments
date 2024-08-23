@@ -5,7 +5,17 @@ from logging import getLogger
 from pprint import pformat
 from time import process_time
 from types import EllipsisType as ellipsis
-from typing import Annotated, Any, Callable, Optional, Sequence, TypeVar, Union, cast
+from typing import (
+    Annotated,
+    Any,
+    Callable,
+    Dict,
+    Optional,
+    Sequence,
+    TypeVar,
+    Union,
+    cast,
+)
 from warnings import warn
 
 import matplotlib.pyplot as plt
@@ -21,7 +31,7 @@ from ..odes import plot_ode_panel
 from ..pdes import plot_pde_panel
 from ..plotting import _PlotPrefs
 from ..typing import FloatND, NestedDict
-from ..utils import simulate_test_data
+from ..utils import PDEData, simulate_test_data
 from .typing import (
     ExpResult,
     GridLocator,
@@ -137,8 +147,7 @@ def _grid_locator_match(
 
 
 def run(
-    inputs: dict,
-    seed: int,
+    inputs: Dict[Any, PDEData],
     group: str,
     grid_params: list[str],
     grid_vals: list[Sequence],
@@ -219,7 +228,7 @@ def run(
             for axis_ind, key, val_list in zip(ind, new_grid_params, new_grid_vals):
                 curr_other_params[key] = val_list[axis_ind]
             curr_results, grid_data = base_ex.run(
-                seed, inputs, **curr_other_params, display=False, return_all=True
+                inputs, **curr_other_params, display=False, return_all=True
             )
             intermediate_data.append(
                 {"params": curr_other_params.flatten(), "pind": ind, "data": grid_data}

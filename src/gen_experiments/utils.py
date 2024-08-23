@@ -23,7 +23,6 @@ class PDEData(dict):
     x_test: np.ndarray
     x_dot_test: np.ndarray
     x_train_true: np.ndarray
-    rel_noise: float
 
 
 class SINDyTrialData(TypedDict):
