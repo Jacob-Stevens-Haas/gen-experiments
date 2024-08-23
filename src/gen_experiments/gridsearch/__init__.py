@@ -137,13 +137,13 @@ def _grid_locator_match(
 
 
 def run(
+    inputs: dict,
     seed: int,
     group: str,
     grid_params: list[str],
     grid_vals: list[Sequence],
     grid_decisions: list[str],
     other_params: dict,
-    data: dict = None,
     skinny_specs: Optional[SkinnySpecs] = None,
     series_params: Optional[SeriesList] = None,
     metrics: tuple[str, ...] = (),
@@ -219,7 +219,7 @@ def run(
             for axis_ind, key, val_list in zip(ind, new_grid_params, new_grid_vals):
                 curr_other_params[key] = val_list[axis_ind]
             curr_results, grid_data = base_ex.run(
-                seed, data, **curr_other_params, display=False, return_all=True
+                seed, inputs, **curr_other_params, display=False, return_all=True
             )
             intermediate_data.append(
                 {"params": curr_other_params.flatten(), "pind": ind, "data": grid_data}
