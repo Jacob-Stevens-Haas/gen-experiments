@@ -1,5 +1,6 @@
 import itertools
 from logging import getLogger
+from time import process_time
 from typing import Any, Dict
 
 import matplotlib.pyplot as plt
@@ -144,6 +145,7 @@ def data_prep(
     grid_params=None,
     grid_vals=None,
 ):
+    logger.info(f"Beginning Data Generation for {group}")
     rhsfunc = pde_setup[group]["rhsfunc"]["func"]
     dimension = pde_setup[group]["rhsfunc"]["dimension"]
     spatial_grid = pde_setup[group]["spatial_grid"]
@@ -154,6 +156,7 @@ def data_prep(
         len(spatial_grid),
     ]
     if grid_params is not None:
+        start_time = process_time()
         full_data: Dict[Any, PDEData] = {}
         for combo in itertools.product(*grid_vals):
             t_end = combo[0]
@@ -170,10 +173,12 @@ def data_prep(
                 dt=dt,
                 t_end=t_end,
             )
+        logger.info(f"Data Generation took {process_time() - start_time:.2f} sec.")
         return {"main": None, "data": full_data}
     else:
         rel_noise = sim_params["rel_noise"]
         t_end = sim_params["t_end"]
+        start_time = process_time()
         data: PDEData = gen_pde_data(
             rhsfunc,
             initial_condition,
@@ -185,6 +190,7 @@ def data_prep(
             dt=dt,
             t_end=t_end,
         )
+        logger.info(f"Data Generation took {process_time() - start_time:.2f} sec.")
         return {"main": None, "data": data}
 
 
@@ -218,7 +224,10 @@ def run(
     model.fit(x_train, t=t_train)
     coeff_true, coefficients, feature_names = unionize_coeff_matrices(model, coeff_true)
 
-    sim_ind = -1
+    start_time = process_time()
+    x_train_smooth = model.differentiation_method.smoothed_x_
+    logger.debug(f"Data Smoothing took {process_time() - start_time:.2f} sec.")
+
     trial_data: SINDyTrialData = {
         "dt": dt,
         "coeff_true": coeff_true,
@@ -227,10 +236,10 @@ def run(
         "input_features": input_features,
         "t_train": t_train,
         "x_true": x_train_true,
-        "x_train": x_train[sim_ind],
-        "smooth_train": model.differentiation_method.smoothed_x_,
-        "x_test": x_test[sim_ind],
-        "x_dot_test": x_dot_test[sim_ind],
+        "x_train": x_train,
+        "smooth_train": x_train_smooth,
+        "x_test": x_test,
+        "x_dot_test": x_dot_test,
         "model": model,
         "rel_noise": rel_noise,
     }
