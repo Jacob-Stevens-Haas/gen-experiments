@@ -185,8 +185,10 @@ def run(
     base_ex, base_group = gen_experiments.experiments[group]
     if base_ex.__name__ == "gen_experiments.odes":
         plot_panel = plot_ode_panel
+        simulate = simulate_test_data
     elif base_ex.__name__ == "gen_experiments.pdes":
         plot_panel = plot_pde_panel
+        simulate = None
     if series_params is None:
         series_params = SeriesList(None, None, [SeriesDef(group, {}, [], [])])
         legends = False
@@ -303,9 +305,10 @@ def run(
             grid_data = gridpoint["data"]
             logger.info(f"Plotting: {gridpoint['params']}")
             start = process_time()
-            grid_data |= simulate_test_data(
-                grid_data["model"], grid_data["dt"], grid_data["x_test"]
-            )
+            if simulate is not None:
+                grid_data |= simulate(
+                    grid_data["model"], grid_data["dt"], grid_data["x_test"]
+                )
             plot_panel(grid_data)  # type: ignore
             logger.info(f"Sim/Plot took {process_time() - start:.2f} sec")
         if plot_prefs.rel_noise:

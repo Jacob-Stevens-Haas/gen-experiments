@@ -219,14 +219,16 @@ def run(
     else:
         raise KeyError(f"{search_key} not found in data")
 
+    start_time_1 = process_time()
     model = make_model(input_features, dt, diff_params, feat_params, opt_params)
+    logger.debug(f"make_model took {process_time() - start_time_1:.2f} sec.")
 
+    start_time_1 = process_time()
     model.fit(x_train, t=t_train)
+    logger.debug(f"model fitting took {process_time() - start_time_1:.2f} sec.")
     coeff_true, coefficients, feature_names = unionize_coeff_matrices(model, coeff_true)
 
-    start_time = process_time()
     x_train_smooth = model.differentiation_method.smoothed_x_
-    logger.debug(f"Data Smoothing took {process_time() - start_time:.2f} sec.")
 
     trial_data: SINDyTrialData = {
         "dt": dt,
