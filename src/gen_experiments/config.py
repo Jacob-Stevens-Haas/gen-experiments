@@ -118,7 +118,7 @@ sim_params = {
             * (1 + np.sin(np.linspace(0, 100, 1024) - 0.5)),
             "rel_noise": 0.1,
             "t_end": 100,
-            "dt": 0.4,
+            "dt": 0.4
         }
     ),
 }
