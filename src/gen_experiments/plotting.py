@@ -220,7 +220,7 @@ def plot_pde_training_data(x_train, x_true, x_smooth, rel_noise):
         axs[0].set(title="True Data")
         fig.colorbar(im0, ax=axs[0])
         im1 = axs[1].imshow(x_train, vmin=0, vmax=x_true.max())
-        axs[1].set(title=f"Noisy Data with {rel_noise} % Relative Noise")
+        axs[1].set(title=f"Noisy Data with {rel_noise} Relative Noise")
         fig.colorbar(im1, ax=axs[1])
         im2 = axs[2].imshow(x_smooth, vmin=0, vmax=x_smooth.max())
         axs[2].set(title="Smoothed Data")
