@@ -6,12 +6,12 @@ import numpy as np
 import pysindy as ps
 
 from . import config
-from .data import gen_data
 from .plotting import (
     compare_coefficient_plots,
     plot_test_trajectories,
     plot_training_data,
 )
+from .typing import ProbData
 from .utils import (
     FullSINDyTrialData,
     SINDyTrialData,
@@ -154,37 +154,24 @@ ode_setup = {
 
 
 def run(
-    seed: int,
-    group: str,
-    sim_params: dict,
+    data: ProbData,
     diff_params: dict,
     feat_params: dict,
     opt_params: dict,
     display: bool = True,
     return_all: bool = False,
 ) -> dict | tuple[dict, SINDyTrialData | FullSINDyTrialData]:
-    rhsfunc = ode_setup[group]["rhsfunc"]
-    input_features = ode_setup[group]["input_features"]
-    coeff_true = ode_setup[group]["coeff_true"]
-    try:
-        x0_center = ode_setup[group]["x0_center"]
-    except KeyError:
-        x0_center = None
-    try:
-        nonnegative = ode_setup[group]["nonnegative"]
-    except KeyError:
-        nonnegative = False
-    dt, t_train, x_train, x_test, x_dot_test, x_train_true = gen_data(
-        rhsfunc,
-        len(input_features),
-        seed,
-        x0_center=x0_center,
-        nonnegative=nonnegative,
-        **sim_params,
-    )["data"]
+    input_features = data.input_features
+    dt = data.dt
+    x_train = data.x_train
+    t_train = data.t_train
+    x_train_true = data.x_train_true
+    x_test = data.x_test
+    x_dot_test = data.x_dot_test
+    coeff_true = data.coeff_true
     model = make_model(input_features, dt, diff_params, feat_params, opt_params)
 
-    model.fit(x_train)
+    model.fit(x_train, t=dt)
     coeff_true, coefficients, feature_names = unionize_coeff_matrices(model, coeff_true)
 
     sim_ind = -1

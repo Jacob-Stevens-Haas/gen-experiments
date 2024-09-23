@@ -3,8 +3,8 @@ import numpy as np
 import pysindy as ps
 
 from . import config
-from .data import gen_pde_data
 from .plotting import compare_coefficient_plots, plot_pde_training_data
+from .typing import ProbData
 from .utils import (
     FullSINDyTrialData,
     SINDyTrialData,
@@ -136,45 +136,21 @@ pde_setup = {
 
 
 def run(
-    seed: float,
-    group: str,
-    sim_params: dict,
+    data: ProbData,
     diff_params: dict,
     feat_params: dict,
     opt_params: dict,
     display: bool = True,
     return_all: bool = False,
 ) -> dict | tuple[dict, SINDyTrialData | FullSINDyTrialData]:
-    rhsfunc = pde_setup[group]["rhsfunc"]["func"]
-    input_features = pde_setup[group]["input_features"]
-    initial_condition = sim_params["init_cond"]
-    try:
-        rel_noise = sim_params["rel_noise"]
-    except KeyError:
-        rel_noise = 0.1
-    spatial_grid = pde_setup[group]["spatial_grid"]
-    spatial_args = [
-        (spatial_grid[-1] - spatial_grid[0]) / len(spatial_grid),
-        len(spatial_grid),
-    ]
-    time_args = pde_setup[group]["time_args"]
-    dimension = pde_setup[group]["rhsfunc"]["dimension"]
-    coeff_true = pde_setup[group]["coeff_true"]
-    try:
-        time_args = pde_setup[group]["time_args"]
-    except KeyError:
-        time_args = [0.01, 10]
-    dt, t_train, x_train, x_test, x_dot_test, x_train_true = gen_pde_data(
-        rhsfunc,
-        initial_condition,
-        spatial_args,
-        dimension,
-        seed,
-        noise_abs=None,
-        noise_rel=rel_noise,
-        dt=time_args[0],
-        t_end=time_args[1],
-    )["data"]
+    dt = data.dt
+    t_train = data.t_train
+    x_train = data.x_train
+    x_test = data.x_test
+    x_dot_test = data.x_dot_test
+    x_train_true = data.x_train_true
+    coeff_true = data.coeff_true
+    input_features = data.input_features
     model = make_model(input_features, dt, diff_params, feat_params, opt_params)
 
     model.fit(x_train, t=t_train)
