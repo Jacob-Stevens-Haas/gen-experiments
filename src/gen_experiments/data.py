@@ -1,14 +1,14 @@
 from math import ceil
 from pathlib import Path
-from typing import Callable, Optional, cast
+from typing import Any, Callable, Optional, cast
 from warnings import warn
 
 import mitosis
 import numpy as np
 import scipy
 
-from gen_experiments.gridsearch.typing import GridsearchResultDetails
-from gen_experiments.utils import Float1D, Float2D
+from .gridsearch.typing import GridsearchResultDetails
+from .typing import Float1D, ProbData
 
 INTEGRATOR_KEYWORDS = {"rtol": 1e-12, "method": "LSODA", "atol": 1e-12}
 TRIALS_FOLDER = Path(__file__).parent.absolute() / "trials"
@@ -26,9 +26,10 @@ def gen_data(
     nonnegative: bool = False,
     dt: float = 0.01,
     t_end: float = 10,
-) -> tuple[float, Float1D, list[Float2D], list[Float2D], list[Float2D], list[Float2D]]:
+) -> dict[str, Any]:
     """Generate random training and test data
 
+    An Experiment step according to the mitosis experiment runner.
     Note that test data has no noise.
 
     Arguments:
@@ -131,7 +132,11 @@ def gen_data(
     x_test = list(x_test)
     x_dot_test = list(x_dot_test)
     x_train_true = list(x_train_true)
-    return dt, t_train, x_train, x_test, x_dot_test, x_train_true
+    return {
+        "data": ProbData(dt, t_train, x_train, x_test, x_dot_test, x_train_true),
+        "main": f"{n_trajectories} trajectories of {rhs_func.__qualname__}",
+        "metrics": {"rel_noise": noise_rel, "abs_noise": noise_abs},
+    }
 
 
 def gen_pde_data(
@@ -144,7 +149,7 @@ def gen_pde_data(
     noise_rel: float | None = None,
     dt: float = 0.01,
     t_end: int = 100,
-):
+) -> dict[str, Any]:
     """Generate PDE measurement data for training
 
     For simplicity, Trajectories have been removed,
@@ -219,7 +224,11 @@ def gen_pde_data(
     x_train = [np.moveaxis(x_train, 0, -2)]
     x_train_true = np.moveaxis(x_train_true, 0, -2)
     x_test = [np.moveaxis(x_test, [0, 1], [-1, -2])]
-    return dt, t_train, x_train, x_test, x_dot_test, x_train_true
+    return {
+        "data": ProbData(dt, t_train, x_train, x_test, x_dot_test, x_train_true),
+        "main": f"1 trajectory of {rhs_func.__qualname__}",
+        "metrics": {"rel_noise": noise_rel, "abs_noise": noise_abs},
+    }
 
 
 def _max_amplitude(signal: np.ndarray, axis: int) -> float:
