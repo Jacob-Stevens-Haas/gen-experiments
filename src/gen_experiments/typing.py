@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import TypeVar
+from typing import NamedTuple, TypeVar
 
 import numpy as np
 from numpy.typing import NBitBase
@@ -9,6 +9,15 @@ Float1D = np.ndarray[tuple[int], NpFlt]
 Float2D = np.ndarray[tuple[int, int], NpFlt]
 Shape = TypeVar("Shape", bound=tuple[int, ...])
 FloatND = np.ndarray[Shape, np.dtype[np.floating[NBitBase]]]
+
+
+class ProbData(NamedTuple):
+    dt: float
+    t_train: Float1D
+    x_train: list[FloatND]
+    x_test: list[FloatND]
+    x_dot_test: list[FloatND]
+    x_train_true: list[FloatND]
 
 
 class NestedDict(defaultdict):

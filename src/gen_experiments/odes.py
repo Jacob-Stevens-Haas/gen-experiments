@@ -181,7 +181,7 @@ def run(
         x0_center=x0_center,
         nonnegative=nonnegative,
         **sim_params,
-    )
+    )["data"]
     model = make_model(input_features, dt, diff_params, feat_params, opt_params)
 
     model.fit(x_train)

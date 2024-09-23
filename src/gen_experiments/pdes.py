@@ -174,7 +174,7 @@ def run(
         noise_rel=rel_noise,
         dt=time_args[0],
         t_end=time_args[1],
-    )
+    )["data"]
     model = make_model(input_features, dt, diff_params, feat_params, opt_params)
 
     model.fit(x_train, t=t_train)
