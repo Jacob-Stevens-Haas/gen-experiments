@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from math import ceil
 from pathlib import Path
 from typing import Any, Callable, Optional, cast
@@ -8,22 +9,21 @@ import numpy as np
 import scipy
 
 from .gridsearch.typing import GridsearchResultDetails
-from .typing import Float1D, ProbData
+from .odes import ode_setup
+from .pdes import pde_setup
+from .typing import Float1D, Float2D, ProbData
 
 INTEGRATOR_KEYWORDS = {"rtol": 1e-12, "method": "LSODA", "atol": 1e-12}
 TRIALS_FOLDER = Path(__file__).parent.absolute() / "trials"
 
 
 def gen_data(
-    rhs_func: Callable,
-    n_coord: int,
+    group: str,
     seed: Optional[int] = None,
     n_trajectories: int = 1,
-    x0_center: Optional[Float1D] = None,
     ic_stdev: float = 3,
     noise_abs: Optional[float] = None,
     noise_rel: Optional[float] = None,
-    nonnegative: bool = False,
     dt: float = 0.01,
     t_end: float = 10,
 ) -> dict[str, Any]:
@@ -50,15 +50,67 @@ def gen_data(
             used, rather than a normal distribution.
 
     Returns:
-        dt, t_train, x_train, x_test, x_dot_test, x_train_true
+        dictionary of data and descriptive information
     """
+    coeff_true = ode_setup[group]["coeff_true"]
+    input_features = ode_setup[group]["input_features"]
+    rhsfunc = ode_setup[group]["rhsfunc"]
+    try:
+        x0_center = ode_setup[group]["x0_center"]
+    except KeyError:
+        x0_center = np.zeros((len(input_features)), dtype=np.float_)
+    try:
+        nonnegative = ode_setup[group]["nonnegative"]
+    except KeyError:
+        nonnegative = False
     if noise_abs is not None and noise_rel is not None:
         raise ValueError("Cannot specify both noise_abs and noise_rel")
     elif noise_abs is None and noise_rel is None:
         noise_abs = 0.1
+
+    dt, t_train, x_train, x_test, x_dot_test, x_train_true = _gen_data(
+        rhsfunc,
+        len(input_features),
+        seed,
+        x0_center=x0_center,
+        nonnegative=nonnegative,
+        n_trajectories=n_trajectories,
+        ic_stdev=ic_stdev,
+        noise_abs=noise_abs,
+        noise_rel=noise_rel,
+        dt=dt,
+        t_end=t_end,
+    )
+    return {
+        "data": ProbData(
+            dt,
+            t_train,
+            x_train,
+            x_test,
+            x_dot_test,
+            x_train_true,
+            input_features,
+            coeff_true,
+        ),
+        "main": f"{n_trajectories} trajectories of {rhsfunc.__qualname__}",
+        "metrics": {"rel_noise": noise_rel, "abs_noise": noise_abs},
+    }
+
+
+def _gen_data(
+    rhs_func: Callable,
+    n_coord: int,
+    seed: Optional[int],
+    n_trajectories: int,
+    x0_center: Float1D,
+    ic_stdev: float,
+    noise_abs: Optional[float],
+    noise_rel: Optional[float],
+    nonnegative: bool,
+    dt: float,
+    t_end: float,
+) -> tuple[float, Float1D, list[Float2D], list[Float2D], list[Float2D], list[Float2D]]:
     rng = np.random.default_rng(seed)
-    if x0_center is None:
-        x0_center = np.zeros((n_coord), dtype=np.float_)
     t_train = np.arange(0, t_end, dt, dtype=np.float_)
     t_train_span = (t_train[0], t_train[-1])
     if nonnegative:
@@ -132,23 +184,15 @@ def gen_data(
     x_test = list(x_test)
     x_dot_test = list(x_dot_test)
     x_train_true = list(x_train_true)
-    return {
-        "data": ProbData(dt, t_train, x_train, x_test, x_dot_test, x_train_true),
-        "main": f"{n_trajectories} trajectories of {rhs_func.__qualname__}",
-        "metrics": {"rel_noise": noise_rel, "abs_noise": noise_abs},
-    }
+    return dt, t_train, x_train, x_test, x_dot_test, x_train_true
 
 
 def gen_pde_data(
-    rhs_func: Callable,
+    group: str,
     init_cond: np.ndarray,
-    args: tuple,
-    dimension: int,
     seed: int | None = None,
     noise_abs: float | None = None,
-    noise_rel: float | None = None,
-    dt: float = 0.01,
-    t_end: int = 100,
+    rel_noise: float | None = None,
 ) -> dict[str, Any]:
     """Generate PDE measurement data for training
 
@@ -156,10 +200,8 @@ def gen_pde_data(
     Test data is the same as Train data.
 
     Arguments:
-        rhs_func: the function to integrate
+        group: name of the PDE
         init_cond: Initial Conditions for the PDE
-        args: Arguments for rhsfunc
-        dimension: Number of spatial dimensions (1, 2, or 3)
         seed (int): the random seed for number generation
         noise_abs (float): measurement noise standard deviation.
             Defaults to .1 if noise_rel is None.
@@ -167,12 +209,64 @@ def gen_pde_data(
             true data.  Amplitude of data is calculated as the max value
              of the power spectrum.  Either noise_abs or noise_rel must
              be None.  Defaults to None.
-        dt (float): time step for the PDE simulation
-        t_end (int): total time for the PDE simulation
 
     Returns:
         dt, t_train, x_train, x_test, x_dot_test, x_train_true
     """
+    rhsfunc = pde_setup[group]["rhsfunc"]["func"]
+    input_features = pde_setup[group]["input_features"]
+    if rel_noise is None:
+        rel_noise = 0.1
+    spatial_grid = pde_setup[group]["spatial_grid"]
+    spatial_args = [
+        (spatial_grid[-1] - spatial_grid[0]) / len(spatial_grid),
+        len(spatial_grid),
+    ]
+    time_args = pde_setup[group]["time_args"]
+    dimension = pde_setup[group]["rhsfunc"]["dimension"]
+    coeff_true = pde_setup[group]["coeff_true"]
+    try:
+        time_args = pde_setup[group]["time_args"]
+    except KeyError:
+        time_args = [0.01, 10]
+    dt, t_train, x_train, x_test, x_dot_test, x_train_true = _gen_pde_data(
+        rhsfunc,
+        init_cond,
+        spatial_args,
+        dimension,
+        seed,
+        noise_abs=noise_abs,
+        noise_rel=rel_noise,
+        dt=time_args[0],
+        t_end=time_args[1],
+    )
+    return {
+        "data": ProbData(
+            dt,
+            t_train,
+            x_train,
+            x_test,
+            x_dot_test,
+            x_train_true,
+            input_features,
+            coeff_true,
+        ),
+        "main": f"1 trajectories of {rhsfunc.__qualname__}",
+        "metrics": {"rel_noise": rel_noise, "abs_noise": noise_abs},
+    }
+
+
+def _gen_pde_data(
+    rhs_func: Callable,
+    init_cond: np.ndarray,
+    spatial_args: Sequence,
+    dimension: int,
+    seed: int | None,
+    noise_abs: float | None,
+    noise_rel: float | None,
+    dt: float,
+    t_end: int,
+):
     if noise_abs is not None and noise_rel is not None:
         raise ValueError("Cannot specify both noise_abs and noise_rel")
     elif noise_abs is None and noise_rel is None:
@@ -187,7 +281,7 @@ def gen_pde_data(
             t_train_span,
             init_cond,
             t_eval=t_train,
-            args=args,
+            args=spatial_args,
             **INTEGRATOR_KEYWORDS,
         ).y.T
     )
@@ -204,7 +298,10 @@ def gen_pde_data(
     x_test = x_train
     x_test = np.moveaxis(x_test, -1, 0)
     x_dot_test = np.array(
-        [[rhs_func(0, xij, args[0], args[1]) for xij in xi] for xi in x_test]
+        [
+            [rhs_func(0, xij, spatial_args[0], spatial_args[1]) for xij in xi]
+            for xi in x_test
+        ]
     )
     if dimension == 1:
         x_dot_test = [np.moveaxis(x_dot_test, [0, 1], [-1, -2])]
@@ -224,11 +321,7 @@ def gen_pde_data(
     x_train = [np.moveaxis(x_train, 0, -2)]
     x_train_true = np.moveaxis(x_train_true, 0, -2)
     x_test = [np.moveaxis(x_test, [0, 1], [-1, -2])]
-    return {
-        "data": ProbData(dt, t_train, x_train, x_test, x_dot_test, x_train_true),
-        "main": f"1 trajectory of {rhs_func.__qualname__}",
-        "metrics": {"rel_noise": noise_rel, "abs_noise": noise_abs},
-    }
+    return dt, t_train, x_train, x_test, x_dot_test, x_train_true
 
 
 def _max_amplitude(signal: np.ndarray, axis: int) -> float:

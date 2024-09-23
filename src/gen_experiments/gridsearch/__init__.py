@@ -17,6 +17,7 @@ from scipy.stats import kstest
 import gen_experiments
 
 from .. import config
+from ..data import gen_data, gen_pde_data
 from ..odes import plot_ode_panel
 from ..pdes import plot_pde_panel
 from ..plotting import _PlotPrefs
@@ -175,8 +176,10 @@ def run(
     base_ex, base_group = gen_experiments.experiments[group]
     if base_ex.__name__ == "gen_experiments.odes":
         plot_panel = plot_ode_panel
+        data_step = gen_data
     elif base_ex.__name__ == "gen_experiments.pdes":
         plot_panel = plot_pde_panel
+        data_step = gen_pde_data
     if series_params is None:
         series_params = SeriesList(None, None, [SeriesDef(group, {}, [], [])])
         legends = False
@@ -217,8 +220,9 @@ def run(
             start = process_time()
             for axis_ind, key, val_list in zip(ind, new_grid_params, new_grid_vals):
                 curr_other_params[key] = val_list[axis_ind]
+            data = data_step(seed=seed, **curr_other_params.pop("sim_params"))
             curr_results, grid_data = base_ex.run(
-                seed, **curr_other_params, display=False, return_all=True
+                data, **curr_other_params, display=False, return_all=True
             )
             intermediate_data.append(
                 {"params": curr_other_params.flatten(), "pind": ind, "data": grid_data}
