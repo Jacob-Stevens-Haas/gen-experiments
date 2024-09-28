@@ -134,8 +134,8 @@ pde_setup = {
         "input_features": ["u"],
         "coeff_true": [
             {"uu_1": -6, "u_111": -1},
-        ]
-    }
+        ],
+    },
 }
 
 
