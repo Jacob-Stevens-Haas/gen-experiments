@@ -88,7 +88,7 @@ def kdv(t, u, dx, nx):
     u[-1] = 0
     ux = ps.differentiation.SpectralDerivative(d=1, axis=0)._differentiate(u, dx)
     uxxx = ps.differentiation.SpectralDerivative(d=3, axis=0)._differentiate(u, dx)
-    return np.reshape(6 * u * ux - uxxx, nx)
+    return np.reshape(-6 * u * ux - uxxx, nx)
 
 
 pde_setup = {
@@ -129,6 +129,13 @@ pde_setup = {
             {"u_11": -1, "u_1111": -1, "uu_1": -1},
         ],
     },
+    "kdv": {
+        "rhsfunc": {"func": kdv, "dimension": 1},
+        "input_features": ["u"],
+        "coeff_true": [
+            {"uu_1": -6, "u_111": -1},
+        ]
+    }
 }
 
 
@@ -172,8 +179,10 @@ def data_prep(
     else:
         rel_noise = sim_params["rel_noise"]
         t_end = sim_params["t_end"]
+        key = f"data_{(t_end, rel_noise)}"
         start_time = process_time()
-        data: PDEData = gen_pde_data(
+        data: Dict[Any, PDEData] = {}
+        data[key] = gen_pde_data(
             rhsfunc,
             initial_condition,
             spatial_args,
