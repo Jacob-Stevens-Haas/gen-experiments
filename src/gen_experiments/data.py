@@ -45,9 +45,8 @@ def gen_data(
         noise_rel (float): measurement noise-to-signal power ratio.
             Either noise_abs or noise_rel must be None.  Defaults to
             None.
-        nonnegative (bool): Whether x0 must be nonnegative, such as for
-            population models.  If so, a gamma distribution is
-            used, rather than a normal distribution.
+        dt: time step for sample
+        t_end: end time of simulation
 
     Returns:
         dictionary of data and descriptive information
