@@ -180,6 +180,8 @@ def run(
     elif base_ex.__name__ == "gen_experiments.pdes":
         plot_panel = plot_pde_panel
         data_step = gen_pde_data
+    elif base_ex.__name__ == "NoExperiment":
+        data_step = gen_experiments.NoExperiment.gen_data
     if series_params is None:
         series_params = SeriesList(None, None, [SeriesDef(group, {}, [], [])])
         legends = False
@@ -220,10 +222,12 @@ def run(
             start = process_time()
             for axis_ind, key, val_list in zip(ind, new_grid_params, new_grid_vals):
                 curr_other_params[key] = val_list[axis_ind]
-            data = data_step(seed=seed, **curr_other_params.pop("sim_params"))
+            sim_params = curr_other_params.pop("sim_params", {})
+            data = data_step(seed=seed, **sim_params)
             curr_results, grid_data = base_ex.run(
                 data, **curr_other_params, display=False, return_all=True
             )
+            curr_results["sim_params"] = sim_params
             intermediate_data.append(
                 {"params": curr_other_params.flatten(), "pind": ind, "data": grid_data}
             )

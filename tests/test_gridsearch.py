@@ -238,7 +238,7 @@ def test_gridsearch_mock():
         grid_params=["foo"],
         grid_vals=[[0, 1]],
         grid_decisions=["plot"],
-        other_params={"bar": False},
+        other_params={"bar": False, "sim_params": {}},
         metrics=("mse", "mae"),
     )
     assert len(results["plot_data"]) == 0

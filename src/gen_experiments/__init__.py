@@ -36,6 +36,10 @@ class NoExperiment:
     lookup_dict = {"arg": {"foo": 1}}
 
     @staticmethod
+    def gen_data(*args: Any, **kwargs: Any) -> dict[str, Any]:
+        return {}
+
+    @staticmethod
     def run(
         *args: Any, return_all: bool = True, **kwargs: Any
     ) -> Scores | tuple[Scores, SINDyTrialData]:
