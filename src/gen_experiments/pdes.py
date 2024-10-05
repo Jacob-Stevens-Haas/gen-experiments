@@ -156,7 +156,6 @@ def run(
     model.fit(x_train, t=t_train)
     coeff_true, coefficients, feature_names = unionize_coeff_matrices(model, coeff_true)
 
-    sim_ind = -1
     trial_data: SINDyTrialData = {
         "dt": dt,
         "coeff_true": coeff_true,
@@ -165,10 +164,10 @@ def run(
         "input_features": input_features,
         "t_train": t_train,
         "x_true": x_train_true,
-        "x_train": x_train[sim_ind],
+        "x_train": x_train,
         "smooth_train": model.differentiation_method.smoothed_x_,
-        "x_test": x_test[sim_ind],
-        "x_dot_test": x_dot_test[sim_ind],
+        "x_test": x_test,
+        "x_dot_test": x_dot_test,
         "model": model,
     }
     if display:

@@ -295,6 +295,7 @@ def _gen_pde_data(
             x_train, (t, int(np.cbrt(x)), int(np.cbrt(x)), int(np.cbrt(x)), 1)
         )
     x_test = x_train
+    signal = x_test
     x_test = np.moveaxis(x_test, -1, 0)
     x_dot_test = np.array(
         [
@@ -303,23 +304,23 @@ def _gen_pde_data(
         ]
     )
     if dimension == 1:
-        x_dot_test = [np.moveaxis(x_dot_test, [0, 1], [-1, -2])]
+        x_dot_test = np.moveaxis(x_dot_test, [0, 1], [-1, -2])
         pass
     elif dimension == 2:
         x_dot_test = np.reshape(x_dot_test, (t, int(np.sqrt(x)), int(np.sqrt(x)), 1))
-        x_dot_test = [np.moveaxis(x_dot_test, 0, -2)]
+        x_dot_test = np.moveaxis(x_dot_test, 0, -2)
     elif dimension == 3:
         x_dot_test = np.reshape(
             x_dot_test, (t, int(np.cbrt(x)), int(np.cbrt(x)), int(np.cbrt(x)), 1)
         )
-        x_dot_test = [np.moveaxis(x_dot_test, 0, -2)]
+        x_dot_test = np.moveaxis(x_dot_test, 0, -2)
     x_train_true = np.copy(x_train)
     if noise_rel is not None:
-        noise_abs = np.sqrt(_max_amplitude(x_test, axis=-2) * noise_rel)
+        noise_abs = np.sqrt(_max_amplitude(signal, axis=-2) * noise_rel)
     x_train = x_train + cast(float, noise_abs) * rng.standard_normal(x_train.shape)
-    x_train = [np.moveaxis(x_train, 0, -2)]
+    x_train = np.moveaxis(x_train, 0, -2)
     x_train_true = np.moveaxis(x_train_true, 0, -2)
-    x_test = [np.moveaxis(x_test, [0, 1], [-1, -2])]
+    x_test = np.moveaxis(x_test, [0, 1], [-1, -2])
     return dt, t_train, x_train, x_test, x_dot_test, x_train_true
 
 
