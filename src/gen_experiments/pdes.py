@@ -171,9 +171,6 @@ def run(
         "model": model,
     }
     if display:
-        trial_data: FullSINDyTrialData = trial_data | simulate_test_data(
-            trial_data["model"], trial_data["dt"], trial_data["x_test"]
-        )
         plot_pde_panel(trial_data)
 
     metrics = coeff_metrics(coefficients, coeff_true)
