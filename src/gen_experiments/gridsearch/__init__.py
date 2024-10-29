@@ -366,16 +366,17 @@ def plot(
             x_ticks = np.array(x_ticks)
             if m_name in ("coeff_mse", "coeff_mae"):
                 ax.set_yscale("log")
+            if param_name == "sim_params.rel_noise":
+                ax.set_xscale("log")
             x_ticks_normalized = (x_ticks - x_ticks.min()) / (
                 x_ticks.max() - x_ticks.min()
             )
             x_ticks_lognormalized = (np.log(x_ticks) - np.log(x_ticks).min()) / (
                 np.log(x_ticks.max()) - np.log(x_ticks).min()
             )
-            ax = subplots[m_ind_row, col]
-            if kstest(x_ticks_normalized, "uniform") < kstest(
-                x_ticks_lognormalized, "uniform"
-            ):
+            if param_name != "sim_params.rel_noise" and kstest(
+                x_ticks_normalized, "uniform"
+            ) < kstest(x_ticks_lognormalized, "uniform"):
                 ax.set_xscale("log")
             if m_ind_row == 0:
                 ax.set_title(f"{param_name}")
