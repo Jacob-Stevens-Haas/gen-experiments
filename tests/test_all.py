@@ -25,7 +25,6 @@ def test_flatten_nested_bad_dict():
 
 
 def test_unionize_coeff_matrices():
-    # lib = ps.PolynomialLibrary().fit(np.array([[1, 1]]))
     model = ps.SINDy(feature_names=["x", "y"])
     data = np.arange(10)
     data = np.vstack((data, data)).T
