@@ -11,6 +11,7 @@ import scipy
 from .gridsearch.typing import GridsearchResultDetails
 from .odes import ode_setup
 from .pdes import pde_setup
+from .plotting import plot_training_data
 from .typing import Float1D, Float2D, ProbData
 
 INTEGRATOR_KEYWORDS = {"rtol": 1e-12, "method": "LSODA", "atol": 1e-12}
@@ -26,6 +27,7 @@ def gen_data(
     noise_rel: Optional[float] = None,
     dt: float = 0.01,
     t_end: float = 10,
+    display: bool = False,
 ) -> dict[str, Any]:
     """Generate random training and test data
 
@@ -47,6 +49,7 @@ def gen_data(
             None.
         dt: time step for sample
         t_end: end time of simulation
+        display: Whether to display graphics of generated data.
 
     Returns:
         dictionary of data and descriptive information
@@ -80,6 +83,9 @@ def gen_data(
         dt=dt,
         t_end=t_end,
     )
+    if display:
+        fig = plot_training_data(x_train[0], x_train_true[0])
+        fig.suptitle("Sample Trajectory")
     return {
         "data": ProbData(
             dt,

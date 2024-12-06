@@ -123,11 +123,11 @@ def compare_coefficient_plots(
         fig.tight_layout()
 
 
-def plot_training_trajectory(
+def _plot_training_trajectory(
     ax: Axes,
     x_train: np.ndarray,
     x_true: np.ndarray,
-    x_smooth: np.ndarray,
+    x_smooth: np.ndarray | None,
     labels: bool = True,
 ) -> None:
     """Plot a single training trajectory"""
@@ -141,7 +141,10 @@ def plot_training_trajectory(
             color=PAL[1],
             **PLOT_KWS,
         )
-        if np.linalg.norm(x_smooth - x_train) / x_smooth.size > 1e-12:
+        if (
+            x_smooth is not None
+            and np.linalg.norm(x_smooth - x_train) / x_smooth.size > 1e-12
+        ):
             ax.plot(
                 x_smooth[:, 0],
                 x_smooth[:, 1],
@@ -173,7 +176,10 @@ def plot_training_trajectory(
             label="Measured values",
             alpha=0.3,
         )
-        if np.linalg.norm(x_smooth - x_train) / x_smooth.size > 1e-12:
+        if (
+            x_smooth is not None
+            and np.linalg.norm(x_smooth - x_train) / x_smooth.size > 1e-12
+        ):
             ax.plot(
                 x_smooth[:, 0],
                 x_smooth[:, 1],
@@ -191,7 +197,9 @@ def plot_training_trajectory(
         raise ValueError("Can only plot 2d or 3d data.")
 
 
-def plot_training_data(x_train: np.ndarray, x_true: np.ndarray, x_smooth: np.ndarray):
+def plot_training_data(
+    x_train: np.ndarray, x_true: np.ndarray, x_smooth: np.ndarray | None = None
+):
     """Plot training data (and smoothed training data, if different)."""
     fig = plt.figure(figsize=(12, 6))
     if x_train.shape[-1] == 2:
@@ -200,7 +208,7 @@ def plot_training_data(x_train: np.ndarray, x_true: np.ndarray, x_smooth: np.nda
         ax0 = fig.add_subplot(1, 2, 1, projection="3d")
     else:
         raise ValueError("Too many or too few coordinates to plot")
-    plot_training_trajectory(ax0, x_train, x_true, x_smooth)
+    _plot_training_trajectory(ax0, x_train, x_true, x_smooth)
     ax0.legend()
     ax0.set(title="Training data")
     ax1 = fig.add_subplot(1, 2, 2)
