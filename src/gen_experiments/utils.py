@@ -10,6 +10,7 @@ import pysindy as ps
 import sklearn
 import sklearn.metrics
 from numpy.typing import NDArray
+from pysindy.pysindy import _BaseSINDy
 
 from .typing import Float1D, Float2D, FloatND
 
@@ -125,7 +126,9 @@ def integration_metrics(model, x_test, t_train, x_dot_test):
 
 
 def unionize_coeff_matrices(
-    model: ps.SINDy, coeff_true: list[dict[str, float]]
+    model: _BaseSINDy,
+    model_true: tuple[list[str], list[dict[str, float]]] | list[dict[str, float]],
+    strict: bool = False,
 ) -> tuple[NDArray[np.float64], NDArray[np.float64], list[str]]:
     """Reformat true coefficients and coefficient matrix compatibly
 
@@ -139,19 +142,51 @@ def unionize_coeff_matrices(
 
     Arguments:
         model: fitted model
-        coeff_true: list of dicts of format function_name: coefficient,
-            one dict for each modeled coordinate/target
-
+        model_true: A tuple of (a) a list of input feature names, and
+            (b) a list of dicts of format function_name: coefficient,
+            one dict for each modeled coordinate/target.  The old format
+            of passing one
+        strict:
+            whether to attempt to translate the model's features into the
+            input variable names in the true model.
     Returns:
         Tuple of true coefficient matrix, estimated coefficient matrix,
         and combined feature names
 
     Warning:
         Does not disambiguate between commutatively equivalent function
-        names such as 'x z' and 'z x' or 'x^2' and 'x x'
+        names such as 'x z' and 'z x' or 'x^2' and 'x x'.
+
+    Warning:
+        Will attempt to translate between model input
     """
+    inputs_model = cast(list[str], model.feature_names)
+    if isinstance(model_true, list):
+        warn(
+            "Passing coeff_true as merely the list of functions is deprecated. "
+            " It is now required to pass a tuple of system coordinate variables"
+            " as well as the list of functions.",
+            DeprecationWarning,
+        )
+        inputs_true = inputs_model
+        coeff_true = model_true
+    else:
+        inputs_true, coeff_true = model_true
     model_features = model.get_feature_names()
     true_features = [set(coeffs.keys()) for coeffs in coeff_true]
+    if inputs_true != inputs_model:
+        if strict:
+            raise ValueError(
+                "True model and fit model have different input variable names"
+            )
+        mapper = dict(zip(inputs_model, inputs_true, strict=True))
+        translated_features: list[str] = []
+        for feat in model_features:
+            for k, v in mapper.items():
+                feat = feat.replace(k, v)
+            translated_features.append(feat)
+        model_features = translated_features
+
     unmodeled_features = set(chain.from_iterable(true_features)) - set(model_features)
     model_features.extend(list(unmodeled_features))
     est_coeff_mat = model.coefficients()
