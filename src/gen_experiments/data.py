@@ -35,13 +35,10 @@ def gen_data(
     Note that test data has no noise.
 
     Arguments:
-        rhs_func (Callable): the function to integrate
-        n_coord (int): number of coordinates needed for rhs_func
+        group: the function to integrate
         seed (int): the random seed for number generation
         n_trajectories (int): number of trajectories of training data
-        x0_center (np.array): center of random initial conditions
-        ic_stdev (float): standard deviation for generating initial
-            conditions
+        ic_stdev (float): standard deviation for generating initial conditions
         noise_abs (float): measurement noise standard deviation.
             Defaults to .1 if noise_rel is None.
         noise_rel (float): measurement noise-to-signal power ratio.
@@ -84,8 +81,8 @@ def gen_data(
         t_end=t_end,
     )
     if display:
-        fig = plot_training_data(x_train[0], x_train_true[0])
-        fig.suptitle("Sample Trajectory")
+        figs = plot_training_data(x_train[0], x_train_true[0])
+        figs[0].suptitle("Sample Trajectory")
     return {
         "data": ProbData(
             dt,

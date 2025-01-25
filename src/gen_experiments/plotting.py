@@ -6,6 +6,7 @@ import numpy as np
 import scipy
 import seaborn as sns
 from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 
 from .gridsearch.typing import GridLocator
 
@@ -199,24 +200,40 @@ def _plot_training_trajectory(
 
 def plot_training_data(
     x_train: np.ndarray, x_true: np.ndarray, x_smooth: np.ndarray | None = None
-):
+) -> tuple[Figure, Figure]:
     """Plot training data (and smoothed training data, if different)."""
-    fig = plt.figure(figsize=(12, 6))
+    fig_3d = plt.figure(figsize=(12, 6))
     if x_train.shape[-1] == 2:
-        ax0 = fig.add_subplot(1, 2, 1)
+        ax0 = fig_3d.add_subplot(1, 2, 1)
+        coord_names = ("x", "y")
     elif x_train.shape[-1] == 3:
-        ax0 = fig.add_subplot(1, 2, 1, projection="3d")
+        ax0 = fig_3d.add_subplot(1, 2, 1, projection="3d")
+        coord_names = ("x", "y", "z")
     else:
         raise ValueError("Too many or too few coordinates to plot")
     _plot_training_trajectory(ax0, x_train, x_true, x_smooth)
     ax0.legend()
     ax0.set(title="Training data")
-    ax1 = fig.add_subplot(1, 2, 2)
+    ax1 = fig_3d.add_subplot(1, 2, 2)
     ax1.loglog(np.abs(scipy.fft.rfft(x_train, axis=0)) / np.sqrt(len(x_train)))
+    ax1.legend(coord_names)
     ax1.set(title="Training Data Absolute Spectral Density")
     ax1.set(xlabel="Wavenumber")
     ax1.set(ylabel="Magnitude")
-    return fig
+
+    n_coord = x_true.shape[-1]
+    fig_coord = plt.figure(figsize=(n_coord * 4, 6))
+    for coord_ind in range(n_coord):
+        ax = fig_coord.add_subplot(n_coord, 1, coord_ind + 1)
+        ax.set_title(coord_names[coord_ind])
+        ax.plot(x_train[..., coord_ind], "b.", label="measured")
+        ax.plot(x_true[..., coord_ind], "r-", label="true")
+        if x_smooth is not None:
+            ax.plot(x_smooth[..., coord_ind], label="smoothed")
+
+    ax.legend()
+
+    return fig_3d, fig_coord
 
 
 def plot_pde_training_data(last_train, last_train_true, smoothed_last_train):
