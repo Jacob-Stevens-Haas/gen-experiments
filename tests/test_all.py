@@ -29,8 +29,30 @@ def test_unionize_coeff_matrices():
     data = np.arange(10)
     data = np.vstack((data, data)).T
     model.fit(data, 0.1)
-    coeff_true = [{"y": -1, "zorp_x": 0.1}, {"x": 1, "zorp_y": 0.1}]
-    true, est, feats = unionize_coeff_matrices(model, coeff_true)
+    coeff_true = [{"y": -1.0, "zorp_x": 0.1}, {"x": 1.0, "zorp_y": 0.1}]
+    true, est, feats = unionize_coeff_matrices(model, (["x", "y"], coeff_true))
     assert len(feats) == true.shape[1]
     assert len(feats) == est.shape[1]
     assert est.shape == true.shape
+
+
+def test_unionize_coeff_matrices_translation():
+    model = ps.SINDy(feature_names=["a", "b"])
+    data = np.arange(10)
+    data = np.vstack((data, data)).T
+    model.fit(data, 0.1)
+    coeff_true = [{"y": -1.0}, {"x": 1.0}]
+    true, est, feats = unionize_coeff_matrices(model, (["x", "y"], coeff_true))
+    assert len(feats) == true.shape[1]
+    assert len(feats) == est.shape[1]
+    assert est.shape == true.shape
+
+
+def test_unionize_coeff_matrices_strict():
+    model = ps.SINDy(feature_names=["a", "b"])
+    data = np.arange(10)
+    data = np.vstack((data, data)).T
+    model.fit(data, 0.1)
+    coeff_true = [{"y": -1.0}, {"x": 1.0}]
+    with pytest.raises(ValueError, match="True model and fit model"):
+        unionize_coeff_matrices(model, (["x", "y"], coeff_true), True)
