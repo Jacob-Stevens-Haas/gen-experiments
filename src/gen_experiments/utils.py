@@ -11,7 +11,7 @@ import pysindy as ps
 import sklearn
 import sklearn.metrics
 from numpy.typing import NDArray
-from pysindy.pysindy import _BaseSINDy
+from pysindy.pysindy import SINDy, _BaseSINDy
 
 from .typing import Float1D, Float2D, FloatND
 
@@ -109,7 +109,17 @@ def coeff_metrics(coefficients, coeff_true):
     return metrics
 
 
-def integration_metrics(model, x_test, t_train, x_dot_test):
+def pred_metrics(
+    model: _BaseSINDy, x_test: np.ndarray, x_dot_test: np.ndarray
+) -> dict[str, np.ndarray | float | np.floating]:
+    err = model.predict(x_test) - x_dot_test
+    return {
+        "pred_l2_fro": (np.linalg.norm(err) / np.linalg.norm(x_dot_test)),
+        "pred_l2_each": (np.linalg.norm(err) / np.linalg.norm(x_dot_test)),
+    }
+
+
+def integration_metrics(model: SINDy, x_test, t_train, x_dot_test):
     metrics = {}
     metrics["mse-plot"] = model.score(
         x_test,
