@@ -1,4 +1,5 @@
 import logging
+import re
 from itertools import chain
 from typing import Annotated, TypedDict, cast
 from warnings import warn
@@ -158,7 +159,11 @@ def unionize_coeff_matrices(
         names such as 'x z' and 'z x' or 'x^2' and 'x x'.
 
     Warning:
-        Will attempt to translate between model input
+        In non-strict mode, when different input variables are detected in the
+            SINDy model and in the true model, will attempt to translate true
+            features to model inputs, e.g. ``x^2`` -> ``x0^2``.  This is a
+            text replacement, not a lexical replacement, so there are edge cases
+            where translation fails.  Input variables are sorted alphabetically.
     """
     inputs_model = cast(list[str], model.feature_names)
     if isinstance(model_true, list):
@@ -168,7 +173,14 @@ def unionize_coeff_matrices(
             " as well as the list of functions.",
             DeprecationWarning,
         )
-        inputs_true = inputs_model
+        in_funcs = set.union(*[set(d.keys()) for d in model_true])
+
+        def extract_vars(fname: str) -> set[str]:
+            # split on ops like *,^, only accept x, x2, from x * x2 ^ 2
+            return {var for var in re.split(r"\W", fname) if re.match(r"[^\d]", var)}
+
+        inputs_true = set.union(*[extract_vars(fname) for fname in in_funcs])
+        inputs_true = sorted(inputs_true)
         coeff_true = model_true
     else:
         inputs_true, coeff_true = model_true
