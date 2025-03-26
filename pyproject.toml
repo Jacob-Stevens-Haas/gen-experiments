@@ -42,7 +42,6 @@ dependencies = [
   "pre-commit",
   "codecov",
   "seaborn",
-  "sqlalchemy<2.0",
   "tomli",
 ]
 
