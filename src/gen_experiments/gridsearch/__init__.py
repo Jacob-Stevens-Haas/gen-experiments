@@ -228,8 +228,8 @@ def run(
             curr_results, grid_data = base_ex.run(
                 data, **curr_other_params, display=False, return_all=True
             )
-            curr_results["sim_params"] = sim_params
-            curr_results["group"] = group_arg
+            curr_other_params["sim_params"] = sim_params
+            curr_other_params["group"] = group_arg
             intermediate_data.append(
                 {"params": curr_other_params.flatten(), "pind": ind, "data": grid_data}
             )
