@@ -223,11 +223,13 @@ def run(
             for axis_ind, key, val_list in zip(ind, new_grid_params, new_grid_vals):
                 curr_other_params[key] = val_list[axis_ind]
             sim_params = curr_other_params.pop("sim_params", {})
-            data = data_step(seed=seed, group=base_group, **sim_params)
+            group_arg = curr_other_params.pop("group", None)
+            data = data_step(seed=seed, group=group_arg, **sim_params)["data"]
             curr_results, grid_data = base_ex.run(
                 data, **curr_other_params, display=False, return_all=True
             )
             curr_results["sim_params"] = sim_params
+            curr_results["group"] = group
             intermediate_data.append(
                 {"params": curr_other_params.flatten(), "pind": ind, "data": grid_data}
             )

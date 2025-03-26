@@ -8,6 +8,7 @@ from numpy.typing import NDArray
 from pysindy import BaseDifferentiation, FiniteDifference, SINDy
 
 from . import gridsearch, odes, pdes
+from .typing import ProbData
 from .utils import SINDyTrialData, make_model  # noqa: F401
 
 this_module = importlib.import_module(__name__)
@@ -37,7 +38,18 @@ class NoExperiment:
 
     @staticmethod
     def gen_data(*args: Any, **kwargs: Any) -> dict[str, Any]:
-        return {}
+        return {
+            "data": ProbData(
+                0,
+                BORING_ARRAY,
+                [BORING_ARRAY],
+                [BORING_ARRAY],
+                [BORING_ARRAY],
+                [BORING_ARRAY],
+                ["x"],
+                [{"x": 0}],
+            )
+        }
 
     @staticmethod
     def run(

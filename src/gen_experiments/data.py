@@ -94,7 +94,7 @@ def gen_data(
             input_features,
             coeff_true,
         ),
-        "main": f"{n_trajectories} trajectories of {rhsfunc.__qualname__}",
+        "main": f"{n_trajectories} trajectories of {rhsfunc}",
         "metrics": {"rel_noise": noise_rel, "abs_noise": noise_abs},
     }
 
