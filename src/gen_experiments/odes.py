@@ -1,5 +1,5 @@
 from functools import partial
-from typing import Callable
+from typing import Callable, TypeVar
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -33,6 +33,34 @@ metric_ordering = {
     "mse_plot": "min",
     "mae_plot": "min",
 }
+
+
+T = TypeVar("T", bound=int)
+DType = TypeVar("DType", bound=np.dtype)
+
+
+def add_forcing(
+    forcing_func: Callable[[float], np.ndarray[tuple[T], DType]],
+    auto_func: Callable[
+        [float, np.ndarray[tuple[T], DType]], np.ndarray[tuple[T], DType]
+    ],
+) -> Callable[[float, np.ndarray], np.ndarray]:
+    """Add a time-dependent forcing term to a rhs func
+
+    Args:
+        forcing_func: The forcing function to add
+        auto_func: An existing rhs func for solve_ivp
+
+    Returns:
+        A rhs function for integration
+    """
+
+    def sum_of_terms(
+        t: float, state: np.ndarray[tuple[T], DType]
+    ) -> np.ndarray[tuple[T], DType]:
+        return forcing_func(t) + auto_func(t, state)
+
+    return sum_of_terms
 
 
 def nonlinear_pendulum(
@@ -102,6 +130,16 @@ ode_setup = {
         ],
         "x0_center": np.array([0, 0, 15]),
     },
+    "lorenz_sin_forced": {
+        "rhsfunc": add_forcing(lambda t: [np.sin(t), 0, 0], ps.utils.lorenz),
+        "input_features": ["x", "y", "z", "t"],
+        "coeff_true": [
+            {"x": -10, "y": 10, "sin(t)": 1},
+            {"x": 28, "y": -1, "x z": -1},
+            {"z": -8 / 3, "x y": 1},
+        ],
+        "x0_center": np.array([0, 0, 15]),
+    },
     "hopf": {
         "rhsfunc": ps.utils.hopf,
         "input_features": ["x", "y"],
@@ -132,6 +170,14 @@ ode_setup = {
         "coeff_true": [
             {"x'": 1},
             {"x": -1, "x'": 0.5, "x^2 x'": -0.5},
+        ],
+    },
+    "kinematics": {
+        "rhsfunc": lambda t, x: [x[1], -1],
+        "input_features": ["x", "x'"],
+        "coeff_true": [
+            {"x'": 1},
+            {"1": -1},
         ],
     },
     "pendulum": {
@@ -173,6 +219,12 @@ def run(
 
     model.fit(x_train, t=dt)
     coeff_true, coefficients, feature_names = unionize_coeff_matrices(model, coeff_true)
+    if isinstance(model.feature_library, ps.WeakPDELibrary):
+        # WeakPDE library fails to simulate, so construct proxy model.
+        model = ps.SINDy(
+            feature_library=model.feature_library.function_library,
+            optimizer=model.optimizer,
+        )
 
     sim_ind = -1
     trial_data: SINDyTrialData = {
