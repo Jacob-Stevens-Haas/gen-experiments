@@ -227,9 +227,9 @@ def unionize_coeff_matrices(
 def make_model(
     input_features: list[str],
     dt: float,
-    diff_params: dict,
-    feat_params: dict,
-    opt_params: dict,
+    diff_params: dict | ps.BaseDifferentiation,
+    feat_params: dict | ps.feature_library.base.BaseFeatureLibrary,
+    opt_params: dict | ps.BaseOptimizer,
 ) -> ps.SINDy:
     """Build a model with object parameters dictionaries
 
@@ -248,9 +248,18 @@ def make_model(
         pdict[lookup_key] = cls_name
         return param_final
 
-    diff = finalize_param(diff_lookup, diff_params, "diffcls")
-    features = finalize_param(feature_lookup, feat_params, "featcls")
-    opt = finalize_param(opt_lookup, opt_params, "optcls")
+    if isinstance(diff_params, ps.BaseDifferentiation):
+        diff = diff_params
+    else:
+        diff = finalize_param(diff_lookup, diff_params, "diffcls")
+    if isinstance(feat_params, ps.feature_library.base.BaseFeatureLibrary):
+        features = feat_params
+    else:
+        features = finalize_param(feature_lookup, feat_params, "featcls")
+    if isinstance(opt_params, ps.BaseOptimizer):
+        opt = opt_params
+    else:
+        opt = finalize_param(opt_lookup, opt_params, "optcls")
     return ps.SINDy(
         differentiation_method=diff,
         optimizer=opt,

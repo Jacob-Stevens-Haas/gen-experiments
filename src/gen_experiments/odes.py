@@ -192,7 +192,7 @@ ode_setup = {
     },
     "lorenz_xy": {
         "rhsfunc": ps.utils.lorenz,
-        "input_features": ["x", "y"],
+        "input_features": ["x", "y", "z"],
         "coeff_true": [
             {"x": -10, "y": 10},
             {"x": 28, "y": -1},
@@ -217,19 +217,31 @@ def run(
     x_test = data.x_test
     x_dot_test = data.x_dot_test
     coeff_true = data.coeff_true
-    model = make_model(input_features, dt, diff_params, feat_params, opt_params)
 
+    if feat_params["featcls"] == "weak":
+        feat_params.pop("featcls")
+        feat_params = ps.WeakPDELibrary(**feat_params, spatiotemporal_grid=data.t_train)
+
+    model = make_model(input_features, dt, diff_params, feat_params, opt_params)
+    model.feature_names = data.input_features
     model.fit(x_train, t=dt)
     MOD_LOG.info(f"Fitting a model: {model}")
-    coeff_true, coefficients, feature_names = unionize_coeff_matrices(model, coeff_true)
+    coeff_true, coefficients, feature_names = unionize_coeff_matrices(
+        model, (data.input_features, coeff_true)
+    )
     if isinstance(model.feature_library, ps.WeakPDELibrary):
-        # WeakPDE library fails to simulate, so construct proxy model.
-        model = ps.SINDy(
-            feature_library=model.feature_library.function_library,
-            optimizer=model.optimizer,
-        )
-
+        # WeakPDE library fails to simulate, so insert nonweak library
+        # to Pipeline and SINDy model.
+        inner_lib = model.feature_library.function_library
+        model.model.steps[0] = ("features", inner_lib)
+        model.feature_library = inner_lib
     sim_ind = -1
+    if hasattr(model.differentiation_method, "smoothed_x_"):
+        smooth_x = model.differentiation_method.smoothed_x_
+    else:  # using WeakPDELibrary
+        smooth_x = x_train[0]
+        model.__sklearn_is_fitted__ = lambda: True
+        model.model = "fake_model"
     trial_data: SINDyTrialData = {
         "dt": dt,
         "coeff_true": coeff_true,
@@ -239,7 +251,7 @@ def run(
         "t_train": t_train,
         "x_true": x_train_true[sim_ind],
         "x_train": x_train[sim_ind],
-        "smooth_train": model.differentiation_method.smoothed_x_,
+        "smooth_train": smooth_x,
         "x_test": x_test[sim_ind],
         "x_dot_test": x_dot_test[sim_ind],
         "model": model,
@@ -256,6 +268,17 @@ def run(
     if return_all:
         return (metrics, trial_data)
     return metrics
+
+
+def lorenz_xy(
+    data: ProbData,
+    diff_params: dict,
+    feat_params: dict,
+    opt_params: dict,
+    display: bool = True,
+    return_all: bool = False,
+) -> dict | tuple[dict, SINDyTrialData | FullSINDyTrialData]:
+    pass
 
 
 def plot_ode_panel(trial_data: FullSINDyTrialData):
