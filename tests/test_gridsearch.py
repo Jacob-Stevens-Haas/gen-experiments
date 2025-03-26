@@ -10,6 +10,18 @@ from gen_experiments.gridsearch.typing import (
 )
 
 
+def test_thick_indexing():
+    result = set(gridsearch._ndindex_skinny((2,), None, None))
+    expected = {(0,), (1,)}
+    assert result == expected
+
+
+def test_thick_indexing_alt():
+    result = set(gridsearch._ndindex_skinny((2,), [], None))
+    expected = {(0,), (1,)}
+    assert result == expected
+
+
 def test_thin_indexing():
     result = set(gridsearch._ndindex_skinny((2, 2, 2), (0, 2), ((0,), (-1,))))
     expected = {
@@ -82,6 +94,26 @@ def test_marginalize_grid_views():
     expected_ind = [
         np.array([[(0, 0, 0), (1, 1, 1)], [(0, 0, 0), (1, 1, 0)]], ts),
         np.array([[(0, 0, 0), (1, 1, 1)], [(1, 1, 0), (0, 0, 1)]], ts),
+    ]
+    for result, expected in zip(res_ind, expected_ind):
+        np.testing.assert_array_equal(result, expected)
+
+
+def test_marginalize_grid_views_noplot():
+    arr = np.array(([[0.0, 1.0], [2.0, 3.0]]))  # (metrics, param1)
+    grid_decisions = ["max"]
+    opts = ["max", "min"]
+    res_val, res_ind = gridsearch._marginalize_grid_views(grid_decisions, arr, opts)
+    assert len(res_val) == 1
+    expected_val = [
+        np.array([[1.0], [2.0]]),
+    ]
+    for result, expected in zip(res_val, expected_val):
+        np.testing.assert_array_equal(result, expected)
+
+    ts = np.dtype([("f0", "<i4")])
+    expected_ind = [
+        np.array([[(1,)], [(0,)]], ts),
     ]
     for result, expected in zip(res_ind, expected_ind):
         np.testing.assert_array_equal(result, expected)
@@ -238,6 +270,19 @@ def test_gridsearch_mock():
         grid_params=["foo"],
         grid_vals=[[0, 1]],
         grid_decisions=["plot"],
+        other_params={"bar": False, "sim_params": {}},
+        metrics=("mse", "mae"),
+    )
+    assert len(results["plot_data"]) == 0
+
+
+def test_gridsearch_mock_noplot():
+    results = gridsearch.run(
+        1,
+        "none",
+        grid_params=["foo"],
+        grid_vals=[[0, 1]],
+        grid_decisions=["max"],
         other_params={"bar": False, "sim_params": {}},
         metrics=("mse", "mae"),
     )

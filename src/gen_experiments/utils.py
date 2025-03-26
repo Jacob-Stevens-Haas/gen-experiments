@@ -189,8 +189,8 @@ def unionize_coeff_matrices(
             # split on ops like *,^, only accept x, x2, from x * x2 ^ 2
             return {var for var in re.split(r"\W", fname) if re.match(r"[^\d]", var)}
 
-        inputs_true = set.union(*[extract_vars(fname) for fname in in_funcs])
-        inputs_true = sorted(inputs_true)
+        inputs_set = set.union(*[extract_vars(fname) for fname in in_funcs])
+        inputs_true = sorted(inputs_set)
         coeff_true = model_true
     else:
         inputs_true, coeff_true = model_true

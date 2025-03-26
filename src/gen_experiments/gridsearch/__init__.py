@@ -311,32 +311,33 @@ def run(
         else:
             results["plot_grid"] = scan_grid
 
-        fig, subplots = plt.subplots(
-            n_metrics,
-            n_plotparams,
-            sharey="row",
-            sharex="col",
-            squeeze=False,
-            figsize=(n_plotparams * 3, 0.5 + n_metrics * 2.25),
-        )
-        for series_search, series_name in zip(
-            series_searches, (ser.name for ser in series_params.series_list)
-        ):
-            plot(
-                subplots,
-                metrics,
-                cast(Sequence[str], results["plot_grid"].keys()),
-                cast(Sequence[Sequence], results["plot_grid"].values()),
-                series_search[0],
-                series_name,
-                legends,
+        if n_plotparams > 0:
+            fig, subplots = plt.subplots(
+                n_metrics,
+                n_plotparams,
+                sharey="row",
+                sharex="col",
+                squeeze=False,
+                figsize=(n_plotparams * 3, 0.5 + n_metrics * 2.25),
             )
-        if series_params.print_name is not None:
-            title = f"Grid Search on {series_params.print_name} in {group}"
-        else:
-            title = f"Grid Search in {group}"
-        fig.suptitle(title)
-        fig.tight_layout()
+            for series_search, series_name in zip(
+                series_searches, (ser.name for ser in series_params.series_list)
+            ):
+                plot(
+                    subplots,
+                    metrics,
+                    cast(Sequence[str], results["plot_grid"].keys()),
+                    cast(Sequence[Sequence], results["plot_grid"].values()),
+                    series_search[0],
+                    series_name,
+                    legends,
+                )
+            if series_params.print_name is not None:
+                title = f"Grid Search on {series_params.print_name} in {group}"
+            else:
+                title = f"Grid Search in {group}"
+            fig.suptitle(title)
+            fig.tight_layout()
 
     return results
 
@@ -442,6 +443,8 @@ def _marginalize_grid_views(
         a list of the flattened argoptima, with metric removed
     """
     plot_param_inds = [ind for ind, val in enumerate(grid_decisions) if val == "plot"]
+    if not plot_param_inds:
+        plot_param_inds = [results.ndim - 1]
     grid_searches = []
     args_maxes = []
     optfuns = [np.nanmax if opt == "max" else np.nanmin for opt in max_or_min]
@@ -456,8 +459,8 @@ def _marginalize_grid_views(
             sub_arrs.append(arg_max)
 
         args_max = np.stack(sub_arrs)
-        grid_searches.append(selection_results)
-        args_maxes.append(args_max)
+        grid_searches.append(selection_results.reshape((len(max_or_min), -1)))
+        args_maxes.append(args_max.reshape((len(max_or_min), -1)))
     return grid_searches, args_maxes
 
 
@@ -477,7 +480,7 @@ def _ndindex_skinny(
     Args:
         shape: array shape
         thin_axes: axes for which you don't want the product of all
-            indexes
+            indexes.  Empty sequence or None (default) is to thin no axes.
         thin_slices: the indexes for other thin axes when traversing
             a particular thin axis. Defaults to 0th index
 
@@ -487,15 +490,14 @@ def _ndindex_skinny(
 
     {(0, 0), (0, 1), (1, 1)}
     """
-    if thin_axes is None and thin_slices is None:
-        thin_axes = ()
-        thin_slices = ()
+    full_indexes = np.ndindex(shape)
+    if not thin_axes and thin_slices is None:
+        yield from full_indexes
     elif thin_axes is None:
         raise ValueError("Must pass thin_axes if thin_slices is not None")
     elif thin_slices is None:  # slice other thin axes at 0th index
         n_thin = len(thin_axes)
         thin_slices = n_thin * ((n_thin - 1) * (0,),)
-    full_indexes = np.ndindex(shape)
     thin_slices = cast(Sequence[OtherSliceDef], thin_slices)
 
     def ind_checker(multi_index: tuple[int, ...]) -> bool:
