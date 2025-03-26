@@ -297,7 +297,7 @@ def ablate_feat(
     model.fit(x_train, t=dt)
     MOD_LOG.info(f"Fitting a model: {model}")
     coeff_true, coefficients, feature_names = unionize_coeff_matrices(
-        model, (data.input_features, data.coeff_true)
+        model, (data.input_features[:-1], data.coeff_true[:-1])
     )
     if isinstance(model.feature_library, ps.WeakPDELibrary):
         # WeakPDE library fails to simulate, so insert nonweak library
