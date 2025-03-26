@@ -118,3 +118,6 @@ ignore_missing_imports=true
 [[tool.mypy.overrides]]
 module="scipy.*"
 ignore_missing_imports=true
+
+[tool.mitosis.steps]
+data = ["gen_experiments.data:gen_data", "gen_experiments.config:no_dict"]

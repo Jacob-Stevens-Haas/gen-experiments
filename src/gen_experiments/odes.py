@@ -60,7 +60,7 @@ def add_forcing(
     def sum_of_terms(
         t: float, state: np.ndarray[tuple[T], DType]
     ) -> np.ndarray[tuple[T], DType]:
-        return forcing_func(t) + auto_func(t, state)
+        return np.array(forcing_func(t)) + np.array(auto_func(t, state))
 
     return sum_of_terms
 
@@ -134,7 +134,7 @@ ode_setup = {
     },
     "lorenz_sin_forced": {
         "rhsfunc": add_forcing(lambda t: [np.sin(t), 0, 0], ps.utils.lorenz),
-        "input_features": ["x", "y", "z", "t"],
+        "input_features": ["x", "y", "z"],
         "coeff_true": [
             {"x": -10, "y": 10, "sin(t)": 1},
             {"x": 28, "y": -1, "x z": -1},

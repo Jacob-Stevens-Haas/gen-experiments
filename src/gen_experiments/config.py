@@ -468,3 +468,5 @@ skinny_specs: dict[str, SkinnySpecs] = {
     ),
     "duration-noise": (("sim_params.t_end", "sim_params.noise_rel"), ((1,), (-1,))),
 }
+
+no_dict = {}
