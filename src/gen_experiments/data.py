@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from logging import getLogger
 from math import ceil
 from pathlib import Path
 from typing import Any, Callable, Optional, cast
@@ -16,6 +17,7 @@ from .typing import Float1D, Float2D, ProbData
 
 INTEGRATOR_KEYWORDS = {"rtol": 1e-12, "method": "LSODA", "atol": 1e-12}
 TRIALS_FOLDER = Path(__file__).parent.absolute() / "trials"
+MOD_LOG = getLogger(__name__)
 
 
 def gen_data(
@@ -67,6 +69,7 @@ def gen_data(
     elif noise_abs is None and noise_rel is None:
         noise_abs = 0.1
 
+    MOD_LOG.info(f"Generating {n_trajectories} trajectories of f{group}")
     dt, t_train, x_train, x_test, x_dot_test, x_train_true = _gen_data(
         rhsfunc,
         len(input_features),

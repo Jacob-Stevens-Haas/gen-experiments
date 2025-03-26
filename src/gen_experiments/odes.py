@@ -1,4 +1,5 @@
 from functools import partial
+from logging import getLogger
 from typing import Callable, TypeVar
 
 import matplotlib.pyplot as plt
@@ -37,6 +38,7 @@ metric_ordering = {
 
 T = TypeVar("T", bound=int)
 DType = TypeVar("DType", bound=np.dtype)
+MOD_LOG = getLogger(__name__)
 
 
 def add_forcing(
@@ -218,6 +220,7 @@ def run(
     model = make_model(input_features, dt, diff_params, feat_params, opt_params)
 
     model.fit(x_train, t=dt)
+    MOD_LOG.info(f"Fitting a model: {model}")
     coeff_true, coefficients, feature_names = unionize_coeff_matrices(model, coeff_true)
     if isinstance(model.feature_library, ps.WeakPDELibrary):
         # WeakPDE library fails to simulate, so construct proxy model.
@@ -242,11 +245,12 @@ def run(
         "model": model,
     }
     if display:
+        MOD_LOG.info(f"Simulating a model: {model}")
         trial_data: FullSINDyTrialData = trial_data | simulate_test_data(
             trial_data["model"], trial_data["dt"], trial_data["x_test"]
         )
         plot_ode_panel(trial_data)
-
+    MOD_LOG.info(f"Evaluating a model: {model}")
     metrics = coeff_metrics(coefficients, coeff_true)
     metrics.update(integration_metrics(model, x_test, t_train, x_dot_test))
     if return_all:
