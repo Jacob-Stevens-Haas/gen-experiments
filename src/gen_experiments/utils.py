@@ -279,7 +279,14 @@ def simulate_test_data(model: ps.SINDy, dt: float, x_test: Float2D) -> SINDyTria
     t_test = cast(Float1D, np.arange(0, len(x_test) * dt, step=dt))
     t_sim = t_test
     try:
-        x_sim = cast(Float2D, model.simulate(x_test[0], t_test))
+        def quit(t, x):
+            return np.abs(x).max() - 1000
+        quit.terminal=True
+        x_sim = cast(Float2D, model.simulate(
+            x_test[0], t_test, integrator_kws={
+                "method": "LSODA", "rtol": 1e-12, "atol": 1e-12, "events": [quit]
+            }
+        ))
     except ValueError:
         warn(message="Simulation blew up; returning zeros")
         x_sim = np.zeros_like(x_test)
