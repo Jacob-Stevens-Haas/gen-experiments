@@ -639,8 +639,11 @@ def find_gridpoints(
         inds_of_metrics = range(len(argopt_metrics))
     else:
         inds_of_metrics = tuple(argopt_metrics.index(metric) for metric in find.metrics)
-    # No deduplication is done!
-    keep_axes = _normalize_keep_axes(find.keep_axes, argopt_axes)
+    # If no plot axes, there's a single SeriesData for argopt_arrs with a single column
+    if not argopt_axes:
+        keep_axes = ((0, (0,)),)
+    else:
+        keep_axes = _normalize_keep_axes(find.keep_axes, argopt_axes)
 
     ser: list[tuple[GridsearchResult[np.floating], GridsearchResult[np.void]]]
     for ser in argopt_arrs:
