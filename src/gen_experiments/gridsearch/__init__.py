@@ -182,6 +182,9 @@ def run(
         data_step = gen_pde_data
     elif base_ex.__name__ == "NoExperiment":
         data_step = gen_experiments.NoExperiment.gen_data
+        plot_panel = lambda trial_data: print(  # noqa
+            f"I'm plotting {trial_data['model']}"
+        )
     if series_params is None:
         series_params = SeriesList(None, None, [SeriesDef(group, {}, [], [])])
         legends = False
