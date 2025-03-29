@@ -305,6 +305,7 @@ def run(
         for gridpoint in plot_data:
             grid_data = gridpoint["data"]
             logger.info(f"Plotting: {gridpoint['params']}")
+            print(f"Plotting: gridpoint {gridpoint['pind']}, {gridpoint['params']}")
             start = process_time()
             grid_data |= simulate_test_data(
                 grid_data["model"], grid_data["dt"], grid_data["x_test"]
