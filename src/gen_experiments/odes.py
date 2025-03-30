@@ -293,7 +293,6 @@ def ablate_feat(
         feat_params = ps.WeakPDELibrary(**feat_params, spatiotemporal_grid=data.t_train)
 
     model = make_model(input_features, dt, diff_params, feat_params, opt_params)
-    model.feature_names = data.input_features
     model.fit(x_train, t=dt)
     MOD_LOG.info(f"Fitting a model: {model}")
     coeff_true, coefficients, feature_names = unionize_coeff_matrices(

@@ -83,39 +83,53 @@ def compare_coefficient_plots(
     coefficients_true: Annotated[np.ndarray, "(n_coord, n_feat)"],
     input_features: Sequence[str],
     feature_names: Sequence[str],
+    scaling: bool = True,
 ):
-    """Create plots of true and estimated coefficients."""
+    """Create plots of true and estimated coefficients.
+
+    Args:
+        scaling: Whether to scale coefficients so that magnitude of largest to
+            smallest (in absolute value) is less than or equal to ten.
+    """
     n_cols = len(coefficients_est)
 
     # helps boost the color of small coefficients.  Maybe log is better?
-    def signed_sqrt(x):
-        return np.sign(x) * np.sqrt(np.abs(x))
+    all_vals = np.hstack((coefficients_est.flatten(), coefficients_true.flatten()))
+    nzs = all_vals[all_vals.nonzero()]
+    max_val = np.max(np.abs(nzs), initial=0.0)
+    min_val = np.min(np.abs(nzs), initial=np.inf)
+    if scaling and np.isfinite(min_val) and max_val / min_val > 10:
+        pwr_ratio = 1.0 / np.log10(max_val / min_val)
+    else:
+        pwr_ratio = 1
+
+    def signed_root(x):
+        return np.sign(x) * np.power(np.abs(x), pwr_ratio)
 
     with sns.axes_style(style="white", rc={"axes.facecolor": (0, 0, 0, 0)}):
         fig, axs = plt.subplots(
             1, 2, figsize=(1.9 * n_cols, 8), sharey=True, sharex=True
         )
-
-        max_clean = max(np.max(np.abs(c)) for c in coefficients_est)
-        max_noisy = max(np.max(np.abs(c)) for c in coefficients_true)
-        max_mag = np.sqrt(max(max_clean, max_noisy))
+        vmax = signed_root(max_val)
 
         plot_coefficients(
-            signed_sqrt(coefficients_true),
+            signed_root(coefficients_true),
             input_features=input_features,
             feature_names=feature_names,
             ax=axs[0],
             cbar=False,
-            vmax=max_mag,
-            vmin=-max_mag,
+            vmax=vmax,
+            vmin=-vmax,
         )
 
         plot_coefficients(
-            signed_sqrt(coefficients_est),
+            signed_root(coefficients_est),
             input_features=input_features,
             feature_names=feature_names,
             ax=axs[1],
             cbar=False,
+            vmax=vmax,
+            vmin=-vmax,
         )
 
         axs[0].set_title("True Coefficients", rotation=45)
