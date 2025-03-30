@@ -228,9 +228,9 @@ def run(
             sim_params = curr_other_params.pop("sim_params", {})
             group_arg = curr_other_params.pop("group", None)
             data = data_step(seed=seed, group=group_arg, **sim_params)["data"]
-            curr_results, grid_data = base_ex.run(
-                data, **curr_other_params, display=False, return_all=True
-            )
+            res = base_ex.run(data, **curr_other_params, display=False, return_all=True)
+            curr_results = res["metrics"]
+            grid_data = res["data"]
             curr_other_params["sim_params"] = sim_params
             curr_other_params["group"] = group_arg
             intermediate_data.append(
