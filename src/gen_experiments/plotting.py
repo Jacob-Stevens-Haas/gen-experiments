@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Annotated, Any, Callable, Literal, Sequence
+from typing import Annotated, Any, Callable, Literal, Optional, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -43,7 +43,19 @@ def plot_coefficients(
     feature_names: Sequence[str],
     ax: Axes,
     **heatmap_kws,
-):
+) -> None:
+    """Plot a set of dynamical system coefficients in a heatmap.
+
+    Args:
+        coefficients: A 2D array holding the coefficients of different
+            library functions.  System dimension is rows, function index
+            is columns
+        input_features: system coordinate names, e.g. "x","y","z" or "u","v"
+        feature_names: the names of the functions in the library.
+        ax: the matplotlib axis to plot on
+        **heatmap_kws: additional kwargs to seaborn's styling
+    """
+
     def detex(input: str) -> str:
         if input[0] == "$":
             input = input[1:]
@@ -294,18 +306,13 @@ def _plot_test_sim_data_2d(
 
 
 def _plot_test_sim_data_3d(
-    axs: Annotated[Sequence[Axes], "len=3"],
-    x_test: np.ndarray,
-    x_sim: np.ndarray,
-    labels: bool = True,
-) -> None:
-    axs[0].plot(x_test[:, 0], x_test[:, 1], x_test[:, 2], "k", label="True Trajectory")
-    axs[1].plot(x_sim[:, 0], x_sim[:, 1], x_sim[:, 2], "r--", label="Simulation")
-    for ax in axs:
-        if labels:
-            ax.set(xlabel="$x_0$", ylabel="$x_1$", zlabel="$x_2$")
-        else:
-            ax.set(xticks=[], yticks=[], zticks=[])
+    ax: Axes, x_vals: np.ndarray, label: Optional[str] = None, color: Optional = None
+):
+    ax.plot(x_vals[:, 0], x_vals[:, 1], x_vals[:, 2], color, label=label)
+    if label:
+        ax.set(xlabel="$x_0$", ylabel="$x_1$", zlabel="$x_2$")
+    else:
+        ax.set(xticks=[], yticks=[], zticks=[])
 
 
 def plot_test_trajectories(
@@ -333,7 +340,9 @@ def plot_test_trajectories(
         _plot_test_sim_data_2d(axs, x_test, x_sim)
     elif x_test.shape[1] == 3:
         _, axs = plt.subplots(1, 2, figsize=(10, 4.5), subplot_kw={"projection": "3d"})
-        _plot_test_sim_data_3d(axs, x_test, x_sim)
+        _plot_test_sim_data_3d(axs[0], x_test, "True Trajectory", "k")
+        _plot_test_sim_data_3d(axs[1], x_sim, "Simulation", "r--")
+
     else:
         raise ValueError("Can only plot 2d or 3d data.")
     axs[0].set(title="true trajectory")
