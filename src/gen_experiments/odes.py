@@ -218,7 +218,7 @@ def run(
     x_dot_test = data.x_dot_test
     coeff_true = data.coeff_true
 
-    if feat_params["featcls"] == "weak":
+    if isinstance(feat_params, dict) and feat_params["featcls"] == "weak":
         feat_params.pop("featcls")
         feat_params = ps.WeakPDELibrary(**feat_params, spatiotemporal_grid=data.t_train)
 
