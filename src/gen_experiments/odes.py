@@ -133,10 +133,10 @@ ode_setup = {
         "x0_center": np.array([0, 0, 15]),
     },
     "lorenz_sin_forced": {
-        "rhsfunc": add_forcing(lambda t: [np.sin(t), 0, 0], ps.utils.lorenz),
+        "rhsfunc": add_forcing(lambda t: [50 * np.sin(t), 0, 0], ps.utils.lorenz),
         "input_features": ["x", "y", "z"],
         "coeff_true": [
-            {"x": -10, "y": 10, "sin(t)": 1},
+            {"x": -10, "y": 10, "sin(t)": 50},
             {"x": 28, "y": -1, "x z": -1},
             {"z": -8 / 3, "x y": 1},
         ],
