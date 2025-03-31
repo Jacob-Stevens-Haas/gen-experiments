@@ -98,12 +98,15 @@ def compare_coefficient_plots(
     input_features: Sequence[str],
     feature_names: Sequence[str],
     scaling: bool = True,
+    axs: Optional[Sequence[Axes]] = None,
 ):
     """Create plots of true and estimated coefficients.
 
     Args:
         scaling: Whether to scale coefficients so that magnitude of largest to
             smallest (in absolute value) is less than or equal to ten.
+        axs: A sequence of axes of at least length two.  Plots are added to the
+            first two axes in the list
     """
     n_cols = len(coefficients_est)
 
@@ -121,9 +124,12 @@ def compare_coefficient_plots(
         return np.sign(x) * np.power(np.abs(x), pwr_ratio)
 
     with sns.axes_style(style="white", rc={"axes.facecolor": (0, 0, 0, 0)}):
-        fig, axs = plt.subplots(
-            1, 2, figsize=(1.9 * n_cols, 8), sharey=True, sharex=True
-        )
+        if axs is None:
+            fig, axs = plt.subplots(
+                1, 2, figsize=(1.9 * n_cols, 8), sharey=True, sharex=True
+            )
+            fig.tight_layout()
+
         vmax = signed_root(max_val)
 
         plot_coefficients(
@@ -148,8 +154,6 @@ def compare_coefficient_plots(
 
         axs[0].set_title("True Coefficients", rotation=45)
         axs[1].set_title("Est. Coefficients", rotation=45)
-
-        fig.tight_layout()
 
 
 def _plot_training_trajectory(
@@ -254,14 +258,24 @@ def plot_training_data(
     for coord_ind in range(n_coord):
         ax = fig_coord.add_subplot(n_coord, 1, coord_ind + 1)
         ax.set_title(coord_names[coord_ind])
-        ax.plot(x_train[..., coord_ind], "b.", label="measured")
-        ax.plot(x_true[..., coord_ind], "r-", label="true")
-        if x_smooth is not None:
-            ax.plot(x_smooth[..., coord_ind], label="smoothed")
+        plot_training_1d(ax, coord_ind, x_train, x_true, x_smooth)
 
     ax.legend()
 
     return fig_3d, fig_coord
+
+
+def plot_training_1d(
+    ax: Axes,
+    coord_ind: int,
+    x_train: np.ndarray,
+    x_true: np.ndarray,
+    x_smooth: Optional[np.ndarray],
+):
+    ax.plot(x_train[..., coord_ind], "b.", label="measured")
+    ax.plot(x_true[..., coord_ind], "r-", label="true")
+    if x_smooth is not None:
+        ax.plot(x_smooth[..., coord_ind], label="smoothed")
 
 
 def plot_pde_training_data(last_train, last_train_true, smoothed_last_train):
