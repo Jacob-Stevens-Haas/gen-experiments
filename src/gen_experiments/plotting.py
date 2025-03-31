@@ -82,7 +82,9 @@ def plot_coefficients(
             "linecolor": "whitesmoke",
         }
         heatmap_args.update(**heatmap_kws)
-
+        coefficients = np.where(
+            coefficients == 0, np.nan * np.empty_like(coefficients), coefficients
+        )
         sns.heatmap(coefficients.T, **heatmap_args)
 
         ax.tick_params(axis="y", rotation=0)
