@@ -76,7 +76,7 @@ class NoExperiment:
                 # "x_train_true": [boring_array],
                 "model": FakeModel(),
             }
-            return {"metrics": metrics, "data": trial_data, "main": metrics["main"]}
+            return {"metrics": metrics, "data": trial_data, "main": metrics["main"]}  # type: ignore # noqa
         return metrics
 
 

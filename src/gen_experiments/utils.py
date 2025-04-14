@@ -283,7 +283,7 @@ def simulate_test_data(model: ps.SINDy, dt: float, x_test: Float2D) -> SINDyTria
         def quit(t, x):
             return np.abs(x).max() - 1000
 
-        quit.terminal = True
+        quit.terminal = True  # type: ignore
         x_sim = cast(
             Float2D,
             model.simulate(
