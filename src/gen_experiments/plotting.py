@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Annotated, Any, Callable, Literal, Sequence
+from typing import Annotated, Any, Callable, Literal, Optional, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -43,7 +43,19 @@ def plot_coefficients(
     feature_names: Sequence[str],
     ax: Axes,
     **heatmap_kws,
-):
+) -> None:
+    """Plot a set of dynamical system coefficients in a heatmap.
+
+    Args:
+        coefficients: A 2D array holding the coefficients of different
+            library functions.  System dimension is rows, function index
+            is columns
+        input_features: system coordinate names, e.g. "x","y","z" or "u","v"
+        feature_names: the names of the functions in the library.
+        ax: the matplotlib axis to plot on
+        **heatmap_kws: additional kwargs to seaborn's styling
+    """
+
     def detex(input: str) -> str:
         if input[0] == "$":
             input = input[1:]
@@ -70,7 +82,9 @@ def plot_coefficients(
             "linecolor": "whitesmoke",
         }
         heatmap_args.update(**heatmap_kws)
-
+        coefficients = np.where(
+            coefficients == 0, np.nan * np.empty_like(coefficients), coefficients
+        )
         sns.heatmap(coefficients.T, **heatmap_args)
 
         ax.tick_params(axis="y", rotation=0)
@@ -83,45 +97,63 @@ def compare_coefficient_plots(
     coefficients_true: Annotated[np.ndarray, "(n_coord, n_feat)"],
     input_features: Sequence[str],
     feature_names: Sequence[str],
+    scaling: bool = True,
+    axs: Optional[Sequence[Axes]] = None,
 ):
-    """Create plots of true and estimated coefficients."""
+    """Create plots of true and estimated coefficients.
+
+    Args:
+        scaling: Whether to scale coefficients so that magnitude of largest to
+            smallest (in absolute value) is less than or equal to ten.
+        axs: A sequence of axes of at least length two.  Plots are added to the
+            first two axes in the list
+    """
     n_cols = len(coefficients_est)
 
     # helps boost the color of small coefficients.  Maybe log is better?
-    def signed_sqrt(x):
-        return np.sign(x) * np.sqrt(np.abs(x))
+    all_vals = np.hstack((coefficients_est.flatten(), coefficients_true.flatten()))
+    nzs = all_vals[all_vals.nonzero()]
+    max_val = np.max(np.abs(nzs), initial=0.0)
+    min_val = np.min(np.abs(nzs), initial=np.inf)
+    if scaling and np.isfinite(min_val) and max_val / min_val > 10:
+        pwr_ratio = 1.0 / np.log10(max_val / min_val)
+    else:
+        pwr_ratio = 1
+
+    def signed_root(x):
+        return np.sign(x) * np.power(np.abs(x), pwr_ratio)
 
     with sns.axes_style(style="white", rc={"axes.facecolor": (0, 0, 0, 0)}):
-        fig, axs = plt.subplots(
-            1, 2, figsize=(1.9 * n_cols, 8), sharey=True, sharex=True
-        )
+        if axs is None:
+            fig, axs = plt.subplots(
+                1, 2, figsize=(1.9 * n_cols, 8), sharey=True, sharex=True
+            )
+            fig.tight_layout()
 
-        max_clean = max(np.max(np.abs(c)) for c in coefficients_est)
-        max_noisy = max(np.max(np.abs(c)) for c in coefficients_true)
-        max_mag = np.sqrt(max(max_clean, max_noisy))
+        vmax = signed_root(max_val)
 
         plot_coefficients(
-            signed_sqrt(coefficients_true),
+            signed_root(coefficients_true),
             input_features=input_features,
             feature_names=feature_names,
             ax=axs[0],
             cbar=False,
-            vmax=max_mag,
-            vmin=-max_mag,
+            vmax=vmax,
+            vmin=-vmax,
         )
 
         plot_coefficients(
-            signed_sqrt(coefficients_est),
+            signed_root(coefficients_est),
             input_features=input_features,
             feature_names=feature_names,
             ax=axs[1],
             cbar=False,
+            vmax=vmax,
+            vmin=-vmax,
         )
 
         axs[0].set_title("True Coefficients", rotation=45)
         axs[1].set_title("Est. Coefficients", rotation=45)
-
-        fig.tight_layout()
 
 
 def _plot_training_trajectory(
@@ -226,14 +258,24 @@ def plot_training_data(
     for coord_ind in range(n_coord):
         ax = fig_coord.add_subplot(n_coord, 1, coord_ind + 1)
         ax.set_title(coord_names[coord_ind])
-        ax.plot(x_train[..., coord_ind], "b.", label="measured")
-        ax.plot(x_true[..., coord_ind], "r-", label="true")
-        if x_smooth is not None:
-            ax.plot(x_smooth[..., coord_ind], label="smoothed")
+        plot_training_1d(ax, coord_ind, x_train, x_true, x_smooth)
 
     ax.legend()
 
     return fig_3d, fig_coord
+
+
+def plot_training_1d(
+    ax: Axes,
+    coord_ind: int,
+    x_train: np.ndarray,
+    x_true: np.ndarray,
+    x_smooth: Optional[np.ndarray],
+):
+    ax.plot(x_train[..., coord_ind], "b.", label="measured")
+    ax.plot(x_true[..., coord_ind], "r-", label="true")
+    if x_smooth is not None:
+        ax.plot(x_smooth[..., coord_ind], label="smoothed")
 
 
 def plot_pde_training_data(last_train, last_train_true, smoothed_last_train):
@@ -280,18 +322,13 @@ def _plot_test_sim_data_2d(
 
 
 def _plot_test_sim_data_3d(
-    axs: Annotated[Sequence[Axes], "len=3"],
-    x_test: np.ndarray,
-    x_sim: np.ndarray,
-    labels: bool = True,
-) -> None:
-    axs[0].plot(x_test[:, 0], x_test[:, 1], x_test[:, 2], "k", label="True Trajectory")
-    axs[1].plot(x_sim[:, 0], x_sim[:, 1], x_sim[:, 2], "r--", label="Simulation")
-    for ax in axs:
-        if labels:
-            ax.set(xlabel="$x_0$", ylabel="$x_1$", zlabel="$x_2$")
-        else:
-            ax.set(xticks=[], yticks=[], zticks=[])
+    ax: Axes, x_vals: np.ndarray, label: Optional[str] = None, color: Optional = None
+):
+    ax.plot(x_vals[:, 0], x_vals[:, 1], x_vals[:, 2], color, label=label)
+    if label:
+        ax.set(xlabel="$x_0$", ylabel="$x_1$", zlabel="$x_2$")
+    else:
+        ax.set(xticks=[], yticks=[], zticks=[])
 
 
 def plot_test_trajectories(
@@ -319,7 +356,9 @@ def plot_test_trajectories(
         _plot_test_sim_data_2d(axs, x_test, x_sim)
     elif x_test.shape[1] == 3:
         _, axs = plt.subplots(1, 2, figsize=(10, 4.5), subplot_kw={"projection": "3d"})
-        _plot_test_sim_data_3d(axs, x_test, x_sim)
+        _plot_test_sim_data_3d(axs[0], x_test, "True Trajectory", "k")
+        _plot_test_sim_data_3d(axs[1], x_sim, "Simulation", "r--")
+
     else:
         raise ValueError("Can only plot 2d or 3d data.")
     axs[0].set(title="true trajectory")

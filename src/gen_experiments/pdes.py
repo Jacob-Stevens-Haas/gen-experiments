@@ -180,7 +180,7 @@ def run(
     metrics = coeff_metrics(coefficients, coeff_true)
     metrics.update(integration_metrics(model, x_test, t_train, x_dot_test))
     if return_all:
-        return (metrics, trial_data)
+        return {"metrics": metrics, "data": trial_data, "main": metrics["main"]}
     return metrics
 
 

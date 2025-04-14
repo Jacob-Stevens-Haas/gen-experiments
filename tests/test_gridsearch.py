@@ -204,6 +204,40 @@ def gridsearch_results():
     return want, full_details
 
 
+@pytest.fixture
+def gridsearch_noplot_results():
+    want: SavedGridPoint = {
+        "params": {
+            "diff_params.alpha": 0.1,
+        },
+        "pind": (1,),
+        "data": {},
+    }
+    dont_want: SavedGridPoint = {
+        "params": {
+            "diff_params.alpha": 0.2,
+        },
+        "pind": (0,),
+        "data": {},
+    }
+    tup_dtype = np.dtype([("f0", "i")])
+    max_amax: SeriesData = [
+        (np.ones((2, 1)), np.array([[(1,)], [(0,)]], dtype=tup_dtype)),
+    ]
+    full_details: GridsearchResultDetails = {
+        "system": "sho",
+        "plot_data": [want, dont_want],
+        "series_data": {"foo": max_amax},
+        "metrics": ("mse", "mae"),
+        "scan_grid": {},
+        "plot_grid": {},
+        "grid_params": ["diff_params.alpha"],
+        "grid_vals": [[0.1, 0.2]],
+        "main": 1,
+    }
+    return want, full_details
+
+
 @pytest.mark.parametrize(
     "locator",
     (
@@ -226,6 +260,19 @@ def gridsearch_results():
 )
 def test_find_gridpoints(gridsearch_results, locator):
     want, full_details = gridsearch_results
+    results = gridsearch.find_gridpoints(
+        locator,
+        full_details["plot_data"],
+        full_details["series_data"].values(),
+        full_details["metrics"],
+        full_details["scan_grid"],
+    )
+    assert [want] == results
+
+
+def test_find_noplot_gridpoints(gridsearch_noplot_results):
+    locator = gridsearch.GridLocator(..., (..., ...), [{"diff_params.alpha": 0.1}])
+    want, full_details = gridsearch_noplot_results
     results = gridsearch.find_gridpoints(
         locator,
         full_details["plot_data"],

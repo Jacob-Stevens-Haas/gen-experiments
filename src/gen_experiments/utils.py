@@ -227,9 +227,9 @@ def unionize_coeff_matrices(
 def make_model(
     input_features: list[str],
     dt: float,
-    diff_params: dict,
-    feat_params: dict,
-    opt_params: dict,
+    diff_params: dict | ps.BaseDifferentiation,
+    feat_params: dict | ps.feature_library.base.BaseFeatureLibrary,
+    opt_params: dict | ps.BaseOptimizer,
 ) -> ps.SINDy:
     """Build a model with object parameters dictionaries
 
@@ -248,9 +248,18 @@ def make_model(
         pdict[lookup_key] = cls_name
         return param_final
 
-    diff = finalize_param(diff_lookup, diff_params, "diffcls")
-    features = finalize_param(feature_lookup, feat_params, "featcls")
-    opt = finalize_param(opt_lookup, opt_params, "optcls")
+    if isinstance(diff_params, ps.BaseDifferentiation):
+        diff = diff_params
+    else:
+        diff = finalize_param(diff_lookup, diff_params, "diffcls")
+    if isinstance(feat_params, ps.feature_library.base.BaseFeatureLibrary):
+        features = feat_params
+    else:
+        features = finalize_param(feature_lookup, feat_params, "featcls")
+    if isinstance(opt_params, ps.BaseOptimizer):
+        opt = opt_params
+    else:
+        opt = finalize_param(opt_lookup, opt_params, "optcls")
     return ps.SINDy(
         differentiation_method=diff,
         optimizer=opt,
@@ -270,7 +279,24 @@ def simulate_test_data(model: ps.SINDy, dt: float, x_test: Float2D) -> SINDyTria
     t_test = cast(Float1D, np.arange(0, len(x_test) * dt, step=dt))
     t_sim = t_test
     try:
-        x_sim = cast(Float2D, model.simulate(x_test[0], t_test))
+
+        def quit(t, x):
+            return np.abs(x).max() - 1000
+
+        quit.terminal = True  # type: ignore
+        x_sim = cast(
+            Float2D,
+            model.simulate(
+                x_test[0],
+                t_test,
+                integrator_kws={
+                    "method": "LSODA",
+                    "rtol": 1e-12,
+                    "atol": 1e-12,
+                    "events": [quit],
+                },
+            ),
+        )
     except ValueError:
         warn(message="Simulation blew up; returning zeros")
         x_sim = np.zeros_like(x_test)

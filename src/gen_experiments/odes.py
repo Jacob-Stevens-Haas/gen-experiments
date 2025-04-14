@@ -133,10 +133,10 @@ ode_setup = {
         "x0_center": np.array([0, 0, 15]),
     },
     "lorenz_sin_forced": {
-        "rhsfunc": add_forcing(lambda t: [np.sin(t), 0, 0], ps.utils.lorenz),
+        "rhsfunc": add_forcing(lambda t: [50 * np.sin(t), 0, 0], ps.utils.lorenz),
         "input_features": ["x", "y", "z"],
         "coeff_true": [
-            {"x": -10, "y": 10, "sin(t)": 1},
+            {"x": -10, "y": 10, "sin(t)": 50},
             {"x": 28, "y": -1, "x z": -1},
             {"z": -8 / 3, "x y": 1},
         ],
@@ -192,7 +192,7 @@ ode_setup = {
     },
     "lorenz_xy": {
         "rhsfunc": ps.utils.lorenz,
-        "input_features": ["x", "y"],
+        "input_features": ["x", "y", "z"],
         "coeff_true": [
             {"x": -10, "y": 10},
             {"x": 28, "y": -1},
@@ -217,19 +217,29 @@ def run(
     x_test = data.x_test
     x_dot_test = data.x_dot_test
     coeff_true = data.coeff_true
-    model = make_model(input_features, dt, diff_params, feat_params, opt_params)
 
+    if isinstance(feat_params, dict) and feat_params["featcls"] == "weak":
+        feat_params.pop("featcls")
+        feat_params = ps.WeakPDELibrary(**feat_params, spatiotemporal_grid=data.t_train)
+
+    model = make_model(input_features, dt, diff_params, feat_params, opt_params)
+    model.feature_names = data.input_features
     model.fit(x_train, t=dt)
     MOD_LOG.info(f"Fitting a model: {model}")
-    coeff_true, coefficients, feature_names = unionize_coeff_matrices(model, coeff_true)
+    coeff_true, coefficients, feature_names = unionize_coeff_matrices(
+        model, (data.input_features, coeff_true)
+    )
     if isinstance(model.feature_library, ps.WeakPDELibrary):
-        # WeakPDE library fails to simulate, so construct proxy model.
-        model = ps.SINDy(
-            feature_library=model.feature_library.function_library,
-            optimizer=model.optimizer,
-        )
-
+        # WeakPDE library fails to simulate, so insert nonweak library
+        # to Pipeline and SINDy model.
+        inner_lib = model.feature_library.function_library
+        model.model.steps[0] = ("features", inner_lib)
+        model.feature_library = inner_lib
     sim_ind = -1
+    if hasattr(model.differentiation_method, "smoothed_x_"):
+        smooth_x = model.differentiation_method.smoothed_x_
+    else:  # using WeakPDELibrary
+        smooth_x = x_train[0]
     trial_data: SINDyTrialData = {
         "dt": dt,
         "coeff_true": coeff_true,
@@ -239,7 +249,7 @@ def run(
         "t_train": t_train,
         "x_true": x_train_true[sim_ind],
         "x_train": x_train[sim_ind],
-        "smooth_train": model.differentiation_method.smoothed_x_,
+        "smooth_train": smooth_x,
         "x_test": x_test[sim_ind],
         "x_dot_test": x_dot_test[sim_ind],
         "model": model,
@@ -254,7 +264,76 @@ def run(
     metrics = coeff_metrics(coefficients, coeff_true)
     metrics.update(integration_metrics(model, x_test, t_train, x_dot_test))
     if return_all:
-        return (metrics, trial_data)
+        return {"metrics": metrics, "data": trial_data, "main": metrics["main"]}
+    return metrics
+
+
+def ablate_feat(
+    data: ProbData,
+    diff_params: dict,
+    feat_params: dict,
+    opt_params: dict,
+    display: bool = True,
+    return_all: bool = False,
+) -> dict | tuple[dict, SINDyTrialData | FullSINDyTrialData]:
+    """Like run(), but hide one input feature from model
+
+    Temporary and highly WET.
+    """
+    input_features = data.input_features[:-1]
+    dt = data.dt
+    x_train = [x[..., :-1] for x in data.x_train]
+    t_train = data.t_train
+    x_train_true = [x[..., :-1] for x in data.x_train_true]
+    x_test = [x[..., :-1] for x in data.x_test]
+    x_dot_test = [x[..., :-1] for x in data.x_dot_test]
+
+    if feat_params["featcls"] == "weak":
+        feat_params.pop("featcls")
+        feat_params = ps.WeakPDELibrary(**feat_params, spatiotemporal_grid=data.t_train)
+
+    model = make_model(input_features, dt, diff_params, feat_params, opt_params)
+    model.fit(x_train, t=dt)
+    MOD_LOG.info(f"Fitting a model: {model}")
+    coeff_true, coefficients, feature_names = unionize_coeff_matrices(
+        model, (data.input_features[:-1], data.coeff_true[:-1])
+    )
+    if isinstance(model.feature_library, ps.WeakPDELibrary):
+        # WeakPDE library fails to simulate, so insert nonweak library
+        # to Pipeline and SINDy model.
+        inner_lib = model.feature_library.function_library
+        model.model.steps[0] = ("features", inner_lib)
+        model.feature_library = inner_lib
+    sim_ind = -1
+    if hasattr(model.differentiation_method, "smoothed_x_"):
+        smooth_x = model.differentiation_method.smoothed_x_
+    else:  # using WeakPDELibrary
+        smooth_x = x_train[0]
+    trial_data: SINDyTrialData = {
+        "dt": dt,
+        "coeff_true": coeff_true,
+        "coeff_fit": coefficients,
+        "feature_names": feature_names,
+        "input_features": input_features,
+        "t_train": t_train,
+        "x_true": x_train_true[sim_ind],
+        "x_train": x_train[sim_ind],
+        "smooth_train": smooth_x,
+        "x_test": x_test[sim_ind],
+        "x_dot_test": x_dot_test[sim_ind],
+        "model": model,
+    }
+    if display:
+        MOD_LOG.info(f"Simulating a model: {model}")
+        trial_data: FullSINDyTrialData = trial_data | simulate_test_data(
+            trial_data["model"], trial_data["dt"], trial_data["x_test"]
+        )
+        plot_ode_panel(trial_data)
+    MOD_LOG.info(f"Evaluating a model: {model}")
+    metrics = coeff_metrics(coefficients, coeff_true)
+    metrics.update(integration_metrics(model, x_test, t_train, x_dot_test))
+    if return_all:
+        return {"metrics": metrics, "data": trial_data, "main": metrics["main"]}
     return metrics
 
 

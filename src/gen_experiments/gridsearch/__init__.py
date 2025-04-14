@@ -182,6 +182,9 @@ def run(
         data_step = gen_pde_data
     elif base_ex.__name__ == "NoExperiment":
         data_step = gen_experiments.NoExperiment.gen_data
+        plot_panel = lambda trial_data: print(  # noqa
+            f"I'm plotting {trial_data['model']}"
+        )
     if series_params is None:
         series_params = SeriesList(None, None, [SeriesDef(group, {}, [], [])])
         legends = False
@@ -225,11 +228,11 @@ def run(
             sim_params = curr_other_params.pop("sim_params", {})
             group_arg = curr_other_params.pop("group", None)
             data = data_step(seed=seed, group=group_arg, **sim_params)["data"]
-            curr_results, grid_data = base_ex.run(
-                data, **curr_other_params, display=False, return_all=True
-            )
-            curr_results["sim_params"] = sim_params
-            curr_results["group"] = group_arg
+            res = base_ex.run(data, **curr_other_params, display=False, return_all=True)
+            curr_results = res["metrics"]
+            grid_data = res["data"]
+            curr_other_params["sim_params"] = sim_params
+            curr_other_params["group"] = group_arg
             intermediate_data.append(
                 {"params": curr_other_params.flatten(), "pind": ind, "data": grid_data}
             )
@@ -302,6 +305,7 @@ def run(
         for gridpoint in plot_data:
             grid_data = gridpoint["data"]
             logger.info(f"Plotting: {gridpoint['params']}")
+            print(f"Plotting: gridpoint {gridpoint['pind']}, {gridpoint['params']}")
             start = process_time()
             grid_data |= simulate_test_data(
                 grid_data["model"], grid_data["dt"], grid_data["x_test"]
@@ -639,8 +643,11 @@ def find_gridpoints(
         inds_of_metrics = range(len(argopt_metrics))
     else:
         inds_of_metrics = tuple(argopt_metrics.index(metric) for metric in find.metrics)
-    # No deduplication is done!
-    keep_axes = _normalize_keep_axes(find.keep_axes, argopt_axes)
+    # If no plot axes, there's a single SeriesData for argopt_arrs with a single column
+    if not argopt_axes:
+        keep_axes = ((0, (0,)),)
+    else:
+        keep_axes = _normalize_keep_axes(find.keep_axes, argopt_axes)
 
     ser: list[tuple[GridsearchResult[np.floating], GridsearchResult[np.void]]]
     for ser in argopt_arrs:
