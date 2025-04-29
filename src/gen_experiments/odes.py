@@ -1,10 +1,12 @@
 from functools import partial
 from logging import getLogger
-from typing import Callable, TypeVar
+from typing import Callable, Optional, TypeVar, cast
+from warnings import warn
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pysindy as ps
+from pysindy.pysindy import _BaseSINDy
 
 from . import config
 from .plotting import (
@@ -203,9 +205,10 @@ ode_setup = {
 
 def run(
     data: ProbData,
-    diff_params: dict,
-    feat_params: dict,
-    opt_params: dict,
+    diff_params: Optional[dict] = None,
+    feat_params: Optional[dict] = None,
+    opt_params: Optional[dict] = None,
+    model: Optional[ps.pysindy._BaseSINDy] = None,
     display: bool = True,
     return_all: bool = False,
 ) -> dict | tuple[dict, SINDyTrialData | FullSINDyTrialData]:
@@ -222,7 +225,29 @@ def run(
         feat_params.pop("featcls")
         feat_params = ps.WeakPDELibrary(**feat_params, spatiotemporal_grid=data.t_train)
 
-    model = make_model(input_features, dt, diff_params, feat_params, opt_params)
+    if model is None and all(
+        (diff_params is not None, feat_params is not None, opt_params is not None)
+    ):
+        warn(
+            "Passing the built model directly is now accepted.  This is the recommended"
+            "way, and passing (nested) dictionaries to build classes is likely to be"
+            "deprecated.",
+            PendingDeprecationWarning,
+        )
+        model = make_model(input_features, dt, diff_params, feat_params, opt_params)
+    elif (
+        model is not None
+        and any(
+            (diff_params is not None, feat_params is not None, opt_params is not None)
+        )
+        or model is None
+        and any((diff_params is None, feat_params is None, opt_params is None))
+    ):
+        raise ValueError(
+            "Either model must be None and the builder dictionaries all defined,"
+            "or vice versa."
+        )
+    model = cast(_BaseSINDy, model)
     model.feature_names = data.input_features
     model.fit(x_train, t=dt)
     MOD_LOG.info(f"Fitting a model: {model}")
@@ -234,10 +259,15 @@ def run(
         # to Pipeline and SINDy model.
         inner_lib = model.feature_library.function_library
         model.model.steps[0] = ("features", inner_lib)
-        model.feature_library = inner_lib
+        model.feature_library = inner_lib  # type: ignore  # TODO: Fix in pysindy
     sim_ind = -1
-    if hasattr(model.differentiation_method, "smoothed_x_"):
-        smooth_x = model.differentiation_method.smoothed_x_
+    if all(
+        (
+            isinstance(model, ps.SINDy),
+            hasattr(model.differentiation_method, "smoothed_x_"),  # type: ignore
+        )
+    ):
+        smooth_x = model.differentiation_method.smoothed_x_  # type: ignore
     else:  # using WeakPDELibrary
         smooth_x = x_train[0]
     trial_data: SINDyTrialData = {
