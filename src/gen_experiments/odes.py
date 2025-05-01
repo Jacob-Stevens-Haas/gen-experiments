@@ -249,7 +249,7 @@ def run(
         )
     model = cast(_BaseSINDy, model)
     model.feature_names = data.input_features
-    model.fit(x_train, t=dt)
+    model.fit(x_train, t=len(x_train) * t_train)
     MOD_LOG.info(f"Fitting a model: {model}")
     coeff_true, coefficients, feature_names = unionize_coeff_matrices(
         model, (data.input_features, coeff_true)
