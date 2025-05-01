@@ -17,7 +17,7 @@ In addition, tentative PDE functionality is provided, though may be unstable:
 * `gen_experiments.pdes.run()`
 
 ## Plotting and diagnostics
-Perhaps of most significance are the SINDy diagnostic plotting.  `gen_experiments.plotting` has a variety 
+Perhaps of most significance are the SINDy diagnostic plotting.  `gen_experiments.plotting` has a variety
 of functions for creating diagnostics of fitted SINDy models:
 * `gen_experiments.plotting.compare_coefficient_plots()` and its cousin,
   `gen_experiments.utils.unionize_coeff_matrices()`, which is used to align coefficient matrices from
@@ -28,5 +28,5 @@ of functions for creating diagnostics of fitted SINDy models:
 
 
 ## Names
-This package is destributed as pysindy-experiments, while some names still refer to gen_experiments.
+This package is distributed as pysindy-experiments, while some names still refer to gen_experiments.
 The latter is due to the origins in a PhD general exam.
