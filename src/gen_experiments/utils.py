@@ -11,7 +11,7 @@ import pysindy as ps
 import sklearn
 import sklearn.metrics
 from numpy.typing import NDArray
-from pysindy.pysindy import SINDy, _BaseSINDy
+from pysindy.pysindy import _BaseSINDy
 
 from .typing import Float1D, Float2D, FloatND
 
@@ -119,7 +119,7 @@ def pred_metrics(
     }
 
 
-def integration_metrics(model: SINDy, x_test, t_train, x_dot_test):
+def integration_metrics(model: _BaseSINDy, x_test, t_train, x_dot_test):
     metrics = {}
     metrics["mse-plot"] = model.score(
         x_test,
