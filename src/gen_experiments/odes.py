@@ -249,7 +249,7 @@ def run(
         )
     model = cast(_BaseSINDy, model)
     model.feature_names = data.input_features
-    model.fit(x_train, t=len(x_train) * t_train)
+    model.fit(x_train, t=len(x_train) * [t_train])
     MOD_LOG.info(f"Fitting a model: {model}")
     coeff_true, coefficients, feature_names = unionize_coeff_matrices(
         model, (data.input_features, coeff_true)
@@ -261,13 +261,10 @@ def run(
         model.model.steps[0] = ("features", inner_lib)
         model.feature_library = inner_lib  # type: ignore  # TODO: Fix in pysindy
     sim_ind = -1
-    if all(
-        (
-            isinstance(model, ps.SINDy),
-            hasattr(model.differentiation_method, "smoothed_x_"),  # type: ignore
-        )
+    if isinstance(model, ps.SINDy) and hasattr(
+        model.differentiation_method, "smoothed_x_"
     ):
-        smooth_x = model.differentiation_method.smoothed_x_  # type: ignore
+        smooth_x = model.differentiation_method.smoothed_x_
     else:  # using WeakPDELibrary
         smooth_x = x_train[0]
     trial_data: SINDyTrialData = {
