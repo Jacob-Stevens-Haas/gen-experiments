@@ -1,17 +1,50 @@
 from dataclasses import dataclass, field
 from typing import Annotated, Any, Callable, Literal, Optional, Sequence
 
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy
 import seaborn as sns
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
+from matplotlib.typing import ColorType
 
 from .gridsearch.typing import GridLocator
 
 PAL = sns.color_palette("Set1")
 PLOT_KWS = {"alpha": 0.7, "linewidth": 3}
+
+
+@dataclass
+class _ColorConstants:
+    color_sequence: list[ColorType]
+
+    def set_sequence(self, color_sequence: list[ColorType]):
+        self.color_sequence = color_sequence
+
+    @property
+    def TRUE(self):
+        return self.color_sequence[0]
+
+    @property
+    def MEAS(self):
+        return self.color_sequence[1]
+
+    @property
+    def EST(self):
+        return self.color_sequence[2]
+
+    @property
+    def TRAIN(self):
+        return self.color_sequence[3]
+
+    @property
+    def TEST(self):
+        return self.color_sequence[3]
+
+
+COLOR = _ColorConstants(mpl.color_sequences["tab10"])
 
 
 @dataclass(frozen=True)
@@ -165,13 +198,15 @@ def _plot_training_trajectory(
 ) -> None:
     """Plot a single training trajectory"""
     if x_train.shape[1] == 2:
-        ax.plot(x_true[:, 0], x_true[:, 1], ".", label="True", color=PAL[0], **PLOT_KWS)
+        ax.plot(
+            x_true[:, 0], x_true[:, 1], ".", label="True", color=COLOR.TRUE, **PLOT_KWS
+        )
         ax.plot(
             x_train[:, 0],
             x_train[:, 1],
             ".",
             label="Measured",
-            color=PAL[1],
+            color=COLOR.MEAS,
             **PLOT_KWS,
         )
         if (
@@ -183,7 +218,7 @@ def _plot_training_trajectory(
                 x_smooth[:, 1],
                 ".",
                 label="Smoothed",
-                color=PAL[2],
+                color=COLOR.EST,
                 **PLOT_KWS,
             )
         if labels:
@@ -195,7 +230,7 @@ def _plot_training_trajectory(
             x_true[:, 0],
             x_true[:, 1],
             x_true[:, 2],
-            color=PAL[0],
+            color=COLOR.TRUE,
             label="True values",
             **PLOT_KWS,
         )
@@ -205,7 +240,7 @@ def _plot_training_trajectory(
             x_train[:, 1],
             x_train[:, 2],
             ".",
-            color=PAL[1],
+            color=COLOR.MEAS,
             label="Measured values",
             alpha=0.3,
         )
@@ -218,7 +253,7 @@ def _plot_training_trajectory(
                 x_smooth[:, 1],
                 x_smooth[:, 2],
                 ".",
-                color=PAL[2],
+                color=COLOR.EST,
                 label="Smoothed values",
                 alpha=0.3,
             )
@@ -247,7 +282,13 @@ def plot_training_data(
     ax0.legend()
     ax0.set(title="Training data")
     ax1 = fig_3d.add_subplot(1, 2, 2)
-    ax1.loglog(np.abs(scipy.fft.rfft(x_train, axis=0)) / np.sqrt(len(x_train)))
+    ax1.loglog(
+        np.abs(scipy.fft.rfft(x_train, axis=0)) / np.sqrt(len(x_train)),
+        color=COLOR.MEAS,
+    )
+    ax1.loglog(
+        np.abs(scipy.fft.rfft(x_true, axis=0)) / np.sqrt(len(x_true)), color=COLOR.TRUE
+    )
     ax1.legend(coord_names)
     ax1.set(title="Training Data Absolute Spectral Density")
     ax1.set(xlabel="Wavenumber")
@@ -272,10 +313,10 @@ def plot_training_1d(
     x_true: np.ndarray,
     x_smooth: Optional[np.ndarray],
 ):
-    ax.plot(x_train[..., coord_ind], "b.", label="measured")
-    ax.plot(x_true[..., coord_ind], "r-", label="true")
+    ax.plot(x_train[..., coord_ind], "b.", color=COLOR.MEAS, label="measured")
+    ax.plot(x_true[..., coord_ind], "r-", color=COLOR.TRUE, label="true")
     if x_smooth is not None:
-        ax.plot(x_smooth[..., coord_ind], label="smoothed")
+        ax.plot(x_smooth[..., coord_ind], color=COLOR.EST, label="smoothed")
 
 
 def plot_pde_training_data(last_train, last_train_true, smoothed_last_train):
