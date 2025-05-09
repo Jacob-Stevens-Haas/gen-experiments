@@ -36,12 +36,16 @@ class _ColorConstants:
         return self.color_sequence[2]
 
     @property
-    def TRAIN(self):
+    def EST2(self):
         return self.color_sequence[3]
 
     @property
+    def TRAIN(self):
+        return self.color_sequence[4]
+
+    @property
     def TEST(self):
-        return self.color_sequence[3]
+        return self.color_sequence[5]
 
 
 COLOR = _ColorConstants(mpl.color_sequences["tab10"])
