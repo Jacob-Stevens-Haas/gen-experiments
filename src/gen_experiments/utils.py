@@ -112,10 +112,12 @@ def coeff_metrics(coefficients, coeff_true):
 def pred_metrics(
     model: _BaseSINDy, x_test: np.ndarray, x_dot_test: np.ndarray
 ) -> dict[str, np.ndarray | float | np.floating]:
-    err = model.predict(x_test) - x_dot_test
+    preds = model.predict(x_test)
+    err = preds - x_dot_test
     return {
         "pred_l2_fro": (np.linalg.norm(err) / np.linalg.norm(x_dot_test)),
         "pred_l2_each": (np.linalg.norm(err) / np.linalg.norm(x_dot_test)),
+        "pred_r2": sklearn.metrics.r2_score(x_dot_test, preds),
     }
 
 
