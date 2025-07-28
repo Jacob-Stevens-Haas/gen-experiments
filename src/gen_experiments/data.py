@@ -9,11 +9,11 @@ import mitosis
 import numpy as np
 import scipy
 
-from .gridsearch.typing import GridsearchResultDetails
-from .odes import ode_setup
-from .pdes import pde_setup
-from .plotting import plot_training_data
-from .typing import Float1D, Float2D, ProbData
+from gen_experiments.gridsearch.typing import GridsearchResultDetails
+from gen_experiments.odes import ode_setup
+from gen_experiments.pdes import pde_setup
+from gen_experiments.plotting import plot_training_data
+from gen_experiments.typing import Float1D, Float2D, ProbData
 
 INTEGRATOR_KEYWORDS = {"rtol": 1e-12, "method": "LSODA", "atol": 1e-12}
 TRIALS_FOLDER = Path(__file__).parent.absolute() / "trials"
