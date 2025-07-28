@@ -22,32 +22,30 @@ classifiers = [
   "Natural Language :: English",
   "Operating System :: POSIX :: Linux",
 ]
-# Since the point of the package is reproducibility, incl. all dev
-# dependencies
 dependencies = [
   "mitosis >=0.5.2",
   "derivative >=0.6.3",
-  "pysindy[cvxpy,miosr] >=2.0.0rc2",
+  "pysindy[cvxpy,miosr] >=2.0.0rc3",
   "kalman @ git+https://github.com/Jacob-Stevens-Haas/kalman@0.1.1",
   "auto_ks @ git+https://github.com/cvxgrp/auto_ks.git@e60bcc6",
-  "pytest >= 6.0.0",
-  "pytest-cov",
-  "flake8",
-  "flake8-comprehensions>=3.1.0",
   "matplotlib",
   "numpy >= 1.20.0",
-  "black",
-  "coverage",
-  "isort",
-  "pre-commit",
-  "codecov",
   "seaborn",
-  "tomli",
 ]
 
 [project.optional-dependencies]
 dev = [
   "mypy",
+  "pytest >= 6.0.0",
+  "pytest-cov",
+  "flake8",
+  "flake8-comprehensions>=3.1.0",
+  "black",
+  "coverage",
+  "isort",
+  "pre-commit",
+  "codecov",
+  "tomli",
 ]
 
 [project.urls]
