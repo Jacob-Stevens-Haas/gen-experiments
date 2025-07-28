@@ -73,7 +73,7 @@ def test_curr_skinny_specs():
 
 
 def test_marginalize_grid_views():
-    arr = np.arange(16, dtype=np.float_).reshape(
+    arr = np.arange(16, dtype=np.float64).reshape(
         2, 2, 2, 2
     )  # (metrics, param1, param2, param3)
     arr[0, 0, 0, 0] = 1000
@@ -120,7 +120,7 @@ def test_marginalize_grid_views_noplot():
 
 
 def test_argopt_tuple_axis():
-    arr = np.arange(16, dtype=np.float_).reshape(2, 2, 2, 2)
+    arr = np.arange(16, dtype=np.float64).reshape(2, 2, 2, 2)
     arr[0, 0, 0, 0] = 1000
     result = gridsearch._argopt(arr, (1, 3))
     expected = np.array(
@@ -130,7 +130,7 @@ def test_argopt_tuple_axis():
 
 
 def test_argopt_empty_tuple_axis():
-    arr = np.arange(4, dtype=np.float_).reshape(4)
+    arr = np.arange(4, dtype=np.float64).reshape(4)
     result = gridsearch._argopt(arr, ())
     expected = np.array([(0,), (1,), (2,), (3,)], dtype=[("f0", "i")])
     np.testing.assert_array_equal(result, expected)
@@ -139,7 +139,7 @@ def test_argopt_empty_tuple_axis():
 
 
 def test_argopt_int_axis():
-    arr = np.arange(8, dtype=np.float_).reshape(2, 2, 2)
+    arr = np.arange(8, dtype=np.float64).reshape(2, 2, 2)
     arr[0, 0, 0] = 1000
     result = gridsearch._argopt(arr, 1)
     expected = np.array([[(0, 0, 0), (0, 1, 1)], [(1, 1, 0), (1, 1, 1)]], dtype="i,i,i")

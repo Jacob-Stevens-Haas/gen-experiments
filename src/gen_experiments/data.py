@@ -9,11 +9,11 @@ import mitosis
 import numpy as np
 import scipy
 
-from .gridsearch.typing import GridsearchResultDetails
-from .odes import ode_setup
-from .pdes import pde_setup
-from .plotting import plot_training_data
-from .typing import Float1D, Float2D, ProbData
+from gen_experiments.gridsearch.typing import GridsearchResultDetails
+from gen_experiments.odes import ode_setup
+from gen_experiments.pdes import pde_setup
+from gen_experiments.plotting import plot_training_data
+from gen_experiments.typing import Float1D, Float2D, ProbData
 
 INTEGRATOR_KEYWORDS = {"rtol": 1e-12, "method": "LSODA", "atol": 1e-12}
 TRIALS_FOLDER = Path(__file__).parent.absolute() / "trials"
@@ -59,7 +59,7 @@ def gen_data(
     try:
         x0_center = ode_setup[group]["x0_center"]
     except KeyError:
-        x0_center = np.zeros((len(input_features)), dtype=np.float_)
+        x0_center = np.zeros((len(input_features)), dtype=np.float64)
     try:
         nonnegative = ode_setup[group]["nonnegative"]
     except KeyError:
@@ -116,7 +116,7 @@ def _gen_data(
     t_end: float,
 ) -> tuple[float, Float1D, list[Float2D], list[Float2D], list[Float2D], list[Float2D]]:
     rng = np.random.default_rng(seed)
-    t_train = np.arange(0, t_end, dt, dtype=np.float_)
+    t_train = np.arange(0, t_end, dt, dtype=np.float64)
     t_train_span = (t_train[0], t_train[-1])
     if nonnegative:
         shape = ((x0_center + 1) / ic_stdev) ** 2

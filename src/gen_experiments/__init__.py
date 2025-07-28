@@ -41,7 +41,7 @@ class NoExperiment:
         return {
             "data": ProbData(
                 0,
-                BORING_ARRAY,
+                BORING_ARRAY[0],
                 [BORING_ARRAY],
                 [BORING_ARRAY],
                 [BORING_ARRAY],
@@ -62,8 +62,8 @@ class NoExperiment:
         if return_all:
             trial_data: SINDyTrialData = {
                 "dt": 1,
-                "coeff_true": BORING_ARRAY[:1],
-                "coeff_fit": BORING_ARRAY[:1],
+                "coeff_true": BORING_ARRAY[:1],  # type: ignore
+                "coeff_fit": BORING_ARRAY[:1],  # type: ignore
                 # "coefficients": boring_array,
                 "feature_names": ["1"],
                 "input_features": ["x", "y"],
