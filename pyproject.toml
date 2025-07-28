@@ -23,7 +23,7 @@ classifiers = [
   "Operating System :: POSIX :: Linux",
 ]
 dependencies = [
-  "mitosis >=0.5.2",
+  "mitosis >=0.6.1",
   "derivative >=0.6.3",
   "pysindy[cvxpy,miosr] >=2.0.0rc3",
   "kalman @ git+https://github.com/Jacob-Stevens-Haas/kalman@0.1.1",
