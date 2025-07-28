@@ -30,3 +30,11 @@ of functions for creating diagnostics of fitted SINDy models:
 ## Names
 This package is distributed as pysindy-experiments, while some names still refer to gen_experiments.
 The latter is due to the origins in a PhD general exam.
+
+# Vendored branch
+This branch removes the `pysindy` and `derivative` dependencies
+    so that other projects which tie together tight development
+            of `pysindy` and `pysindy-experiments`
+        can manage these packages' compatible versions.
+Do not develop off of this branch!
+Instead, add all features to `main`, then rebase this branch at the tip.
