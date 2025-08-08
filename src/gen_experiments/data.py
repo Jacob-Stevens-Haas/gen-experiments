@@ -127,7 +127,7 @@ def _gen_data(
     list[Float2D],
 ]:
     rng = np.random.default_rng(seed)
-    t_train = np.arange(0, t_end, dt, dtype=np.float64)
+    t_train = np.arange(0, t_end, dt)
     t_train_span = (t_train[0], t_train[-1])
     if nonnegative:
         shape = ((x0_center + 1) / ic_stdev) ** 2
