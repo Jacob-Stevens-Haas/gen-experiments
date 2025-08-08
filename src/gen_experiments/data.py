@@ -70,18 +70,20 @@ def gen_data(
         noise_abs = 0.1
 
     MOD_LOG.info(f"Generating {n_trajectories} trajectories of f{group}")
-    dt, t_train, x_train, x_test, x_dot_test, x_train_true = _gen_data(
-        rhsfunc,
-        len(input_features),
-        seed,
-        x0_center=x0_center,
-        nonnegative=nonnegative,
-        n_trajectories=n_trajectories,
-        ic_stdev=ic_stdev,
-        noise_abs=noise_abs,
-        noise_rel=noise_rel,
-        dt=dt,
-        t_end=t_end,
+    dt, t_train, x_train, x_test, x_dot_test, x_train_true, x_train_true_dot = (
+        _gen_data(
+            rhsfunc,
+            len(input_features),
+            seed,
+            x0_center=x0_center,
+            nonnegative=nonnegative,
+            n_trajectories=n_trajectories,
+            ic_stdev=ic_stdev,
+            noise_abs=noise_abs,
+            noise_rel=noise_rel,
+            dt=dt,
+            t_end=t_end,
+        )
     )
     if display:
         figs = plot_training_data(x_train[0], x_train_true[0])
@@ -94,6 +96,7 @@ def gen_data(
             x_test,
             x_dot_test,
             x_train_true,
+            x_train_true_dot,
             input_features,
             coeff_true,
         ),
@@ -114,9 +117,17 @@ def _gen_data(
     nonnegative: bool,
     dt: float,
     t_end: float,
-) -> tuple[float, Float1D, list[Float2D], list[Float2D], list[Float2D], list[Float2D]]:
+) -> tuple[
+    float,
+    Float1D,
+    list[Float2D],
+    list[Float2D],
+    list[Float2D],
+    list[Float2D],
+    list[Float2D],
+]:
     rng = np.random.default_rng(seed)
-    t_train = np.arange(0, t_end, dt, dtype=np.float64)
+    t_train = np.arange(0, t_end, dt)
     t_train_span = (t_train[0], t_train[-1])
     if nonnegative:
         shape = ((x0_center + 1) / ic_stdev) ** 2
@@ -182,6 +193,9 @@ def _gen_data(
     x_test = np.array(x_test)
     x_dot_test = np.array([[rhs_func(0, xij) for xij in xi] for xi in x_test])
     x_train_true = np.copy(x_train)
+    x_train_true_dot = np.array(
+        [[rhs_func(0, xij) for xij in xi] for xi in x_train_true]
+    )
     if noise_rel is not None:
         noise_abs = np.sqrt(_signal_avg_power(x_test) * noise_rel)
     x_train = x_train + cast(float, noise_abs) * rng.standard_normal(x_train.shape)
@@ -189,7 +203,8 @@ def _gen_data(
     x_test = list(x_test)
     x_dot_test = list(x_dot_test)
     x_train_true = list(x_train_true)
-    return dt, t_train, x_train, x_test, x_dot_test, x_train_true
+    x_train_true_dot = list(x_train_true_dot)
+    return dt, t_train, x_train, x_test, x_dot_test, x_train_true, x_train_true_dot
 
 
 def gen_pde_data(
