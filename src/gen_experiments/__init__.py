@@ -46,6 +46,7 @@ class NoExperiment:
                 [BORING_ARRAY],
                 [BORING_ARRAY],
                 [BORING_ARRAY],
+                [BORING_ARRAY],
                 ["x"],
                 [{"x": 0}],
             )
