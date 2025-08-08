@@ -18,6 +18,7 @@ class ProbData(NamedTuple):
     x_test: list[FloatND]
     x_dot_test: list[FloatND]
     x_train_true: list[FloatND]
+    x_train_true_dot: list[FloatND]
     input_features: list[str]
     coeff_true: list[dict[str, float]]
 
