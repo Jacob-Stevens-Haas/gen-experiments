@@ -11,7 +11,7 @@ import pysindy as ps
 import sklearn
 import sklearn.metrics
 from numpy.typing import NDArray
-from pysindy.pysindy import _BaseSINDy
+from pysindy._core import _BaseSINDy
 
 from .typing import Float1D, Float2D, FloatND
 

@@ -6,7 +6,7 @@ from warnings import warn
 import matplotlib.pyplot as plt
 import numpy as np
 import pysindy as ps
-from pysindy.pysindy import _BaseSINDy
+from pysindy._core import _BaseSINDy
 
 from . import config
 from .plotting import (
@@ -208,7 +208,7 @@ def run(
     diff_params: Optional[dict] = None,
     feat_params: Optional[dict] = None,
     opt_params: Optional[dict] = None,
-    model: Optional[ps.pysindy._BaseSINDy] = None,
+    model: Optional[ps._core._BaseSINDy] = None,
     display: bool = True,
     return_all: bool = False,
 ) -> dict | tuple[dict, SINDyTrialData | FullSINDyTrialData]:
